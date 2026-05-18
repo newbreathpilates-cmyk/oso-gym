@@ -1982,12 +1982,10 @@ function renderMembersTable(list) {
               <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();openMemberModal(${m.id})"><i class="ti ti-edit"></i></button>
               <div style="position:relative;display:inline-block">
                 <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();toggleShareMenu(${m.id})" title="Gönder"><i class="ti ti-share"></i></button>
-                <div id="share-menu-${m.id}" style="display:none;position:absolute;right:0;top:100%;z-index:100;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);min-width:180px;padding:4px 0">
-                  <button onclick="event.stopPropagation();printMemberPDF(${m.id});closeShareMenus()" style="width:100%;padding:12px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:var(--text)"><i class="ti ti-file-download" style="font-size:18px"></i> PDF İndir</button>
-                  <button onclick="event.stopPropagation();sendWhatsApp(${m.id},'member');closeShareMenus()" style="width:100%;padding:12px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#25D366"><i class="ti ti-brand-whatsapp" style="font-size:18px"></i> WhatsApp</button>
-                  <button onclick="event.stopPropagation();sendEmail(${m.id},'member');closeShareMenus()" style="width:100%;padding:12px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#2563EB"><i class="ti ti-mail" style="font-size:18px"></i> E-posta</button>
-                  <hr style="margin:4px 0;border:none;border-top:1px solid var(--border)">
-                  <button onclick="event.stopPropagation();printOlcumPDF(${m.id});closeShareMenus()" style="width:100%;padding:12px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#4338ca"><i class="ti ti-ruler-2" style="font-size:18px"></i> Ölçüm PDF</button>
+                <div id="share-menu-${m.id}" style="display:none;position:fixed;right:10px;z-index:500;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:180px;padding:4px 0">
+                  <button onclick="event.stopPropagation();printMemberPDF(${m.id});closeShareMenus()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:var(--text)"><i class="ti ti-file-download" style="font-size:16px"></i> PDF İndir</button>
+                  <button onclick="event.stopPropagation();shareViaPDF(${m.id},'whatsapp');closeShareMenus()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#25D366"><i class="ti ti-brand-whatsapp" style="font-size:16px"></i> WhatsApp</button>
+                  <button onclick="event.stopPropagation();shareViaPDF(${m.id},'email');closeShareMenus()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#2563EB"><i class="ti ti-mail" style="font-size:16px"></i> E-posta</button>
                 </div>
               </div>
               <button class="btn btn-sm btn-icon btn-danger" onclick="event.stopPropagation();deleteMember(${m.id})"><i class="ti ti-trash"></i></button>
@@ -2492,8 +2490,19 @@ function saveMember(){
 }
 function toggleShareMenu(id) {
   closeShareMenus();
+  const btn = event.currentTarget;
   const menu = document.getElementById('share-menu-'+id);
-  if(menu) menu.style.display = menu.style.display==='none' ? '' : 'none';
+  if(!menu) return;
+  const rect = btn.getBoundingClientRect();
+  // Menüyü butonun üstüne veya altına yerleştir
+  if(rect.bottom + 150 > window.innerHeight) {
+    menu.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+    menu.style.top = 'auto';
+  } else {
+    menu.style.top = (rect.bottom + 4) + 'px';
+    menu.style.bottom = 'auto';
+  }
+  menu.style.display = '';
 }
 
 function closeShareMenus() {
@@ -2502,6 +2511,137 @@ function closeShareMenus() {
 
 // Dışarı tıklayınca kapat
 document.addEventListener('click', closeShareMenus);
+
+function shareViaPDF(id, channel) {
+  const m = S.members.find(x=>x.id===parseInt(id));
+  if(!m) return;
+
+  const total = pkgSessions(m.package||'');
+  const used = m.used||0;
+  const remaining = total>0&&total<999 ? total-used : '—';
+  const planned = S.events.filter(e=>!e.completed&&(e.members||[]).includes(m.id)).length;
+  const endDate = m.package&&m.start ? getEnd(m) : '—';
+  const days = m.package&&m.start ? daysLeft(m) : 0;
+  const o = m.olcumler||{};
+  const gecmis = (m.olcumGecmis||[]).sort((a,b)=>a.tarih>b.tarih?1:-1);
+  const sonOlcum = gecmis.length ? gecmis[gecmis.length-1] : null;
+  const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed).sort((a,b)=>b.date>a.date?1:-1).slice(0,5);
+
+  const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
+<title>${m.name} ${m.surname} — OSO GYM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#1a1a18;padding:24px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #1D9E75}
+.logo{font-size:18px;font-weight:700;color:#1D9E75}
+.section{margin-bottom:16px}
+.section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#6b6b65;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px}
+.box-label{font-size:10px;color:#9e9e96;margin-bottom:3px}
+.box-value{font-size:13px;font-weight:600}
+.pkg-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px}
+.pkg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.pkg-stat{background:white;border-radius:6px;padding:8px;text-align:center}
+.pkg-stat-val{font-size:18px;font-weight:700;color:#2563EB}
+.pkg-stat-label{font-size:9px;color:#6b7280;margin-top:2px;text-transform:uppercase}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#f3f4f6;padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;border-bottom:2px solid #e5e7eb}
+td{padding:7px 10px;border-bottom:1px solid #f3f4f6}
+.footer{margin-top:20px;padding-top:10px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:10px;color:#9e9e96}
+</style></head><body>
+<div class="header">
+  <div><div class="logo">🌿 OSO GYM</div><div style="font-size:11px;color:#6b6b65">Üye Bilgi Raporu</div></div>
+  <div style="text-align:right;font-size:11px;color:#6b6b65">${new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Kişisel Bilgiler</div>
+  <div class="grid">
+    <div class="box"><div class="box-label">Ad Soyad</div><div class="box-value">${m.name} ${m.surname}</div></div>
+    <div class="box"><div class="box-label">Telefon</div><div class="box-value">${m.phone||'—'}</div></div>
+    ${m.email?`<div class="box"><div class="box-label">E-posta</div><div class="box-value">${m.email}</div></div>`:''}
+    ${m.yas?`<div class="box"><div class="box-label">Yaş</div><div class="box-value">${m.yas}</div></div>`:''}
+    ${m.il||m.ilce?`<div class="box"><div class="box-label">İl / İlçe</div><div class="box-value">${[m.il,m.ilce].filter(Boolean).join(' / ')}</div></div>`:''}
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Paket Bilgisi</div>
+  <div class="pkg-box">
+    <div style="font-size:15px;font-weight:700;color:#1e3a8a">${m.package||'Paket tanımlanmamış'}</div>
+    <div class="pkg-grid">
+      <div class="pkg-stat"><div class="pkg-stat-val">${total===999?'∞':total||'—'}</div><div class="pkg-stat-label">Toplam</div></div>
+      <div class="pkg-stat"><div class="pkg-stat-val">${used}</div><div class="pkg-stat-label">Yapılan</div></div>
+      <div class="pkg-stat"><div class="pkg-stat-val" style="color:${remaining===0?'#dc2626':'#2563EB'}">${remaining}</div><div class="pkg-stat-label">Kalan</div></div>
+      <div class="pkg-stat"><div class="pkg-stat-val">${planned}</div><div class="pkg-stat-label">Planlanmış</div></div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;display:flex;gap:20px">
+      <span><span style="color:#6b7280">Başlangıç:</span> <strong>${m.start||'—'}</strong></span>
+      <span><span style="color:#6b7280">Bitiş:</span> <strong>${endDate}</strong> ${days>0?'('+days+' gün kaldı)':days===0?'(Bugün bitiyor)':m.start?'<span style="color:#dc2626">(Süresi doldu)</span>':''}</span>
+    </div>
+  </div>
+</div>
+
+${sonOlcum?`
+<div class="section">
+  <div class="section-title">Son Ölçümler (${sonOlcum.tarih})</div>
+  <div class="grid">
+    ${sonOlcum.boy?`<div class="box"><div class="box-label">Boy</div><div class="box-value">${sonOlcum.boy} cm</div></div>`:''}
+    ${sonOlcum.kilo?`<div class="box"><div class="box-label">Kilo</div><div class="box-value">${sonOlcum.kilo} kg</div></div>`:''}
+    ${sonOlcum.bmi?`<div class="box"><div class="box-label">VKİ</div><div class="box-value">${sonOlcum.bmi}</div></div>`:''}
+    ${sonOlcum.bel?`<div class="box"><div class="box-label">Bel</div><div class="box-value">${sonOlcum.bel} cm</div></div>`:''}
+    ${sonOlcum.kalca?`<div class="box"><div class="box-label">Kalça</div><div class="box-value">${sonOlcum.kalca} cm</div></div>`:''}
+    ${sonOlcum.whr?`<div class="box"><div class="box-label">Bel/Kalça</div><div class="box-value">${sonOlcum.whr}</div></div>`:''}
+    ${sonOlcum.gogus?`<div class="box"><div class="box-label">Göğüs</div><div class="box-value">${sonOlcum.gogus} cm</div></div>`:''}
+    ${sonOlcum.kol?`<div class="box"><div class="box-label">Kol</div><div class="box-value">${sonOlcum.kol} cm</div></div>`:''}
+  </div>
+</div>`:''}
+
+${memberEvents.length?`
+<div class="section">
+  <div class="section-title">Son Dersler</div>
+  <table>
+    <thead><tr><th>Tarih</th><th>Saat</th><th>Ders</th><th>Eğitmen</th></tr></thead>
+    <tbody>${memberEvents.map(ev=>{
+      const tr=S.trainers.find(t=>t.id===ev.trainerId);
+      return `<tr><td>${ev.date}</td><td>${ev.startTime}</td><td>${ev.type}</td><td>${tr?tr.name:'—'}</td></tr>`;
+    }).join('')}</tbody>
+  </table>
+</div>`:''}
+
+<div class="footer">
+  <span>OSO GYM — Üye Bilgi Raporu</span>
+  <span>${m.name} ${m.surname} · ${new Date().toLocaleDateString('tr-TR')}</span>
+</div>
+</body></html>`;
+
+  // PDF blob oluştur
+  const blob = new Blob([html],{type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+
+  if(channel === 'whatsapp') {
+    // Önce PDF'i indir, sonra WhatsApp aç
+    const a = document.createElement('a');
+    a.href = url; a.download = `${m.name}_${m.surname}_OSO_GYM.html`; a.click();
+    setTimeout(()=>{
+      const phone = m.phone ? m.phone.replace(/\D/g,'') : '';
+      const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
+      const msg = encodeURIComponent(`Merhaba ${m.name} 👋\n\nOSO GYM üye bilgi raporunuzu ekte bulabilirsiniz.\n\n📦 Paket: ${m.package||'—'}\n✅ Kalan Ders: ${remaining}\n📅 Bitiş: ${endDate}`);
+      window.open(`https://wa.me/${waPhone}?text=${msg}`, '_blank');
+      URL.revokeObjectURL(url);
+    }, 1000);
+  } else if(channel === 'email') {
+    const a = document.createElement('a');
+    a.href = url; a.download = `${m.name}_${m.surname}_OSO_GYM.html`; a.click();
+    setTimeout(()=>{
+      const subject = encodeURIComponent('OSO GYM — Üye Bilgi Raporunuz');
+      const body = encodeURIComponent(`Merhaba ${m.name},\n\nÜye bilgi raporunuzu ekte bulabilirsiniz.\n\nPaket: ${m.package||'—'}\nKalan Ders: ${remaining}\nPaket Bitiş: ${endDate}\n\nOSO GYM`);
+      window.open(`mailto:${m.email||''}?subject=${subject}&body=${body}`);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }
+}
 
 function sendWhatsApp(id, type) {
   const m = S.members.find(x=>x.id===parseInt(id));
