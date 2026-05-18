@@ -4011,34 +4011,32 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
   o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
 });
 
-// PIN digit auto-advance (owner only)
+// PIN digit auto-advance
 document.querySelectorAll('#owner-pin-input .pin-digit').forEach((input,i,arr)=>{
   input.addEventListener('input',()=>{
-    if(input.value.length===1&&i<arr.length-1) arr[i+1].focus();
+    input.value = input.value.replace(/[^0-9]/g,'').slice(-1);
+    if(input.value.length===1 && i<arr.length-1) arr[i+1].focus();
+    if(i===arr.length-1 && input.value.length===1) loginOwner();
   });
   input.addEventListener('keydown',e=>{
     if(e.key==='Backspace'&&!input.value&&i>0) arr[i-1].focus();
+    if(e.key==='Enter') loginOwner();
   });
+  input.addEventListener('focus',()=>input.select());
 });
 
 // Populate trainer cards on load
 populateTrainerSelect();
 
-// Oturum kontrolü — sayfa yenilenmesinde otomatik giriş
-if(checkSession()) {
-  enterApp();
-}
-
 // Firebase hazır olunca veriyi güncelle
 window._onFirebaseReady = function() {
   if(window._firebaseData) {
     S = loadState();
-    // Eğer kullanıcı giriş yapmışsa sayfayı yenile
+    populateTrainerSelect();
     if(currentUser) navigateTo(currentPage);
   }
 };
 
-// Firebase zaten hazırsa hemen çalıştır
 if(window._firebaseReady && window._firebaseData) {
   S = loadState();
 }
