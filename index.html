@@ -1182,7 +1182,6 @@ function loginOwner() {
   const pin = getPin('owner-pin-input');
   if(pin === S.ownerPin) {
     currentUser = { role:'owner', trainerId: null };
-    sessionStorage.setItem('oso_session', JSON.stringify(currentUser));
     enterApp();
   } else {
     showLoginError('Hatalı PIN. Lütfen tekrar deneyin.');
@@ -1219,25 +1218,10 @@ function loginTrainer() {
   const trainer = S.trainers.find(t=>t.id===selectedTrainerId);
   if(trainer) {
     currentUser = { role:'trainer', trainerId: trainer.id, trainerName: trainer.name };
-    sessionStorage.setItem('oso_session', JSON.stringify(currentUser));
     enterApp();
   } else {
     showLoginError('Eğitmen bulunamadı.');
   }
-}
-
-function checkSession() {
-  try {
-    const saved = sessionStorage.getItem('oso_session');
-    if(saved) {
-      const user = JSON.parse(saved);
-      // Eğitmen hâlâ sistemde var mı kontrol et
-      if(user.role==='trainer' && !S.trainers.find(t=>t.id===user.trainerId)) return false;
-      currentUser = user;
-      return true;
-    }
-  } catch(e){}
-  return false;
 }
 
 function showLoginError(msg) {
@@ -1258,7 +1242,6 @@ function enterApp() {
 
 function logout() {
   currentUser = null;
-  sessionStorage.removeItem('oso_session');
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.querySelectorAll('.pin-digit').forEach(d=>d.value='');
