@@ -1182,9 +1182,10 @@ function loginOwner() {
   const pin = getPin('owner-pin-input');
   if(pin === S.ownerPin) {
     currentUser = { role:'owner', trainerId: null };
+    sessionStorage.setItem('oso_session', JSON.stringify(currentUser));
     enterApp();
   } else {
-    showLoginError('Hatalı PIN. Varsayılan: 1234');
+    showLoginError('Hatalı PIN. Lütfen tekrar deneyin.');
   }
 }
 
@@ -1218,10 +1219,25 @@ function loginTrainer() {
   const trainer = S.trainers.find(t=>t.id===selectedTrainerId);
   if(trainer) {
     currentUser = { role:'trainer', trainerId: trainer.id, trainerName: trainer.name };
+    sessionStorage.setItem('oso_session', JSON.stringify(currentUser));
     enterApp();
   } else {
     showLoginError('Eğitmen bulunamadı.');
   }
+}
+
+function checkSession() {
+  try {
+    const saved = sessionStorage.getItem('oso_session');
+    if(saved) {
+      const user = JSON.parse(saved);
+      // Eğitmen hâlâ sistemde var mı kontrol et
+      if(user.role==='trainer' && !S.trainers.find(t=>t.id===user.trainerId)) return false;
+      currentUser = user;
+      return true;
+    }
+  } catch(e){}
+  return false;
 }
 
 function showLoginError(msg) {
@@ -1242,6 +1258,7 @@ function enterApp() {
 
 function logout() {
   currentUser = null;
+  sessionStorage.removeItem('oso_session');
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.querySelectorAll('.pin-digit').forEach(d=>d.value='');
@@ -1947,7 +1964,7 @@ function renderMembers() {
       <select style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;font-family:inherit" id="member-filter" onchange="filterMembersTable()">
         <option value="">Tümü</option><option>Aktif</option><option>Süresi Doldu</option><option>Donduruldu</option>
       </select>
-      ${!isTrainer ? `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>` : `<span style="font-size:11px;color:var(--text3);padding:8px 12px;background:var(--bg);border-radius:var(--radius-sm)"><i class="ti ti-eye" style="font-size:13px;vertical-align:-2px"></i> Görüntüleme modu</span>`}
+      ${!isTrainer ? `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>` : `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>`}
     </div>`;
   renderMembersTable(S.members);
 }
@@ -1964,7 +1981,7 @@ function renderMembersTable(list) {
   document.getElementById('page-content').innerHTML=`
     <div class="card" style="padding:0;overflow:hidden">
       <table class="member-table">
-        <thead><tr><th>Üye</th><th>Telefon</th><th>Paket</th><th>Seans</th><th>Bitiş</th><th>Durum</th>${!isTrainer?'<th></th>':''}</tr></thead>
+        <thead><tr><th>Üye</th><th>Telefon</th><th>Paket</th><th>Seans</th><th>Bitiş</th><th>Durum</th><th></th></tr></thead>
         <tbody>${list.map(m=>{
           const pkg = m.package||'';
           const t=pkgSessions(pkg),u=m.used||0;
@@ -1978,9 +1995,9 @@ function renderMembersTable(list) {
             <td style="font-size:12px">${t===0?'<span style="color:var(--text3)">—</span>':t===999?u+' ders':u+'/'+t}${t>0&&t<999?`<div class="progress-bar" style="width:60px"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div>`:''}</td>
             <td style="font-size:12px">${endDate}</td>
             <td><span class="badge ${m.status==='Aktif'?'badge-active':m.status==='Süresi Doldu'?'badge-expired':'badge-paused'}">${m.status||'Aktif'}</span></td>
-            ${!isTrainer?`<td><div class="flex gap-8">
+            <td><div class="flex gap-8">
               <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();openMemberModal(${m.id})"><i class="ti ti-edit"></i></button>
-              <div style="position:relative;display:inline-block">
+              ${!isTrainer?`<div style="position:relative;display:inline-block">
                 <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();toggleShareMenu(${m.id})" title="Gönder"><i class="ti ti-share"></i></button>
                 <div id="share-menu-${m.id}" style="display:none;position:fixed;right:10px;z-index:500;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:180px;padding:4px 0">
                   <button onclick="event.stopPropagation();printMemberPDF(${m.id});closeShareMenus()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:var(--text)"><i class="ti ti-file-download" style="font-size:16px"></i> PDF İndir</button>
@@ -1988,9 +2005,8 @@ function renderMembersTable(list) {
                   <button onclick="event.stopPropagation();shareViaPDF(${m.id},'email');closeShareMenus()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#2563EB"><i class="ti ti-mail" style="font-size:16px"></i> E-posta</button>
                 </div>
               </div>
-              <button class="btn btn-sm btn-icon btn-danger" onclick="event.stopPropagation();deleteMember(${m.id})"><i class="ti ti-trash"></i></button>
-            </div></td>`:''}
-          </tr>`;
+              <button class="btn btn-sm btn-icon btn-danger" onclick="event.stopPropagation();deleteMember(${m.id})"><i class="ti ti-trash"></i></button>`:''}
+            </div></td>
         }).join('')}</tbody>
       </table>
     </div>`;
@@ -4007,6 +4023,11 @@ document.querySelectorAll('#owner-pin-input .pin-digit').forEach((input,i,arr)=>
 
 // Populate trainer cards on load
 populateTrainerSelect();
+
+// Oturum kontrolü — sayfa yenilenmesinde otomatik giriş
+if(checkSession()) {
+  enterApp();
+}
 
 // Firebase hazır olunca veriyi güncelle
 window._onFirebaseReady = function() {
