@@ -796,6 +796,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
             Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
           </label>
         </div>
+
+        <!-- Dijital İmza (Opsiyonel) -->
+        <div style="margin-top:12px;padding:12px;background:white;border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.4px">✍️ İmza <span style="font-weight:400;text-transform:none;letter-spacing:0">(opsiyonel)</span></span>
+            <button type="button" onclick="clearSignature()" style="font-size:10px;color:#b91c1c;background:none;border:none;cursor:pointer;padding:2px 6px">Temizle</button>
+          </div>
+          <canvas id="signature-canvas" width="400" height="120" style="width:100%;height:120px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);cursor:crosshair;touch-action:none;background:#fafafa"></canvas>
+          <div style="font-size:10px;color:var(--text3);margin-top:5px">Parmağınız veya mouse ile imzanızı atın</div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -2064,6 +2074,7 @@ function openMemberModal(id) {
     toggleGroupMembers();
   }
   openModal('member-modal');
+  setTimeout(initSignature, 100);
 }
 
 function updateHealthLabel(id) {
@@ -2387,6 +2398,57 @@ function calcAge() {
   document.getElementById('m-yas').value = age;
 }
 
+// ── DİJİTAL İMZA ──
+let signatureDrawing = false;
+let signatureCanvas = null;
+let signatureCtx = null;
+
+function initSignature() {
+  signatureCanvas = document.getElementById('signature-canvas');
+  if(!signatureCanvas) return;
+  signatureCtx = signatureCanvas.getContext('2d');
+  signatureCtx.strokeStyle = '#1a1a18';
+  signatureCtx.lineWidth = 2;
+  signatureCtx.lineCap = 'round';
+  signatureCtx.lineJoin = 'round';
+
+  function getPos(e) {
+    const rect = signatureCanvas.getBoundingClientRect();
+    const scaleX = signatureCanvas.width / rect.width;
+    const scaleY = signatureCanvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  }
+
+  signatureCanvas.addEventListener('mousedown', e => { signatureDrawing=true; const p=getPos(e); signatureCtx.beginPath(); signatureCtx.moveTo(p.x,p.y); });
+  signatureCanvas.addEventListener('mousemove', e => { if(!signatureDrawing) return; const p=getPos(e); signatureCtx.lineTo(p.x,p.y); signatureCtx.stroke(); });
+  signatureCanvas.addEventListener('mouseup', () => signatureDrawing=false);
+  signatureCanvas.addEventListener('mouseleave', () => signatureDrawing=false);
+  signatureCanvas.addEventListener('touchstart', e => { e.preventDefault(); signatureDrawing=true; const p=getPos(e); signatureCtx.beginPath(); signatureCtx.moveTo(p.x,p.y); }, {passive:false});
+  signatureCanvas.addEventListener('touchmove', e => { e.preventDefault(); if(!signatureDrawing) return; const p=getPos(e); signatureCtx.lineTo(p.x,p.y); signatureCtx.stroke(); }, {passive:false});
+  signatureCanvas.addEventListener('touchend', () => signatureDrawing=false);
+}
+
+function clearSignature() {
+  if(!signatureCanvas||!signatureCtx) return;
+  signatureCtx.clearRect(0,0,signatureCanvas.width,signatureCanvas.height);
+}
+
+function getSignatureData() {
+  if(!signatureCanvas) return null;
+  // Boş mu kontrol et
+  const blank = document.createElement('canvas');
+  blank.width = signatureCanvas.width;
+  blank.height = signatureCanvas.height;
+  if(signatureCanvas.toDataURL() === blank.toDataURL()) return null;
+  return signatureCanvas.toDataURL('image/png');
+}
+
+function resetSignature() {
+  clearSignature();
+}
+
 function toggleGroupMembers() {
   // Paket alanı üye formundan kaldırıldı — grup üye alanları artık kullanılmıyor
   const sec = document.getElementById('group-members-section');
@@ -2399,7 +2461,7 @@ function saveMember(){
   const yeniOlcum = getNewOlcum();
   const d={name:document.getElementById('m-name').value.trim(),surname:document.getElementById('m-surname').value.trim(),phone:document.getElementById('m-phone').value.trim(),email:document.getElementById('m-email').value.trim(),il:document.getElementById('m-il').value.trim(),ilce:document.getElementById('m-ilce').value.trim(),adres:document.getElementById('m-adres').value.trim(),gender:document.getElementById('m-gender').value,yas:document.getElementById('m-yas').value||'',dob:document.getElementById('m-dob').value||'',status:document.getElementById('m-status').value,note:document.getElementById('m-note').value.trim(),emergencyName:document.getElementById('m-emergency-name').value.trim(),emergencyRel:document.getElementById('m-emergency-rel').value.trim(),emergencyPhone:document.getElementById('m-emergency-phone').value.trim(),rulesAccepted:document.getElementById('m-rules-accepted').checked,
     saglik:getHealthForm(),healthAccepted:document.getElementById('m-health-accepted').checked,healthNotes:document.getElementById('m-health-notes').value.trim(),
-    postur:getPosturData()};
+    postur:getPosturData(),signature:getSignatureData()};
   if(!d.name||!d.surname){toast('Ad ve soyad zorunludur.','error');return;}
   const isNew = !id;
   if(isNew && !d.rulesAccepted){toast('Üyelik kuralları kabul edilmelidir.','error');return;}
@@ -2680,6 +2742,15 @@ function printMemberPDF(id) {
   <div class="section">
     <div class="section-title">Notlar</div>
     <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:12px">${m.note}</div>
+  </div>`:''}
+
+  ${m.signature?`
+  <div class="section">
+    <div class="section-title">İmza</div>
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;display:inline-block">
+      <img src="${m.signature}" style="max-width:300px;height:100px;object-fit:contain">
+    </div>
+    <div style="font-size:10px;color:#9e9e96;margin-top:4px">${m.name} ${m.surname} — Dijital İmza</div>
   </div>`:''}
 
   <!-- Son Randevular -->
