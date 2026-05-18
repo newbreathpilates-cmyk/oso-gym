@@ -1980,8 +1980,16 @@ function renderMembersTable(list) {
             <td><span class="badge ${m.status==='Aktif'?'badge-active':m.status==='Süresi Doldu'?'badge-expired':'badge-paused'}">${m.status||'Aktif'}</span></td>
             ${!isTrainer?`<td><div class="flex gap-8">
               <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();openMemberModal(${m.id})"><i class="ti ti-edit"></i></button>
-              <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();printMemberPDF(${m.id})" title="Üye PDF"><i class="ti ti-file-download"></i></button>
-              <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();printOlcumPDF(${m.id})" title="Ölçüm Karşılaştırma PDF" style="color:#4338ca;border-color:#c7d2fe"><i class="ti ti-ruler-2"></i></button>
+              <div style="position:relative;display:inline-block">
+                <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();toggleShareMenu(${m.id})" title="Gönder"><i class="ti ti-share"></i></button>
+                <div id="share-menu-${m.id}" style="display:none;position:absolute;right:0;top:100%;z-index:100;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);min-width:160px;padding:4px 0">
+                  <button onclick="event.stopPropagation();printMemberPDF(${m.id});closeShareMenus()" style="width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;color:var(--text)"><i class="ti ti-file-download" style="font-size:14px"></i> PDF İndir</button>
+                  <button onclick="event.stopPropagation();sendWhatsApp(${m.id},'member');closeShareMenus()" style="width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;color:#25D366"><i class="ti ti-brand-whatsapp" style="font-size:14px"></i> WhatsApp</button>
+                  <button onclick="event.stopPropagation();sendEmail(${m.id},'member');closeShareMenus()" style="width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;color:#2563EB"><i class="ti ti-mail" style="font-size:14px"></i> E-posta</button>
+                  <hr style="margin:4px 0;border:none;border-top:1px solid var(--border)">
+                  <button onclick="event.stopPropagation();printOlcumPDF(${m.id});closeShareMenus()" style="width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;color:#4338ca"><i class="ti ti-ruler-2" style="font-size:14px"></i> Ölçüm PDF</button>
+                </div>
+              </div>
               <button class="btn btn-sm btn-icon btn-danger" onclick="event.stopPropagation();deleteMember(${m.id})"><i class="ti ti-trash"></i></button>
             </div></td>`:''}
           </tr>`;
@@ -2482,6 +2490,53 @@ function saveMember(){
   save();closeModal('member-modal');renderMembers();
   toast(yeniOlcum?'Üye kaydedildi — ölçüm eklendi. ✓':'Üye kaydedildi.','success');
 }
+function toggleShareMenu(id) {
+  closeShareMenus();
+  const menu = document.getElementById('share-menu-'+id);
+  if(menu) menu.style.display = menu.style.display==='none' ? '' : 'none';
+}
+
+function closeShareMenus() {
+  document.querySelectorAll('[id^="share-menu-"]').forEach(m=>m.style.display='none');
+}
+
+// Dışarı tıklayınca kapat
+document.addEventListener('click', closeShareMenus);
+
+function sendWhatsApp(id, type) {
+  const m = S.members.find(x=>x.id===parseInt(id));
+  if(!m) return;
+  const phone = m.phone ? m.phone.replace(/\D/g,'') : '';
+  const total = pkgSessions(m.package||'');
+  const used = m.used||0;
+  const remaining = total>0&&total<999 ? total-used : '—';
+  const endDate = m.package&&m.start ? getEnd(m) : '—';
+
+  let msg = '';
+  if(type==='member') {
+    msg = `Merhaba ${m.name} 👋\n\n*OSO GYM — Üye Bilgileriniz*\n\n📦 Paket: ${m.package||'Tanımlanmamış'}\n✅ Kalan Ders: ${remaining}\n📅 Paket Bitiş: ${endDate}\n\nDaha fazla bilgi için bize ulaşabilirsiniz.`;
+  }
+
+  const encodedMsg = encodeURIComponent(msg);
+  const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
+  window.open(`https://wa.me/${waPhone}?text=${encodedMsg}`, '_blank');
+}
+
+function sendEmail(id, type) {
+  const m = S.members.find(x=>x.id===parseInt(id));
+  if(!m||!m.email) { toast('Bu üyenin e-posta adresi kayıtlı değil.','error'); return; }
+  const total = pkgSessions(m.package||'');
+  const used = m.used||0;
+  const remaining = total>0&&total<999 ? total-used : '—';
+  const endDate = m.package&&m.start ? getEnd(m) : '—';
+
+  const subject = encodeURIComponent('OSO GYM — Üye Bilgileriniz');
+  const body = encodeURIComponent(
+    `Merhaba ${m.name},\n\nÜye bilgileriniz aşağıdaki gibidir:\n\nPaket: ${m.package||'Tanımlanmamış'}\nKalan Ders: ${remaining}\nPaket Bitiş: ${endDate}\n\nSorularınız için bize ulaşabilirsiniz.\n\nOSO GYM`
+  );
+  window.open(`mailto:${m.email}?subject=${subject}&body=${body}`);
+}
+
 function printOlcumPDF(id) {
   try {
     const m = S.members.find(x=>x.id===parseInt(id));
