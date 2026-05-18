@@ -1982,12 +1982,12 @@ function renderMembersTable(list) {
               <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();openMemberModal(${m.id})"><i class="ti ti-edit"></i></button>
               <div style="position:relative;display:inline-block">
                 <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();toggleShareMenu(${m.id})" title="Gönder"><i class="ti ti-share"></i></button>
-                <div id="share-menu-${m.id}" style="display:none;position:absolute;right:0;top:100%;z-index:100;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);min-width:160px;padding:4px 0">
-                  <button onclick="event.stopPropagation();printMemberPDF(${m.id});closeShareMenus()" style="width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;color:var(--text)"><i class="ti ti-file-download" style="font-size:14px"></i> PDF İndir</button>
-                  <button onclick="event.stopPropagation();sendWhatsApp(${m.id},'member');closeShareMenus()" style="width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;color:#25D366"><i class="ti ti-brand-whatsapp" style="font-size:14px"></i> WhatsApp</button>
-                  <button onclick="event.stopPropagation();sendEmail(${m.id},'member');closeShareMenus()" style="width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;color:#2563EB"><i class="ti ti-mail" style="font-size:14px"></i> E-posta</button>
+                <div id="share-menu-${m.id}" style="display:none;position:fixed;right:10px;z-index:1000;background:white;border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 24px rgba(0,0,0,0.15);min-width:200px;padding:6px 0">
+                  <button onclick="event.stopPropagation();printMemberPDF(${m.id});closeShareMenus()" style="width:100%;padding:12px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:var(--text)"><i class="ti ti-file-download" style="font-size:18px"></i> PDF İndir</button>
+                  <button onclick="event.stopPropagation();sendWhatsApp(${m.id},'member');closeShareMenus()" style="width:100%;padding:12px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#25D366"><i class="ti ti-brand-whatsapp" style="font-size:18px"></i> WhatsApp</button>
+                  <button onclick="event.stopPropagation();sendEmail(${m.id},'member');closeShareMenus()" style="width:100%;padding:12px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#2563EB"><i class="ti ti-mail" style="font-size:18px"></i> E-posta</button>
                   <hr style="margin:4px 0;border:none;border-top:1px solid var(--border)">
-                  <button onclick="event.stopPropagation();printOlcumPDF(${m.id});closeShareMenus()" style="width:100%;padding:8px 12px;text-align:left;background:none;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;color:#4338ca"><i class="ti ti-ruler-2" style="font-size:14px"></i> Ölçüm PDF</button>
+                  <button onclick="event.stopPropagation();printOlcumPDF(${m.id});closeShareMenus()" style="width:100%;padding:12px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#4338ca"><i class="ti ti-ruler-2" style="font-size:18px"></i> Ölçüm PDF</button>
                 </div>
               </div>
               <button class="btn btn-sm btn-icon btn-danger" onclick="event.stopPropagation();deleteMember(${m.id})"><i class="ti ti-trash"></i></button>
@@ -2493,7 +2493,17 @@ function saveMember(){
 function toggleShareMenu(id) {
   closeShareMenus();
   const menu = document.getElementById('share-menu-'+id);
-  if(menu) menu.style.display = menu.style.display==='none' ? '' : 'none';
+  if(!menu) return;
+  menu.style.display = '';
+  // Ekranın altına taşıyor mu kontrol et
+  const rect = menu.getBoundingClientRect();
+  if(rect.bottom > window.innerHeight) {
+    menu.style.top = 'auto';
+    menu.style.bottom = '100%';
+  } else {
+    menu.style.top = '100%';
+    menu.style.bottom = 'auto';
+  }
 }
 
 function closeShareMenus() {
