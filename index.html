@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OSO GYM — Yönetim Sistemi</title>
+<title>NEW BREATH PILATES — Yönetim Sistemi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
@@ -404,7 +404,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <div class="login-card">
     <div class="login-logo">
       <div class="login-logo-icon"><i class="ti ti-leaf"></i></div>
-      <h1>OSO GYM</h1>
+      <h1>NEW BREATH PILATES</h1>
       <p>Yönetim ve Eğitmen Sistemi</p>
     </div>
     <div class="role-tabs">
@@ -448,7 +448,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="sidebar-logo">
           <div class="sidebar-logo-icon"><i class="ti ti-leaf"></i></div>
           <div>
-            <div class="sidebar-logo-text">OSO GYM</div>
+            <div class="sidebar-logo-text">NEW BREATH PILATES</div>
             <div class="sidebar-logo-sub">Yönetim Sistemi</div>
           </div>
         </div>
@@ -667,6 +667,24 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#1e3a8a;margin-bottom:14px;display:flex;align-items:center;gap:6px">
           <i class="ti ti-heart-rate-monitor" style="font-size:14px"></i> Sağlık Formu
         </div>
+
+        <!-- Kan Grubu -->
+        <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #dbeafe">
+          <div style="font-size:11px;font-weight:600;color:#1e3a8a;margin-bottom:8px">Kan Grubu</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <label id="lbl-kg-Ap" onclick="setKanGrubu('A+')" style="cursor:pointer;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;border:1.5px solid #bfdbfe;background:white;color:#1e3a8a;transition:all 0.15s;user-select:none">A+</label>
+            <label id="lbl-kg-Am" onclick="setKanGrubu('A−')" style="cursor:pointer;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;border:1.5px solid #bfdbfe;background:white;color:#1e3a8a;transition:all 0.15s;user-select:none">A−</label>
+            <label id="lbl-kg-Bp" onclick="setKanGrubu('B+')" style="cursor:pointer;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;border:1.5px solid #bfdbfe;background:white;color:#1e3a8a;transition:all 0.15s;user-select:none">B+</label>
+            <label id="lbl-kg-Bm" onclick="setKanGrubu('B−')" style="cursor:pointer;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;border:1.5px solid #bfdbfe;background:white;color:#1e3a8a;transition:all 0.15s;user-select:none">B−</label>
+            <label id="lbl-kg-ABp" onclick="setKanGrubu('AB+')" style="cursor:pointer;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;border:1.5px solid #bfdbfe;background:white;color:#1e3a8a;transition:all 0.15s;user-select:none">AB+</label>
+            <label id="lbl-kg-ABm" onclick="setKanGrubu('AB−')" style="cursor:pointer;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;border:1.5px solid #bfdbfe;background:white;color:#1e3a8a;transition:all 0.15s;user-select:none">AB−</label>
+            <label id="lbl-kg-0p" onclick="setKanGrubu('0+')" style="cursor:pointer;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;border:1.5px solid #bfdbfe;background:white;color:#1e3a8a;transition:all 0.15s;user-select:none">0+</label>
+            <label id="lbl-kg-0m" onclick="setKanGrubu('0−')" style="cursor:pointer;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;border:1.5px solid #bfdbfe;background:white;color:#1e3a8a;transition:all 0.15s;user-select:none">0−</label>
+            <label id="lbl-kg-Bilinmiyor" onclick="setKanGrubu('Bilinmiyor')" style="cursor:pointer;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;border:1.5px solid #bfdbfe;background:white;color:#1e3a8a;transition:all 0.15s;user-select:none">Bilinmiyor</label>
+          </div>
+          <input type="hidden" id="m-kan-grubu" value="">
+        </div>
+
         <div style="display:flex;flex-direction:column;gap:0">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #dbeafe">
             <span style="font-size:12px;color:#1e3a8a;flex:1;padding-right:16px">Kalp, tansiyon veya damar hastalığınız var mı?</span>
@@ -1983,7 +2001,7 @@ function renderMembersTable(list) {
                   <button onclick="event.stopPropagation();shareViaPDF(${m.id},'email');closeShareMenus()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#2563EB"><i class="ti ti-mail" style="font-size:16px"></i> E-posta</button>
                 </div>
               </div>
-              <button class="btn btn-sm btn-icon btn-danger" onclick="event.stopPropagation();deleteMember('+m.id+')" ><i class="ti ti-trash"></i></button>`:''}
+              <button class="btn btn-sm btn-icon btn-danger" onclick="event.stopPropagation();deleteMember(${m.id})"><i class="ti ti-trash"></i></button>`:''}
             </div></td>
           </tr>`;
         }).join('')}</tbody>
@@ -2052,6 +2070,7 @@ function openMemberModal(id) {
     if(yof) yof.style.display='none';
     resetOlcumForm();
     loadHealthForm(m.saglik||{});
+    if(m.kanGrubu) setKanGrubu(m.kanGrubu); else resetKanGrubu();
     document.getElementById('m-health-accepted').checked=m.healthAccepted||false;
     document.getElementById('m-health-notes').value=m.healthNotes||'';
     loadPosturData(m.postur||{});
@@ -2070,12 +2089,36 @@ function openMemberModal(id) {
     document.getElementById('m-rules-accepted').checked=false;
     document.getElementById('m-bmi-text').textContent='';
     resetHealthForm();
+    resetKanGrubu();
     document.getElementById('m-health-notes').value='';
     resetPosturData();
     toggleGroupMembers();
   }
   openModal('member-modal');
   setTimeout(initSignature, 100);
+}
+
+function setKanGrubu(val) {
+  document.getElementById('m-kan-grubu').value = val;
+  ['A+','A−','B+','B−','AB+','AB−','0+','0−','Bilinmiyor'].forEach(kg=>{
+    const id = 'lbl-kg-'+kg.replace('+','p').replace('−','m');
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(kg===val) {
+      el.style.background='#2563EB'; el.style.color='white'; el.style.borderColor='#2563EB';
+    } else {
+      el.style.background='white'; el.style.color='#1e3a8a'; el.style.borderColor='#bfdbfe';
+    }
+  });
+}
+
+function resetKanGrubu() {
+  document.getElementById('m-kan-grubu').value='';
+  ['A+','A−','B+','B−','AB+','AB−','0+','0−','Bilinmiyor'].forEach(kg=>{
+    const id = 'lbl-kg-'+kg.replace('+','p').replace('−','m');
+    const el = document.getElementById(id);
+    if(el) { el.style.background='white'; el.style.color='#1e3a8a'; el.style.borderColor='#bfdbfe'; }
+  });
 }
 
 function updateHealthLabel(id) {
@@ -2502,7 +2545,7 @@ function saveMember(){
   // Yeni ölçüm var mı kontrol et
   const yeniOlcum = getNewOlcum();
   const d={name:document.getElementById('m-name').value.trim(),surname:document.getElementById('m-surname').value.trim(),phone:document.getElementById('m-phone').value.trim(),email:document.getElementById('m-email').value.trim(),il:document.getElementById('m-il').value.trim(),ilce:document.getElementById('m-ilce').value.trim(),adres:document.getElementById('m-adres').value.trim(),gender:document.getElementById('m-gender').value,yas:document.getElementById('m-yas').value||'',dob:document.getElementById('m-dob').value||'',status:document.getElementById('m-status').value,note:document.getElementById('m-note').value.trim(),emergencyName:document.getElementById('m-emergency-name').value.trim(),emergencyRel:document.getElementById('m-emergency-rel').value.trim(),emergencyPhone:document.getElementById('m-emergency-phone').value.trim(),rulesAccepted:document.getElementById('m-rules-accepted').checked,
-    saglik:getHealthForm(),healthAccepted:document.getElementById('m-health-accepted').checked,healthNotes:document.getElementById('m-health-notes').value.trim(),
+    saglik:getHealthForm(),kanGrubu:document.getElementById('m-kan-grubu').value||'',healthAccepted:document.getElementById('m-health-accepted').checked,healthNotes:document.getElementById('m-health-notes').value.trim(),
     postur:getPosturData(),signature:getSignatureData()};
   if(!d.name||!d.surname){toast('Ad ve soyad zorunludur.','error');return;}
   const isNew = !id;
@@ -2575,7 +2618,7 @@ function shareViaPDF(id, channel) {
   const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed).sort((a,b)=>b.date>a.date?1:-1).slice(0,5);
 
   const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
-<title>${m.name} ${m.surname} — OSO GYM</title>
+<title>${m.name} ${m.surname} — NEW BREATH PILATES</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#1a1a18;padding:24px}
@@ -2598,7 +2641,7 @@ td{padding:7px 10px;border-bottom:1px solid #f3f4f6}
 .footer{margin-top:20px;padding-top:10px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:10px;color:#9e9e96}
 </style></head><body>
 <div class="header">
-  <div><div class="logo">🌿 OSO GYM</div><div style="font-size:11px;color:#6b6b65">Üye Bilgi Raporu</div></div>
+  <div><div class="logo">🌿 NEW BREATH PILATES</div><div style="font-size:11px;color:#6b6b65">Üye Bilgi Raporu</div></div>
   <div style="text-align:right;font-size:11px;color:#6b6b65">${new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</div>
 </div>
 
@@ -2609,6 +2652,7 @@ td{padding:7px 10px;border-bottom:1px solid #f3f4f6}
     <div class="box"><div class="box-label">Telefon</div><div class="box-value">${m.phone||'—'}</div></div>
     ${m.email?`<div class="box"><div class="box-label">E-posta</div><div class="box-value">${m.email}</div></div>`:''}
     ${m.yas?`<div class="box"><div class="box-label">Yaş</div><div class="box-value">${m.yas}</div></div>`:''}
+    ${m.kanGrubu?`<div class="box" style="background:#fee2e2;border-color:#fecaca"><div class="box-label">Kan Grubu</div><div class="box-value" style="color:#b91c1c;font-size:16px">${m.kanGrubu}</div></div>`:''}
     ${m.il||m.ilce?`<div class="box"><div class="box-label">İl / İlçe</div><div class="box-value">${[m.il,m.ilce].filter(Boolean).join(' / ')}</div></div>`:''}
   </div>
 </div>
@@ -2695,7 +2739,7 @@ ${memberEvents.length?`
 </div>`:''}
 
 <div class="footer">
-  <span>OSO GYM — Üye Bilgi Raporu</span>
+  <span>NEW BREATH PILATES — Üye Bilgi Raporu</span>
   <span>${m.name} ${m.surname} · ${new Date().toLocaleDateString('tr-TR')}</span>
 </div>
 </body></html>`;
@@ -2711,7 +2755,7 @@ ${memberEvents.length?`
     setTimeout(()=>{
       const phone = m.phone ? m.phone.replace(/\D/g,'') : '';
       const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
-      const msg = encodeURIComponent(`Merhaba ${m.name} 👋\n\nOSO GYM üye bilgi raporunuzu ekte bulabilirsiniz.\n\n📦 Paket: ${m.package||'—'}\n✅ Kalan Ders: ${remaining}\n📅 Bitiş: ${endDate}`);
+      const msg = encodeURIComponent(`Merhaba ${m.name} 👋\n\nNEW BREATH PILATES üye bilgi raporunuzu ekte bulabilirsiniz.\n\n📦 Paket: ${m.package||'—'}\n✅ Kalan Ders: ${remaining}\n📅 Bitiş: ${endDate}`);
       window.open(`https://wa.me/${waPhone}?text=${msg}`, '_blank');
       URL.revokeObjectURL(url);
     }, 1000);
@@ -2719,8 +2763,8 @@ ${memberEvents.length?`
     const a = document.createElement('a');
     a.href = url; a.download = `${m.name}_${m.surname}_OSO_GYM.html`; a.click();
     setTimeout(()=>{
-      const subject = encodeURIComponent('OSO GYM — Üye Bilgi Raporunuz');
-      const body = encodeURIComponent(`Merhaba ${m.name},\n\nÜye bilgi raporunuzu ekte bulabilirsiniz.\n\nPaket: ${m.package||'—'}\nKalan Ders: ${remaining}\nPaket Bitiş: ${endDate}\n\nOSO GYM`);
+      const subject = encodeURIComponent('NEW BREATH PILATES — Üye Bilgi Raporunuz');
+      const body = encodeURIComponent(`Merhaba ${m.name},\n\nÜye bilgi raporunuzu ekte bulabilirsiniz.\n\nPaket: ${m.package||'—'}\nKalan Ders: ${remaining}\nPaket Bitiş: ${endDate}\n\nNEW BREATH PILATES`);
       window.open(`mailto:${m.email||''}?subject=${subject}&body=${body}`);
       URL.revokeObjectURL(url);
     }, 1000);
@@ -2738,7 +2782,7 @@ function sendWhatsApp(id, type) {
 
   let msg = '';
   if(type==='member') {
-    msg = `Merhaba ${m.name} 👋\n\n*OSO GYM — Üye Bilgileriniz*\n\n📦 Paket: ${m.package||'Tanımlanmamış'}\n✅ Kalan Ders: ${remaining}\n📅 Paket Bitiş: ${endDate}\n\nDaha fazla bilgi için bize ulaşabilirsiniz.`;
+    msg = `Merhaba ${m.name} 👋\n\n*NEW BREATH PILATES — Üye Bilgileriniz*\n\n📦 Paket: ${m.package||'Tanımlanmamış'}\n✅ Kalan Ders: ${remaining}\n📅 Paket Bitiş: ${endDate}\n\nDaha fazla bilgi için bize ulaşabilirsiniz.`;
   }
 
   const encodedMsg = encodeURIComponent(msg);
@@ -2754,9 +2798,9 @@ function sendEmail(id, type) {
   const remaining = total>0&&total<999 ? total-used : '—';
   const endDate = m.package&&m.start ? getEnd(m) : '—';
 
-  const subject = encodeURIComponent('OSO GYM — Üye Bilgileriniz');
+  const subject = encodeURIComponent('NEW BREATH PILATES — Üye Bilgileriniz');
   const body = encodeURIComponent(
-    `Merhaba ${m.name},\n\nÜye bilgileriniz aşağıdaki gibidir:\n\nPaket: ${m.package||'Tanımlanmamış'}\nKalan Ders: ${remaining}\nPaket Bitiş: ${endDate}\n\nSorularınız için bize ulaşabilirsiniz.\n\nOSO GYM`
+    `Merhaba ${m.name},\n\nÜye bilgileriniz aşağıdaki gibidir:\n\nPaket: ${m.package||'Tanımlanmamış'}\nKalan Ders: ${remaining}\nPaket Bitiş: ${endDate}\n\nSorularınız için bize ulaşabilirsiniz.\n\nNEW BREATH PILATES`
   );
   window.open(`mailto:${m.email}?subject=${subject}&body=${body}`);
 }
@@ -2800,7 +2844,7 @@ td { padding:8px 12px; border-bottom:1px solid #e5e7eb; }
 .footer { margin-top:24px; font-size:10px; color:#9e9e96; border-top:1px solid #e5e7eb; padding-top:10px; display:flex; justify-content:space-between; }
 </style></head><body>
 <div class="header">
-  <div><div class="logo">🌿 OSO GYM</div><div style="font-size:11px;color:#6b6b65;margin-top:2px">Üye Yönetim Sistemi</div></div>
+  <div><div class="logo">🌿 NEW BREATH PILATES</div><div style="font-size:11px;color:#6b6b65;margin-top:2px">Üye Yönetim Sistemi</div></div>
   <div style="text-align:right;font-size:11px;color:#6b6b65"><div>Ölçüm Karşılaştırma Raporu</div><div>${new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</div></div>
 </div>
 <div style="margin-bottom:16px;padding:12px 16px;background:#f5f3ff;border-radius:8px;border:1px solid #c7d2fe">
@@ -2840,7 +2884,7 @@ td { padding:8px 12px; border-bottom:1px solid #e5e7eb; }
   </tbody>
 </table>
 <div class="footer">
-  <span>OSO GYM Üye Yönetim Sistemi</span>
+  <span>NEW BREATH PILATES Üye Yönetim Sistemi</span>
   <span>${m.name} ${m.surname} — Ölçüm Raporu</span>
 </div>
 <div style="margin-top:16px;padding:10px 14px;background:#f5f3ff;border-radius:6px;border:1px solid #c7d2fe;font-size:10px;color:#4338ca;line-height:1.8">
@@ -2928,7 +2972,7 @@ function printMemberPDF(id) {
 <body>
   <div class="header">
     <div>
-      <div class="logo">🌿 OSO GYM</div>
+      <div class="logo">🌿 NEW BREATH PILATES</div>
       <div class="logo-sub">Üye Yönetim Sistemi</div>
     </div>
     <div class="date-info">
@@ -3041,19 +3085,75 @@ function printMemberPDF(id) {
       <tbody>
         ${memberEvents.map(ev=>{
           const tr=S.trainers.find(t=>t.id===ev.trainerId);
-          return `<tr>
-            <td>${ev.date}</td><td>${ev.startTime}</td><td>${ev.type}</td>
-            <td>${tr?tr.name:'—'}</td>
-            <td>${ev.completed?'✓ Tamamlandı':'Planlandı'}</td>
-          </tr>`;
+          return '<tr><td>'+ev.date+'</td><td>'+ev.startTime+'</td><td>'+ev.type+'</td><td>'+(tr?tr.name:'—')+'</td><td>'+(ev.completed?'✓ Tamamlandı':'Planlandı')+'</td></tr>';
         }).join('')}
       </tbody>
     </table>
   </div>`:''}
 
+  <!-- Üyelik Kuralları -->
+  <div class="section" style="margin-top:20px">
+    <div class="section-title" style="font-size:12px;font-weight:700;color:#065f46;border-bottom:2px solid #059669;padding-bottom:6px;margin-bottom:12px">📋 Üyelik Kuralları ve Sözleşme</div>
+    <div style="font-size:11px;color:#374151;line-height:1.8">
+      <p style="font-weight:700;margin-bottom:6px">📦 Paket Süresi ve Kullanımı</p>
+      <ul style="padding-left:16px;margin:0 0 10px">
+        <li>8 Ders Bireysel 30 gün, 10 ve 15 Ders Bireysel 60 gün içinde kullanılmalıdır.</li>
+        <li>8 Ders Düet 30 gün, 10 Ders Düet 60 gün içinde kullanılmalıdır.</li>
+        <li>8 Ders Grup 30 gün, 10 Ders Grup 60 gün içinde kullanılmalıdır.</li>
+        <li>Süre dolduğunda kullanılmayan dersler geçersiz sayılır, iade yapılmaz.</li>
+      </ul>
+      <p style="font-weight:700;margin-bottom:6px">💳 Üyelik ve Ödeme</p>
+      <ul style="padding-left:16px;margin:0 0 10px">
+        <li>Ödemeler peşin alınır.</li>
+        <li>Fiyatlar önceden haber verilmeksizin değiştirilebilir; mevcut paket etkilenmez.</li>
+        <li>Üyelik başkasına devredilemez.</li>
+      </ul>
+      <p style="font-weight:700;margin-bottom:6px">📅 Ders Rezervasyonu ve İptal</p>
+      <ul style="padding-left:16px;margin:0 0 10px">
+        <li>Dersler en az 24 saat öncesinden rezerve edilmelidir.</li>
+        <li>Ders iptali en az 24 saat öncesinden bildirilmelidir.</li>
+        <li>Her paket için 2 ücretsiz iptal hakkı tanınır.</li>
+        <li>24 saatten kısa süre içinde yapılan iptallerde ders yapılmış sayılır ve paketten düşer.</li>
+        <li>Gelmeme (no-show) durumunda ders hakkı kullanılmış sayılır.</li>
+      </ul>
+      <p style="font-weight:700;margin-bottom:6px">🔄 Paket İptali ve İade</p>
+      <ul style="padding-left:16px;margin:0">
+        <li>İptal talebi ilk 7 gün içinde iletilirse, kullanılmayan dersler için tam iade yapılır.</li>
+        <li>7 günden sonra iade yapılmaz.</li>
+        <li>Paketler hiçbir koşulda dondurulamaz.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Onay ve İmza -->
+  <div style="margin-top:20px;padding:16px;background:#f0fdf8;border:2px solid #059669;border-radius:8px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:8px">✅ Beyan ve Onay</div>
+        <div style="font-size:11px;color:#374151;line-height:1.7">
+          Yukarıdaki üyelik kurallarını okudum, anladım ve kabul ediyorum.
+          Sağlık formundaki bilgilerin doğru ve eksiksiz olduğunu beyan ederim.
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:#374151">
+          <strong>Ad Soyad:</strong> ${m.name} ${m.surname}<br>
+          <strong>Tarih:</strong> ${m.start||new Date().toLocaleDateString('tr-TR')}<br>
+          <strong>Durum:</strong> ${m.rulesAccepted?'<span style="color:#059669;font-weight:700">✓ Kabul Edildi</span>':'<span style="color:#b91c1c">Kabul edilmedi</span>'}
+          ${m.healthAccepted?' &nbsp;|&nbsp; Sağlık Formu: <span style="color:#059669;font-weight:700">✓ Onaylandı</span>':''}
+        </div>
+      </div>
+      ${m.signature?`<div style="flex-shrink:0;text-align:center">
+        <div style="font-size:10px;color:#6b7280;margin-bottom:4px;font-weight:600">İMZA</div>
+        <div style="border:1px solid #a7f3d0;border-radius:6px;padding:6px;background:white">
+          <img src="${m.signature}" style="width:180px;height:70px;object-fit:contain;display:block">
+        </div>
+        <div style="font-size:9px;color:#6b7280;margin-top:3px">Dijital İmza</div>
+      </div>`:'<div style="flex-shrink:0;width:180px;border:1px solid #a7f3d0;border-radius:6px;padding:6px;background:white;height:82px;display:flex;align-items:center;justify-content:center"><span style="font-size:10px;color:#9e9e96">İmza atılmadı</span></div>'}
+    </div>
+  </div>
+
   <div class="footer">
-    <span>OSO GYM Üye Yönetim Sistemi</span>
-    <span>${m.name} ${m.surname} · Oluşturulma: ${new Date().toLocaleDateString('tr-TR')}</span>
+    <span>NEW BREATH PILATES Üye Yönetim Sistemi</span>
+    <span>${m.name} ${m.surname} · ${new Date().toLocaleDateString('tr-TR')}</span>
   </div>
 </body>
 </html>`;
