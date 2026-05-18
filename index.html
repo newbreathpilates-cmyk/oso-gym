@@ -1832,28 +1832,23 @@ function addMemberToEvent(mid) {
     document.getElementById('ev-member-add').value='';
     return;
   }
-
-  // Üyeyi ekle
   tempEventMembers.push(id);
 
   // Grup/Düet ortaklarını otomatik ekle
-  const m = S.members.find(x=>x.id===id);
-  if(m && (m.package.includes('Grup') || m.package.includes('Düet'))) {
-    // Bu üyenin grubu: ya kendisi ana üye ya da groupWith ile bağlı
-    const groupId = m.groupWith || m.id;
-    const partners = S.members.filter(x=>
-      x.id !== id &&
-      (x.id === groupId || x.groupWith === groupId) &&
-      x.package === m.package
-    );
-    partners.forEach(p=>{
+  const mem = S.members.find(function(x){return x.id===id;});
+  if(mem && mem.package && (mem.package.indexOf('Grup')>=0 || mem.package.indexOf('Düet')>=0)) {
+    const groupId = mem.groupWith || mem.id;
+    const memberPkg = mem.package;
+    const partners = S.members.filter(function(x){
+      return x.id !== id && (x.id === groupId || x.groupWith === groupId) && x.package === memberPkg;
+    });
+    partners.forEach(function(p){
       if(!tempEventMembers.includes(p.id)) {
-        const rem = getMemberRemainingLessons(p.id);
-        if(rem > 0) tempEventMembers.push(p.id);
+        if(getMemberRemainingLessons(p.id) > 0) tempEventMembers.push(p.id);
       }
     });
     if(partners.length > 0) {
-      toast(`${m.name} ile birlikte ${partners.map(p=>p.name).join(', ')} otomatik eklendi.`,'success');
+      toast(mem.name + ' ile birlikte ' + partners.map(function(p){return p.name;}).join(', ') + ' otomatik eklendi.','success');
     }
   }
 
@@ -1988,8 +1983,9 @@ function renderMembersTable(list) {
                   <button onclick="event.stopPropagation();shareViaPDF(${m.id},'email');closeShareMenus()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#2563EB"><i class="ti ti-mail" style="font-size:16px"></i> E-posta</button>
                 </div>
               </div>
-              <button class="btn btn-sm btn-icon btn-danger" onclick="event.stopPropagation();deleteMember(${m.id})"><i class="ti ti-trash"></i></button>`:''}
+              <button class="btn btn-sm btn-icon btn-danger" onclick="event.stopPropagation();deleteMember('+m.id+')" ><i class="ti ti-trash"></i></button>`:''}
             </div></td>
+          </tr>`;
         }).join('')}</tbody>
       </table>
     </div>`;
