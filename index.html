@@ -860,12 +860,25 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div class="form-group"><label class="form-label">Üye</label><select class="form-select" id="p-member" style="width:100%"></select></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Paket</label>
-          <select class="form-select" id="p-package" onchange="autoFillPaymentAmount()">
+          <select class="form-select" id="p-package" onchange="autoFillPaymentAmount();toggleOzelPaket()">
             <option>8 Ders Bireysel</option><option>10 Ders Bireysel</option>
             <option>15 Ders Bireysel</option><option>8 Ders 3 Kişilik Grup</option>
             <option>8 Ders 2 Kişilik Düet</option><option>10 Ders 2 Kişilik Düet</option>
-            <option>10 Ders 3 Kişilik Grup</option>
+            <option>10 Ders 3 Kişilik Grup</option><option>Özel Paket</option>
           </select>
+          <!-- Özel Paket sayaç -->
+          <div id="ozel-paket-section" style="display:none;margin-top:8px;padding:12px;background:#f0fdf8;border-radius:var(--radius-sm);border:1.5px solid #a7f3d0">
+            <div style="font-size:11px;font-weight:700;color:#065f46;margin-bottom:10px">Özel Paket — Ders Sayısı</div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <button type="button" onclick="ozelDersChange(-1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid #059669;background:white;font-size:20px;font-weight:700;cursor:pointer;color:#059669;display:flex;align-items:center;justify-content:center">−</button>
+              <div style="text-align:center;min-width:60px">
+                <div id="ozel-ders-sayi" style="font-size:28px;font-weight:700;color:#065f46">1</div>
+                <div style="font-size:10px;color:#6b7280">ders</div>
+              </div>
+              <button type="button" onclick="ozelDersChange(1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid #059669;background:#059669;font-size:20px;font-weight:700;cursor:pointer;color:white;display:flex;align-items:center;justify-content:center">+</button>
+              <input type="hidden" id="ozel-ders-count" value="1">
+            </div>
+          </div>
         </div>
         <div class="form-group"><label class="form-label">Tutar (₺)</label><input type="number" class="form-input" id="p-amount" placeholder="0"></div>
       </div>
@@ -2882,6 +2895,25 @@ function renderPayments() {
     </div>`;
 }
 
+function toggleOzelPaket() {
+  const pkg = document.getElementById('p-package')?.value;
+  const sec = document.getElementById('ozel-paket-section');
+  if(sec) sec.style.display = pkg==='Özel Paket' ? '' : 'none';
+  if(pkg==='Özel Paket') {
+    document.getElementById('ozel-ders-count').value = '1';
+    document.getElementById('ozel-ders-sayi').textContent = '1';
+  }
+}
+
+function ozelDersChange(delta) {
+  const inp = document.getElementById('ozel-ders-count');
+  const display = document.getElementById('ozel-ders-sayi');
+  let val = parseInt(inp.value)||1;
+  val = Math.max(1, Math.min(20, val+delta));
+  inp.value = val;
+  display.textContent = val;
+}
+
 function autoFillPaymentAmount() {
   const pkg = document.getElementById('p-package')?.value;
   if(!pkg) return;
@@ -2918,20 +2950,26 @@ function savePayment(){
   const eid=document.getElementById('p-id').value;
   const mid=parseInt(document.getElementById('p-member').value);
   const m=S.members.find(x=>x.id===mid);
-  const pkg=document.getElementById('p-package').value;
+  let pkg=document.getElementById('p-package').value;
   const date=document.getElementById('p-date').value;
+  let ozelDers = 0;
+  if(pkg==='Özel Paket') {
+    ozelDers = parseInt(document.getElementById('ozel-ders-count').value)||1;
+    pkg = `Özel Paket (${ozelDers} Ders)`;
+  }
   const d={memberId:mid,member:m?m.name+' '+m.surname:'',package:pkg,amount:parseFloat(document.getElementById('p-amount').value)||0,date:date,method:document.getElementById('p-method').value};
+  if(!d.amount||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
   if(eid){
     const i=S.payments.findIndex(p=>p.id==eid);
     if(i>-1) S.payments[i]={...S.payments[i],...d};
   } else {
     d.id=S.nextId++;S.payments.push(d);
-    // Üyenin paketini ve başlangıç tarihini otomatik güncelle
     if(m){
       m.package=pkg;
       m.start=date;
       m.used=0;
       m.status='Aktif';
+      if(ozelDers>0) m.ozelDers=ozelDers;
     }
   }
   save();closeModal('payment-modal');renderPayments();toast(eid?'Ödeme güncellendi.':'Ödeme kaydedildi — paket tanımlandı.','success');
@@ -3567,9 +3605,15 @@ function importJSON(input){
 // ══════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════
-const pkgMap={'8 Ders Bireysel':8,'10 Ders Bireysel':10,'15 Ders Bireysel':15,'8 Ders 3 Kişilik Grup':8,'8 Ders 2 Kişilik Düet':8,'10 Ders 2 Kişilik Düet':10,'10 Ders 3 Kişilik Grup':10};
-const pkgDays={'8 Ders Bireysel':30,'10 Ders Bireysel':60,'15 Ders Bireysel':60,'8 Ders 3 Kişilik Grup':30,'8 Ders 2 Kişilik Düet':30,'10 Ders 2 Kişilik Düet':60,'10 Ders 3 Kişilik Grup':60};
-function pkgSessions(p){return pkgMap[p]||0;}
+const pkgMap={'8 Ders Bireysel':8,'10 Ders Bireysel':10,'15 Ders Bireysel':15,'8 Ders 3 Kişilik Grup':8,'8 Ders 2 Kişilik Düet':8,'10 Ders 2 Kişilik Düet':10,'10 Ders 3 Kişilik Grup':10,'Özel Paket':0};
+const pkgDays={'8 Ders Bireysel':30,'10 Ders Bireysel':60,'15 Ders Bireysel':60,'8 Ders 3 Kişilik Grup':30,'8 Ders 2 Kişilik Düet':30,'10 Ders 2 Kişilik Düet':60,'10 Ders 3 Kişilik Grup':60,'Özel Paket':30};
+function pkgSessions(p){
+  if(!p) return 0;
+  // Özel Paket (X Ders) formatını parse et
+  const ozelMatch = p.match(/Özel Paket \((\d+) Ders\)/);
+  if(ozelMatch) return parseInt(ozelMatch[1]);
+  return pkgMap[p]||0;
+}
 function getEnd(m){if(!m.start||!m.package)return'—';const d=new Date(m.start);d.setDate(d.getDate()+(pkgDays[m.package]||30));return d.toISOString().split('T')[0];}
 function daysLeft(m){if(!m.start||!m.package)return 0;return Math.ceil((new Date(getEnd(m))-new Date())/86400000);}
 function today(){return new Date().toISOString().split('T')[0];}
