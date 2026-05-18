@@ -562,6 +562,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="form-group"><label class="form-label">E-posta</label><input class="form-input" id="m-email" placeholder="email@..."></div>
       </div>
       <div class="form-row">
+        <div class="form-group"><label class="form-label">İl</label><input class="form-input" id="m-il" placeholder="İstanbul"></div>
+        <div class="form-group"><label class="form-label">İlçe</label><input class="form-input" id="m-ilce" placeholder="Beşiktaş"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Adres</label><input class="form-input" id="m-adres" placeholder="Mahalle, cadde, sokak, no..."></div>
+      <div class="form-row">
         <div class="form-group"><label class="form-label">Durum</label>
           <select class="form-select" id="m-status"><option>Aktif</option><option>Donduruldu</option><option>Süresi Doldu</option></select>
         </div>
@@ -2007,7 +2012,7 @@ function openMemberModal(id) {
   document.getElementById('member-modal-title').textContent=id?'Üye Düzenle':'Yeni Üye';
   if(id){
     const m=S.members.find(x=>x.id===id);if(!m)return;
-    ['name','surname','phone','email','note'].forEach(f=>document.getElementById('m-'+f).value=m[f]||'');
+    ['name','surname','phone','email','il','ilce','adres','note'].forEach(f=>document.getElementById('m-'+f).value=m[f]||'');
     document.getElementById('m-status').value=m.status||'Aktif';
     document.getElementById('m-gender').value=m.gender||'Kadın';
     document.getElementById('m-yas').value=m.yas||'';
@@ -2028,7 +2033,7 @@ function openMemberModal(id) {
     loadPosturData(m.postur||{});
     toggleGroupMembers();
   } else {
-    ['name','surname','phone','email','note','emergency-name','emergency-rel','emergency-phone'].forEach(f=>document.getElementById('m-'+f).value='');
+    ['name','surname','phone','email','il','ilce','adres','note','emergency-name','emergency-rel','emergency-phone'].forEach(f=>document.getElementById('m-'+f).value='');
     ['boy','kilo','gogus','bel','kalca','kol','baldir','altbaldir'].forEach(f=>document.getElementById('m-'+f).value='');
     document.getElementById('m-aktivite').value='';
     ['sedanter','aktif','sporcu'].forEach(v=>{const el=document.getElementById('lbl-'+v);if(el){el.style.borderColor='var(--border2)';el.style.background='white';el.style.color='#6b7280';}});
@@ -2379,7 +2384,7 @@ function saveMember(){
   const id=document.getElementById('m-id').value;
   // Yeni ölçüm var mı kontrol et
   const yeniOlcum = getNewOlcum();
-  const d={name:document.getElementById('m-name').value.trim(),surname:document.getElementById('m-surname').value.trim(),phone:document.getElementById('m-phone').value.trim(),email:document.getElementById('m-email').value.trim(),gender:document.getElementById('m-gender').value,yas:document.getElementById('m-yas').value||'',dob:document.getElementById('m-dob').value||'',status:document.getElementById('m-status').value,note:document.getElementById('m-note').value.trim(),emergencyName:document.getElementById('m-emergency-name').value.trim(),emergencyRel:document.getElementById('m-emergency-rel').value.trim(),emergencyPhone:document.getElementById('m-emergency-phone').value.trim(),rulesAccepted:document.getElementById('m-rules-accepted').checked,
+  const d={name:document.getElementById('m-name').value.trim(),surname:document.getElementById('m-surname').value.trim(),phone:document.getElementById('m-phone').value.trim(),email:document.getElementById('m-email').value.trim(),il:document.getElementById('m-il').value.trim(),ilce:document.getElementById('m-ilce').value.trim(),adres:document.getElementById('m-adres').value.trim(),gender:document.getElementById('m-gender').value,yas:document.getElementById('m-yas').value||'',dob:document.getElementById('m-dob').value||'',status:document.getElementById('m-status').value,note:document.getElementById('m-note').value.trim(),emergencyName:document.getElementById('m-emergency-name').value.trim(),emergencyRel:document.getElementById('m-emergency-rel').value.trim(),emergencyPhone:document.getElementById('m-emergency-phone').value.trim(),rulesAccepted:document.getElementById('m-rules-accepted').checked,
     saglik:getHealthForm(),healthAccepted:document.getElementById('m-health-accepted').checked,healthNotes:document.getElementById('m-health-notes').value.trim(),
     postur:getPosturData()};
   if(!d.name||!d.surname){toast('Ad ve soyad zorunludur.','error');return;}
