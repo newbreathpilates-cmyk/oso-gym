@@ -2095,6 +2095,44 @@ function updateHealthLabel(id) {
 }
 
 // ── ÖLÇÜM GEÇMİŞİ ──
+let _editingOlcumIdx = null;
+
+function editOlcum(idx) {
+  const id = document.getElementById('m-id').value;
+  if(!id) return;
+  const m = S.members.find(x=>x.id==id);
+  if(!m||!m.olcumGecmis) return;
+  const sorted = [...m.olcumGecmis].sort((a,b)=>b.tarih>a.tarih?1:-1);
+  const o = sorted[idx];
+  if(!o) return;
+
+  _editingOlcumIdx = idx;
+
+  // Formu aç ve doldur
+  const form = document.getElementById('yeni-olcum-form');
+  if(form) form.style.display = '';
+
+  document.getElementById('m-olcum-tarih').value = o.tarih||'';
+  document.getElementById('m-boy').value = o.boy||'';
+  document.getElementById('m-kilo').value = o.kilo||'';
+  document.getElementById('m-gogus').value = o.gogus||'';
+  document.getElementById('m-bel').value = o.bel||'';
+  document.getElementById('m-kalca').value = o.kalca||'';
+  document.getElementById('m-kol').value = o.kol||'';
+  document.getElementById('m-baldir').value = o.baldir||'';
+  document.getElementById('m-altbaldir').value = o.altbaldir||'';
+  if(o.aktivite) setAktivite(o.aktivite);
+
+  updateBMI();
+  updateRatios();
+
+  // Buton metnini değiştir
+  const btn = document.querySelector('[onclick="toggleYeniOlcum()"]');
+  if(btn) btn.innerHTML = '<i class="ti ti-edit"></i> Ölçümü Güncelle';
+
+  toast('Ölçüm düzenleme modunda — değiştir ve kaydet.');
+}
+
 function toggleYeniOlcum() {
   const form = document.getElementById('yeni-olcum-form');
   const isOpen = form.style.display !== 'none';
@@ -2160,7 +2198,10 @@ function renderOlcumGecmis(gecmis) {
     return `<div style="background:white;border-radius:var(--radius-sm);border:1px solid #c7d2fe;padding:10px 12px;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div style="font-size:12px;font-weight:700;color:#4338ca">${o.tarih} ${o.aktivite?`<span style="font-size:10px;background:#ede9fe;padding:2px 7px;border-radius:10px;margin-left:4px">${o.aktivite}</span>`:''}</div>
-        <button type="button" onclick="deleteOlcum(${i})" style="background:none;border:none;cursor:pointer;color:#b91c1c;font-size:12px">✕</button>
+        <div style="display:flex;gap:6px">
+          <button type="button" onclick="editOlcum(${i})" style="background:#ede9fe;border:none;cursor:pointer;color:#4338ca;font-size:11px;padding:3px 8px;border-radius:4px">✏️ Düzenle</button>
+          <button type="button" onclick="deleteOlcum(${i})" style="background:none;border:none;cursor:pointer;color:#b91c1c;font-size:12px;padding:3px 6px">✕</button>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
         ${fields.map(f=>{
@@ -2476,8 +2517,19 @@ function saveMember(){
     if(i>-1){
       const existing = S.members[i];
       d.olcumGecmis = existing.olcumGecmis||[];
-      // Yeni ölçüm eklendiyse geçmişe ekle
-      if(yeniOlcum) d.olcumGecmis = [...d.olcumGecmis, yeniOlcum];
+      if(yeniOlcum) {
+        if(_editingOlcumIdx !== null) {
+          // Düzenleme modu — eski ölçümü güncelle
+          const sorted = [...d.olcumGecmis].sort((a,b)=>b.tarih>a.tarih?1:-1);
+          const toEdit = sorted[_editingOlcumIdx];
+          const editIdx = d.olcumGecmis.findIndex(o=>o.tarih===toEdit.tarih);
+          if(editIdx>-1) d.olcumGecmis[editIdx] = yeniOlcum;
+          _editingOlcumIdx = null;
+        } else {
+          // Yeni ölçüm ekle
+          d.olcumGecmis = [...d.olcumGecmis, yeniOlcum];
+        }
+      }
       S.members[i]={...existing,...d};
     }
   } else {
@@ -2583,19 +2635,56 @@ td{padding:7px 10px;border-bottom:1px solid #f3f4f6}
   </div>
 </div>
 
-${sonOlcum?`
+${gecmis.length>0?`
 <div class="section">
-  <div class="section-title">Son Ölçümler (${sonOlcum.tarih})</div>
+  <div class="section-title">Ölçüm Geçmişi ve Karşılaştırma</div>
+  ${gecmis.length===1?`
   <div class="grid">
-    ${sonOlcum.boy?`<div class="box"><div class="box-label">Boy</div><div class="box-value">${sonOlcum.boy} cm</div></div>`:''}
-    ${sonOlcum.kilo?`<div class="box"><div class="box-label">Kilo</div><div class="box-value">${sonOlcum.kilo} kg</div></div>`:''}
-    ${sonOlcum.bmi?`<div class="box"><div class="box-label">VKİ</div><div class="box-value">${sonOlcum.bmi}</div></div>`:''}
-    ${sonOlcum.bel?`<div class="box"><div class="box-label">Bel</div><div class="box-value">${sonOlcum.bel} cm</div></div>`:''}
-    ${sonOlcum.kalca?`<div class="box"><div class="box-label">Kalça</div><div class="box-value">${sonOlcum.kalca} cm</div></div>`:''}
-    ${sonOlcum.whr?`<div class="box"><div class="box-label">Bel/Kalça</div><div class="box-value">${sonOlcum.whr}</div></div>`:''}
-    ${sonOlcum.gogus?`<div class="box"><div class="box-label">Göğüs</div><div class="box-value">${sonOlcum.gogus} cm</div></div>`:''}
-    ${sonOlcum.kol?`<div class="box"><div class="box-label">Kol</div><div class="box-value">${sonOlcum.kol} cm</div></div>`:''}
-  </div>
+    ${gecmis[0].boy?`<div class="box"><div class="box-label">Boy</div><div class="box-value">${gecmis[0].boy} cm</div></div>`:''}
+    ${gecmis[0].kilo?`<div class="box"><div class="box-label">Kilo</div><div class="box-value">${gecmis[0].kilo} kg</div></div>`:''}
+    ${gecmis[0].bmi?`<div class="box"><div class="box-label">VKİ</div><div class="box-value">${gecmis[0].bmi}</div></div>`:''}
+    ${gecmis[0].bel?`<div class="box"><div class="box-label">Bel</div><div class="box-value">${gecmis[0].bel} cm</div></div>`:''}
+    ${gecmis[0].kalca?`<div class="box"><div class="box-label">Kalça</div><div class="box-value">${gecmis[0].kalca} cm</div></div>`:''}
+    ${gecmis[0].gogus?`<div class="box"><div class="box-label">Göğüs</div><div class="box-value">${gecmis[0].gogus} cm</div></div>`:''}
+    ${gecmis[0].kol?`<div class="box"><div class="box-label">Kol</div><div class="box-value">${gecmis[0].kol} cm</div></div>`:''}
+    ${gecmis[0].baldir?`<div class="box"><div class="box-label">Baldır</div><div class="box-value">${gecmis[0].baldir} cm</div></div>`:''}
+  </div>`:
+  `<table>
+    <thead><tr><th>Ölçüm</th><th>Kilo</th><th>Bel</th><th>Kalça</th><th>Göğüs</th><th>Kol</th><th>Baldır</th><th>VKİ</th></tr></thead>
+    <tbody>
+    ${gecmis.map((o,i)=>{
+      const prev = gecmis[i-1];
+      function diff(key) {
+        if(!o[key]||!prev||!prev[key]) return '';
+        const d = (parseFloat(o[key])-parseFloat(prev[key])).toFixed(1);
+        const color = parseFloat(d)<0?'#059669':parseFloat(d)>0?'#dc2626':'#6b7280';
+        const arrow = parseFloat(d)<0?'↓':parseFloat(d)>0?'↑':'→';
+        return `<br><span style="font-size:10px;font-weight:700;color:${color}">${arrow}${Math.abs(d)}</span>`;
+      }
+      return `<tr style="${i===gecmis.length-1?'background:#f5f3ff;font-weight:600':''}">
+        <td><strong>${o.tarih}</strong>${o.aktivite?`<br><span style="font-size:9px;color:#6b7280">${o.aktivite}</span>`:''}</td>
+        <td>${o.kilo||'—'}${o.kilo?' kg':''}${diff('kilo')}</td>
+        <td>${o.bel||'—'}${o.bel?' cm':''}${diff('bel')}</td>
+        <td>${o.kalca||'—'}${o.kalca?' cm':''}${diff('kalca')}</td>
+        <td>${o.gogus||'—'}${o.gogus?' cm':''}${diff('gogus')}</td>
+        <td>${o.kol||'—'}${o.kol?' cm':''}${diff('kol')}</td>
+        <td>${o.baldir||'—'}${o.baldir?' cm':''}${diff('baldir')}</td>
+        <td>${o.bmi||'—'}</td>
+      </tr>`;
+    }).join('')}
+    ${gecmis.length>1?`<tr style="background:#e0e7ff">
+      <td style="font-weight:700;color:#3730a3">Toplam Değişim<br><span style="font-size:9px">${gecmis[0].tarih} → ${gecmis[gecmis.length-1].tarih}</span></td>
+      ${['kilo','bel','kalca','gogus','kol','baldir','bmi'].map(key=>{
+        const ilk=gecmis[0][key], son=gecmis[gecmis.length-1][key];
+        if(!ilk||!son) return '<td>—</td>';
+        const d=(parseFloat(son)-parseFloat(ilk)).toFixed(1);
+        const color=parseFloat(d)<0?'#059669':parseFloat(d)>0?'#dc2626':'#6b7280';
+        const arrow=parseFloat(d)<0?'↓':parseFloat(d)>0?'↑':'→';
+        return `<td style="font-weight:700;color:${color}">${arrow} ${Math.abs(d)}</td>`;
+      }).join('')}
+    </tr>`:''}
+    </tbody>
+  </table>`}
 </div>`:''}
 
 ${memberEvents.length?`
