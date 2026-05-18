@@ -3428,8 +3428,28 @@ function savePayment(){
 }
 
 function deletePayment(id){
+  // Ödeme silinince üyenin paketi de sıfırlansın
+  const payment = S.payments.find(p=>p.id===id);
+  if(payment) {
+    const m = S.members.find(x=>x.id===payment.memberId);
+    if(m) {
+      // Bu üyeye ait başka ödeme var mı kontrol et
+      const otherPayments = S.payments.filter(p=>p.id!==id && p.memberId===payment.memberId);
+      if(otherPayments.length > 0) {
+        // En son ödemeyi al ve paketi ona göre güncelle
+        const latest = otherPayments.sort((a,b)=>b.date>a.date?1:-1)[0];
+        m.package = latest.package;
+        m.start = latest.date;
+      } else {
+        // Başka ödeme yok — paketi temizle
+        m.package = '';
+        m.start = '';
+        m.used = 0;
+      }
+    }
+  }
   S.payments=S.payments.filter(p=>p.id!==id);
-  save();renderPayments();toast('Ödeme silindi.');
+  save();renderPayments();toast('Ödeme silindi — üye paketi güncellendi.');
 }
 
 // ══════════════════════════════════════
