@@ -2681,191 +2681,67 @@ document.addEventListener('click', function(e){
 });
 
 function shareViaPDF(id, channel) {
-  const m = S.members.find(x=>x.id===parseInt(id));
-  if(!m) return;
+  try {
+    const m = S.members.find(x=>x.id===parseInt(id));
+    if(!m) return;
+    const total = pkgSessions(m.package||'');
+    const used = m.used||0;
+    const remaining = total>0&&total<999 ? total-used : '—';
+    const endDate = m.package&&m.start ? getEnd(m) : '—';
+    const gecmis = (m.olcumGecmis||[]).sort((a,b)=>a.tarih>b.tarih?1:-1);
+    const sonOlcum = gecmis.length ? gecmis[gecmis.length-1] : null;
+    const s = m.saglik||{};
+    const sLabels = ['Kalp/Tansiyon','Nefes Darlığı/Astım','Diyabet','Bel Fıtığı','Eklem Hastalığı','Son 6 Ay Ameliyat','Hamilelik','Düzenli İlaç'];
+    const sIds = ['sh1','sh2','sh3','sh4','sh5','sh6','sh7','sh8'];
 
-  const total = pkgSessions(m.package||'');
-  const used = m.used||0;
-  const remaining = total>0&&total<999 ? total-used : '—';
-  const planned = S.events.filter(e=>!e.completed&&(e.members||[]).includes(m.id)).length;
-  const endDate = m.package&&m.start ? getEnd(m) : '—';
-  const days = m.package&&m.start ? daysLeft(m) : 0;
-  const o = m.olcumler||{};
-  const gecmis = (m.olcumGecmis||[]).sort((a,b)=>a.tarih>b.tarih?1:-1);
-  const sonOlcum = gecmis.length ? gecmis[gecmis.length-1] : null;
-  const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed).sort((a,b)=>b.date>a.date?1:-1).slice(0,5);
+    let msg = '🌿 NEW BREATH PILATES — ÜYE BİLGİ FORMU\n\n';
+    msg += '━━━━━━━━━━━━━━━━━━━━━\n👤 KİŞİSEL BİLGİLER\n━━━━━━━━━━━━━━━━━━━━━\n';
+    msg += 'Ad Soyad: '+m.name+' '+m.surname+'\n';
+    if(m.phone) msg += 'Telefon: '+m.phone+'\n';
+    if(m.email) msg += 'E-posta: '+m.email+'\n';
+    if(m.yas) msg += 'Yaş: '+m.yas+'\n';
+    if(m.kanGrubu) msg += 'Kan Grubu: '+m.kanGrubu+'\n';
+    if(m.il||m.ilce) msg += 'Şehir: '+(m.il||'')+(m.ilce?' / '+m.ilce:'')+'\n';
 
-  const sHealthLabels = ['Kalp/Tansiyon/Damar','Nefes Darlığı/Astım','Diyabet','Omurga/Bel Fıtığı','Eklem/Kemik Hastalığı','Son 6 Ay Ameliyat','Hamilelik/Doğum Sonrası','Düzenli İlaç'];
-  const sHealthIds = ['sh1','sh2','sh3','sh4','sh5','sh6','sh7','sh8'];
-  const s = m.saglik||{};
+    msg += '\n━━━━━━━━━━━━━━━━━━━━━\n📦 PAKET BİLGİSİ\n━━━━━━━━━━━━━━━━━━━━━\n';
+    msg += 'Paket: '+(m.package||'Tanımlanmamış')+'\n';
+    msg += 'Toplam Ders: '+(total===999?'Sınırsız':total||'—')+'\n';
+    msg += 'Yapılan: '+used+' | Kalan: '+remaining+'\n';
+    msg += 'Başlangıç: '+(m.start||'—')+' | Bitiş: '+endDate+'\n';
 
-  // Sağlık formu HTML
-  const saglikHTML = '<div class="section" style="margin-top:16px"><div class="section-title" style="color:#1e3a8a;border-bottom:1px solid #bfdbfe">Sağlık Formu '+(m.healthAccepted?'✓ Onaylandı':'')+'</div><div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px">'+
-    sHealthIds.map(function(id,i){
-      const val=(s[id]||'');
-      const renk=val==='evet'?'#b91c1c':val==='hayir'?'#059669':'#9e9e96';
-      const text=val==='evet'?'Evet':val==='hayir'?'Hayır':'Belirtilmemiş';
-      return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #dbeafe"><span style="font-size:11px">'+sHealthLabels[i]+'</span><span style="font-size:11px;font-weight:700;color:'+renk+'">'+text+'</span></div>';
-    }).join('')+
-    (m.healthNotes?'<div style="margin-top:8px;font-size:11px;color:#1e3a8a"><strong>Not:</strong> '+m.healthNotes+'</div>':'')+
-  '</div></div>';
+    if(sonOlcum) {
+      msg += '\n━━━━━━━━━━━━━━━━━━━━━\n📏 SON ÖLÇÜMLER ('+sonOlcum.tarih+')\n━━━━━━━━━━━━━━━━━━━━━\n';
+      if(sonOlcum.boy) msg += 'Boy: '+sonOlcum.boy+' cm\n';
+      if(sonOlcum.kilo) msg += 'Kilo: '+sonOlcum.kilo+' kg\n';
+      if(sonOlcum.bel) msg += 'Bel: '+sonOlcum.bel+' cm\n';
+      if(sonOlcum.kalca) msg += 'Kalça: '+sonOlcum.kalca+' cm\n';
+      if(sonOlcum.gogus) msg += 'Göğüs: '+sonOlcum.gogus+' cm\n';
+      if(sonOlcum.kol) msg += 'Kol: '+sonOlcum.kol+' cm\n';
+      if(sonOlcum.bmi) msg += 'VKİ: '+sonOlcum.bmi+'\n';
+    }
 
-  // Üyelik kuralları HTML
-  const kurallarHTML = '<div class="section" style="margin-top:14px"><div class="section-title" style="color:#065f46;border-bottom:2px solid #059669;padding-bottom:4px">Üyelik Kuralları</div><div style="font-size:10px;color:#374151;line-height:1.7"><p style="font-weight:700;margin:5px 0 2px">Paket Süresi:</p><ul style="padding-left:14px;margin:0 0 5px"><li>8 Ders paketleri 30 gün, 10-15 Ders paketleri 60 gün içinde kullanılmalıdır.</li><li>Süre sonunda kullanılmayan dersler geçersiz sayılır, iade yapılmaz.</li></ul><p style="font-weight:700;margin:5px 0 2px">Rezervasyon ve İptal:</p><ul style="padding-left:14px;margin:0 0 5px"><li>Dersler en az 24 saat öncesinden rezerve edilmelidir.</li><li>Her pakette 2 ücretsiz iptal hakkı vardır. 24 saatten kısa iptal ve no-show durumunda ders paketten düşer.</li></ul><p style="font-weight:700;margin:5px 0 2px">İade:</p><ul style="padding-left:14px;margin:0"><li>İlk 7 gün içinde iptal talebinde tam iade yapılır. Paketler dondurulamaz.</li></ul></div></div>';
+    msg += '\n━━━━━━━━━━━━━━━━━━━━━\n🏥 SAĞLIK FORMU\n━━━━━━━━━━━━━━━━━━━━━\n';
+    sIds.forEach(function(sid,i){
+      const val=s[sid]||'';
+      msg += sLabels[i]+': '+(val==='evet'?'Evet ⚠️':val==='hayir'?'Hayır ✓':'Belirtilmemiş')+'\n';
+    });
+    if(m.healthNotes) msg += 'Not: '+m.healthNotes+'\n';
 
-  // İmza ve onay HTML
-  const imzaHTML = '<div style="margin-top:14px;padding:12px;background:#f0fdf8;border:2px solid #059669;border-radius:8px"><div style="display:flex;justify-content:space-between;align-items:center;gap:16px"><div style="flex:1"><div style="font-size:11px;font-weight:700;color:#065f46;margin-bottom:5px">Beyan ve Onay</div><div style="font-size:10px;color:#374151">Üyelik kurallarını okudum, anladım ve kabul ediyorum.</div><div style="margin-top:6px;font-size:10px"><strong>'+m.name+' '+m.surname+'</strong> · '+(m.start||new Date().toLocaleDateString('tr-TR'))+'<br>'+(m.rulesAccepted?'<span style="color:#059669">✓ Kurallar kabul edildi</span> ':'')+' '+(m.healthAccepted?'<span style="color:#059669">✓ Sağlık formu onaylandı</span>':'')+'</div></div>'+(m.signature?'<div style="text-align:center"><div style="font-size:9px;color:#6b7280;margin-bottom:3px">IMZA</div><img src="'+m.signature+'" style="width:150px;height:56px;object-fit:contain;border:1px solid #a7f3d0;border-radius:4px;background:white;padding:3px;display:block"></div>':'<div style="width:150px;height:64px;border:1px solid #a7f3d0;border-radius:4px;background:white;display:flex;align-items:center;justify-content:center"><span style="font-size:9px;color:#9e9e96">Imza atilmadi</span></div>')+'</div></div>';
+    msg += '\n━━━━━━━━━━━━━━━━━━━━━\n📋 ONAY\n━━━━━━━━━━━━━━━━━━━━━\n';
+    msg += (m.rulesAccepted?'✅ Üyelik kuralları kabul edildi':'❌ Kurallar kabul edilmedi')+'\n';
+    if(m.healthAccepted) msg += '✅ Sağlık formu onaylandı\n';
+    msg += 'Tarih: '+(m.start||new Date().toLocaleDateString('tr-TR'))+'\n';
+    msg += '\n🌿 NEW BREATH PILATES';
 
-  const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
-<title>${m.name} ${m.surname} — NEW BREATH PILATES</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#1a1a18;padding:24px}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #1D9E75}
-.logo{font-size:18px;font-weight:700;color:#1D9E75}
-.section{margin-bottom:16px}
-.section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#6b6b65;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px}
-.box-label{font-size:10px;color:#9e9e96;margin-bottom:3px}
-.box-value{font-size:13px;font-weight:600}
-.pkg-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px}
-.pkg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
-.pkg-stat{background:white;border-radius:6px;padding:8px;text-align:center}
-.pkg-stat-val{font-size:18px;font-weight:700;color:#2563EB}
-.pkg-stat-label{font-size:9px;color:#6b7280;margin-top:2px;text-transform:uppercase}
-table{width:100%;border-collapse:collapse;font-size:11px}
-th{background:#f3f4f6;padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;border-bottom:2px solid #e5e7eb}
-td{padding:7px 10px;border-bottom:1px solid #f3f4f6}
-.footer{margin-top:20px;padding-top:10px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:10px;color:#9e9e96}
-</style></head><body>
-<div class="header">
-  <div><div class="logo">🌿 NEW BREATH PILATES</div><div style="font-size:11px;color:#6b6b65">Üye Bilgi Raporu</div></div>
-  <div style="text-align:right;font-size:11px;color:#6b6b65">${new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</div>
-</div>
-
-<div class="section">
-  <div class="section-title">Kişisel Bilgiler</div>
-  <div class="grid">
-    <div class="box"><div class="box-label">Ad Soyad</div><div class="box-value">${m.name} ${m.surname}</div></div>
-    <div class="box"><div class="box-label">Telefon</div><div class="box-value">${m.phone||'—'}</div></div>
-    ${m.email?`<div class="box"><div class="box-label">E-posta</div><div class="box-value">${m.email}</div></div>`:''}
-    ${m.yas?`<div class="box"><div class="box-label">Yaş</div><div class="box-value">${m.yas}</div></div>`:''}
-    ${m.kanGrubu?`<div class="box" style="background:#fee2e2;border-color:#fecaca"><div class="box-label">Kan Grubu</div><div class="box-value" style="color:#b91c1c;font-size:16px">${m.kanGrubu}</div></div>`:''}
-    ${m.il||m.ilce?`<div class="box"><div class="box-label">İl / İlçe</div><div class="box-value">${[m.il,m.ilce].filter(Boolean).join(' / ')}</div></div>`:''}
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-title">Paket Bilgisi</div>
-  <div class="pkg-box">
-    <div style="font-size:15px;font-weight:700;color:#1e3a8a">${m.package||'Paket tanımlanmamış'}</div>
-    <div class="pkg-grid">
-      <div class="pkg-stat"><div class="pkg-stat-val">${total===999?'∞':total||'—'}</div><div class="pkg-stat-label">Toplam</div></div>
-      <div class="pkg-stat"><div class="pkg-stat-val">${used}</div><div class="pkg-stat-label">Yapılan</div></div>
-      <div class="pkg-stat"><div class="pkg-stat-val" style="color:${remaining===0?'#dc2626':'#2563EB'}">${remaining}</div><div class="pkg-stat-label">Kalan</div></div>
-      <div class="pkg-stat"><div class="pkg-stat-val">${planned}</div><div class="pkg-stat-label">Planlanmış</div></div>
-    </div>
-    <div style="margin-top:10px;font-size:11px;display:flex;gap:20px">
-      <span><span style="color:#6b7280">Başlangıç:</span> <strong>${m.start||'—'}</strong></span>
-      <span><span style="color:#6b7280">Bitiş:</span> <strong>${endDate}</strong> ${days>0?'('+days+' gün kaldı)':days===0?'(Bugün bitiyor)':m.start?'<span style="color:#dc2626">(Süresi doldu)</span>':''}</span>
-    </div>
-  </div>
-</div>
-
-${gecmis.length>0?`
-<div class="section">
-  <div class="section-title">Ölçüm Geçmişi ve Karşılaştırma</div>
-  ${gecmis.length===1?`
-  <div class="grid">
-    ${gecmis[0].boy?`<div class="box"><div class="box-label">Boy</div><div class="box-value">${gecmis[0].boy} cm</div></div>`:''}
-    ${gecmis[0].kilo?`<div class="box"><div class="box-label">Kilo</div><div class="box-value">${gecmis[0].kilo} kg</div></div>`:''}
-    ${gecmis[0].bmi?`<div class="box"><div class="box-label">VKİ</div><div class="box-value">${gecmis[0].bmi}</div></div>`:''}
-    ${gecmis[0].bel?`<div class="box"><div class="box-label">Bel</div><div class="box-value">${gecmis[0].bel} cm</div></div>`:''}
-    ${gecmis[0].kalca?`<div class="box"><div class="box-label">Kalça</div><div class="box-value">${gecmis[0].kalca} cm</div></div>`:''}
-    ${gecmis[0].gogus?`<div class="box"><div class="box-label">Göğüs</div><div class="box-value">${gecmis[0].gogus} cm</div></div>`:''}
-    ${gecmis[0].kol?`<div class="box"><div class="box-label">Kol</div><div class="box-value">${gecmis[0].kol} cm</div></div>`:''}
-    ${gecmis[0].baldir?`<div class="box"><div class="box-label">Baldır</div><div class="box-value">${gecmis[0].baldir} cm</div></div>`:''}
-  </div>`:
-  `<table>
-    <thead><tr><th>Ölçüm</th><th>Kilo</th><th>Bel</th><th>Kalça</th><th>Göğüs</th><th>Kol</th><th>Baldır</th><th>VKİ</th></tr></thead>
-    <tbody>
-    ${gecmis.map((o,i)=>{
-      const prev = gecmis[i-1];
-      function diff(key) {
-        if(!o[key]||!prev||!prev[key]) return '';
-        const d = (parseFloat(o[key])-parseFloat(prev[key])).toFixed(1);
-        const color = parseFloat(d)<0?'#059669':parseFloat(d)>0?'#dc2626':'#6b7280';
-        const arrow = parseFloat(d)<0?'↓':parseFloat(d)>0?'↑':'→';
-        return `<br><span style="font-size:10px;font-weight:700;color:${color}">${arrow}${Math.abs(d)}</span>`;
-      }
-      return `<tr style="${i===gecmis.length-1?'background:#f5f3ff;font-weight:600':''}">
-        <td><strong>${o.tarih}</strong>${o.aktivite?`<br><span style="font-size:9px;color:#6b7280">${o.aktivite}</span>`:''}</td>
-        <td>${o.kilo||'—'}${o.kilo?' kg':''}${diff('kilo')}</td>
-        <td>${o.bel||'—'}${o.bel?' cm':''}${diff('bel')}</td>
-        <td>${o.kalca||'—'}${o.kalca?' cm':''}${diff('kalca')}</td>
-        <td>${o.gogus||'—'}${o.gogus?' cm':''}${diff('gogus')}</td>
-        <td>${o.kol||'—'}${o.kol?' cm':''}${diff('kol')}</td>
-        <td>${o.baldir||'—'}${o.baldir?' cm':''}${diff('baldir')}</td>
-        <td>${o.bmi||'—'}</td>
-      </tr>`;
-    }).join('')}
-    ${gecmis.length>1?`<tr style="background:#e0e7ff">
-      <td style="font-weight:700;color:#3730a3">Toplam Değişim<br><span style="font-size:9px">${gecmis[0].tarih} → ${gecmis[gecmis.length-1].tarih}</span></td>
-      ${['kilo','bel','kalca','gogus','kol','baldir','bmi'].map(key=>{
-        const ilk=gecmis[0][key], son=gecmis[gecmis.length-1][key];
-        if(!ilk||!son) return '<td>—</td>';
-        const d=(parseFloat(son)-parseFloat(ilk)).toFixed(1);
-        const color=parseFloat(d)<0?'#059669':parseFloat(d)>0?'#dc2626':'#6b7280';
-        const arrow=parseFloat(d)<0?'↓':parseFloat(d)>0?'↑':'→';
-        return `<td style="font-weight:700;color:${color}">${arrow} ${Math.abs(d)}</td>`;
-      }).join('')}
-    </tr>`:''}
-    </tbody>
-  </table>`}
-</div>`:''}
-
-${memberEvents.length?`
-<div class="section">
-  <div class="section-title">Son Dersler</div>
-  <table>
-    <thead><tr><th>Tarih</th><th>Saat</th><th>Ders</th><th>Eğitmen</th></tr></thead>
-    <tbody>${memberEvents.map(ev=>{
-      const tr=S.trainers.find(t=>t.id===ev.trainerId);
-      return `<tr><td>${ev.date}</td><td>${ev.startTime}</td><td>${ev.type}</td><td>${tr?tr.name:'—'}</td></tr>`;
-    }).join('')}</tbody>
-  </table>
-</div>`:''}
-
-${saglikHTML}
-${kurallarHTML}
-${imzaHTML}
-
-<div class="footer">
-  <span>NEW BREATH PILATES — Üye Bilgi Raporu</span>
-  <span>${m.name} ${m.surname} · ${new Date().toLocaleDateString('tr-TR')}</span>
-</div>
-</body></html>`;
-
-  // İndir
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = m.name+'_'+m.surname+'_NBP.html';
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(url), 5000);
-
-  if(channel === 'whatsapp') {
-    const phone = (m.phone||'').replace(/\D/g,'');
-    const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
-    const msg = encodeURIComponent('Merhaba '+m.name+' 👋\n\nNEW BREATH PILATES üye bilgi raporunuz hazır.\n\n📦 Paket: '+(m.package||'—')+'\n✅ Kalan Ders: '+remaining+'\n📅 Bitiş: '+endDate+'\n\n🌿 NEW BREATH PILATES');
-    window.open('https://wa.me/'+(waPhone||'')+'?text='+msg, '_blank');
-  } else {
-    const subject = encodeURIComponent('NEW BREATH PILATES — Üye Bilgi Raporunuz');
-    const body = encodeURIComponent('Merhaba '+m.name+',\n\nÜye bilgi raporunuz hazır.\n\nPaket: '+(m.package||'—')+'\nKalan Ders: '+remaining+'\nPaket Bitiş: '+endDate+'\n\n🌿 NEW BREATH PILATES');
-    window.open('mailto:'+(m.email||'')+'?subject='+subject+'&body='+body, '_blank');
-  }
+    if(channel === 'whatsapp') {
+      const phone = (m.phone||'').replace(/\D/g,'');
+      const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
+      window.open('https://wa.me/'+(waPhone||'')+'?text='+encodeURIComponent(msg), '_blank');
+    } else {
+      const subject = encodeURIComponent('NEW BREATH PILATES — '+m.name+' '+m.surname+' Üye Bilgi Formu');
+      window.open('mailto:'+(m.email||'')+'?subject='+subject+'&body='+encodeURIComponent(msg), '_blank');
+    }
+  } catch(e) { console.error(e); }
 }
 
 function sendWhatsApp(id, type) {
