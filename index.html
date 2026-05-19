@@ -395,6 +395,29 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   .nav-item { min-width: 44px !important; font-size: 8px !important; padding: 3px 4px !important; }
   .nav-item i { font-size: 17px !important; }
   .topbar-title { font-size: 13px; }
+}
+
+/* ── MOBİL FLOATING BUTTON ── */
+.fab {
+  display: none;
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--green);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 16px rgba(29,158,117,0.4);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 150;
+  font-size: 28px;
+}
+@media (max-width: 768px) {
+  .fab { display: flex; }
 }</style>
 </head>
 <body>
@@ -1033,6 +1056,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   </div>
 </div>
 
+<!-- Mobil FAB butonu -->
+<button class="fab" id="fab-btn" style="display:none" onclick="fabAction()">+</button>
+
 <div class="toast" id="toast"></div>
 
 <!-- Firebase SDK -->
@@ -1307,6 +1333,20 @@ function buildSidebar() {
   document.getElementById('sidebar-nav').innerHTML = currentUser.role==='owner' ? ownerNav : trainerNav;
 }
 
+function fabAction() {
+  if(currentPage === 'members') openMemberModal();
+}
+
+function updateFAB(page) {
+  const fab = document.getElementById('fab-btn');
+  if(!fab) return;
+  if(page === 'members') {
+    fab.style.display = '';
+  } else {
+    fab.style.display = 'none';
+  }
+}
+
 function navigateTo(page) {
   currentPage = page;
   document.querySelectorAll('.nav-item[data-page]').forEach(el => {
@@ -1317,6 +1357,7 @@ function navigateTo(page) {
   document.getElementById('topbar-actions').innerHTML = '';
   const pages = { dashboard: renderDashboard, calendar: renderCalendar, members: renderMembers, trainers: renderTrainers, payments: renderPayments, giderler: renderGiderler, hakedis: renderHakedis, 'paket-fiyatlari': renderPaketFiyatlari, export: renderExport, 'trainer-portal': renderTrainerPortal, 'attendance-report': renderAttendanceReport };
   if(pages[page]) pages[page]();
+  updateFAB(page);
 }
 
 // ══════════════════════════════════════
