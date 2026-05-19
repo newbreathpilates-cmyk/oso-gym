@@ -2002,21 +2002,53 @@ function deleteEvent() {
 function renderMembers() {
   const isTrainer = currentUser.role === 'trainer';
   document.getElementById('topbar-actions').innerHTML=`
-    <div class="flex gap-8">
-      <input class="search-input" id="member-search" placeholder="İsim veya telefon..." oninput="filterMembersTable()" style="width:200px">
+    <div class="flex gap-8" style="flex-wrap:wrap">
+      <input class="search-input" id="member-search" placeholder="İsim veya telefon..." oninput="filterMembersTable()" style="width:160px">
       <select style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;font-family:inherit" id="member-filter" onchange="filterMembersTable()">
-        <option value="">Tümü</option><option>Aktif</option><option>Süresi Doldu</option><option>Donduruldu</option>
+        <option value="">Tümü (A-Z)</option>
+        <option value="aktif">Aktif</option>
+        <option value="suresi-doldu">Süresi Doldu</option>
+        <option value="donduruldu">Donduruldu</option>
+        <option value="paket-yok">Paket Yok</option>
+        <option value="son-10-gun">Paket Süresi Bitmek Üzere (Son 10 Gün)</option>
+        <option value="son-2-ders">Son 2 Ders Kalan</option>
       </select>
       ${!isTrainer ? `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>` : `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>`}
     </div>`;
-  renderMembersTable(S.members);
+  filterMembersTable();
 }
 
 function filterMembersTable(){
-  const isTrainer = currentUser.role === 'trainer';
   const q=(document.getElementById('member-search')||{}).value?.toLowerCase()||'';
   const f=(document.getElementById('member-filter')||{}).value||'';
-  renderMembersTable(S.members.filter(m=>(m.name+' '+m.surname+m.phone).toLowerCase().includes(q)&&(!f||m.status===f)));
+  const today = new Date();
+
+  let list = [...S.members];
+
+  // Arama filtresi
+  if(q) list = list.filter(m=>(m.name+' '+m.surname+(m.phone||'')).toLowerCase().includes(q));
+
+  // Kategori filtresi
+  if(f==='aktif') list = list.filter(m=>m.status==='Aktif');
+  else if(f==='suresi-doldu') list = list.filter(m=>m.status==='Süresi Doldu');
+  else if(f==='donduruldu') list = list.filter(m=>m.status==='Donduruldu');
+  else if(f==='paket-yok') list = list.filter(m=>!m.package||pkgSessions(m.package)===0);
+  else if(f==='son-10-gun') list = list.filter(m=>{
+    if(!m.package||!m.start) return false;
+    const d = daysLeft(m);
+    return d>=0 && d<=10 && m.status==='Aktif';
+  });
+  else if(f==='son-2-ders') list = list.filter(m=>{
+    const total = pkgSessions(m.package||'');
+    if(total===0||total===999) return false;
+    const remaining = Math.max(0, total - (m.used||0));
+    return remaining<=2 && remaining>0 && m.status==='Aktif';
+  });
+
+  // A-Z sırala
+  list.sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr'));
+
+  renderMembersTable(list);
 }
 
 function renderMembersTable(list) {
@@ -2043,7 +2075,6 @@ function renderMembersTable(list) {
               ${!isTrainer?`<div style="position:relative;display:inline-block">
                 <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();toggleShareMenu(${m.id})" title="Gönder"><i class="ti ti-share"></i></button>
                 <div id="share-menu-${m.id}" style="display:none;position:fixed;right:10px;z-index:500;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:180px;padding:4px 0">
-                  <button onclick="event.stopPropagation();printMemberPDF(${m.id});closeShareMenus()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:var(--text)"><i class="ti ti-file-download" style="font-size:16px"></i> PDF İndir</button>
                   <button onclick="event.stopPropagation();shareViaPDF(${m.id},'whatsapp');closeShareMenus()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#25D366"><i class="ti ti-brand-whatsapp" style="font-size:16px"></i> WhatsApp</button>
                   <button onclick="event.stopPropagation();shareViaPDF(${m.id},'email');closeShareMenus()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#2563EB"><i class="ti ti-mail" style="font-size:16px"></i> E-posta</button>
                 </div>
@@ -2664,6 +2695,26 @@ function shareViaPDF(id, channel) {
   const sonOlcum = gecmis.length ? gecmis[gecmis.length-1] : null;
   const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed).sort((a,b)=>b.date>a.date?1:-1).slice(0,5);
 
+  const sHealthLabels = ['Kalp/Tansiyon/Damar','Nefes Darlığı/Astım','Diyabet','Omurga/Bel Fıtığı','Eklem/Kemik Hastalığı','Son 6 Ay Ameliyat','Hamilelik/Doğum Sonrası','Düzenli İlaç'];
+  const sHealthIds = ['sh1','sh2','sh3','sh4','sh5','sh6','sh7','sh8'];
+
+  // Sağlık formu HTML
+  const saglikHTML = '<div class="section" style="margin-top:16px"><div class="section-title" style="color:#1e3a8a;border-bottom:1px solid #bfdbfe">Sağlık Formu '+(m.healthAccepted?'✓ Onaylandı':'')+'</div><div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px">'+
+    sHealthIds.map(function(id,i){
+      const val=(s[id]||'');
+      const renk=val==='evet'?'#b91c1c':val==='hayir'?'#059669':'#9e9e96';
+      const text=val==='evet'?'Evet':val==='hayir'?'Hayır':'Belirtilmemiş';
+      return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #dbeafe"><span style="font-size:11px">'+sHealthLabels[i]+'</span><span style="font-size:11px;font-weight:700;color:'+renk+'">'+text+'</span></div>';
+    }).join('')+
+    (m.healthNotes?'<div style="margin-top:8px;font-size:11px;color:#1e3a8a"><strong>Not:</strong> '+m.healthNotes+'</div>':'')+
+  '</div></div>';
+
+  // Üyelik kuralları HTML
+  const kurallarHTML = '<div class="section" style="margin-top:14px"><div class="section-title" style="color:#065f46;border-bottom:2px solid #059669;padding-bottom:4px">Üyelik Kuralları</div><div style="font-size:10px;color:#374151;line-height:1.7"><p style="font-weight:700;margin:5px 0 2px">Paket Süresi:</p><ul style="padding-left:14px;margin:0 0 5px"><li>8 Ders paketleri 30 gün, 10-15 Ders paketleri 60 gün içinde kullanılmalıdır.</li><li>Süre sonunda kullanılmayan dersler geçersiz sayılır, iade yapılmaz.</li></ul><p style="font-weight:700;margin:5px 0 2px">Rezervasyon ve İptal:</p><ul style="padding-left:14px;margin:0 0 5px"><li>Dersler en az 24 saat öncesinden rezerve edilmelidir.</li><li>Her pakette 2 ücretsiz iptal hakkı vardır. 24 saatten kısa iptal ve no-show durumunda ders paketten düşer.</li></ul><p style="font-weight:700;margin:5px 0 2px">İade:</p><ul style="padding-left:14px;margin:0"><li>İlk 7 gün içinde iptal talebinde tam iade yapılır. Paketler dondurulamaz.</li></ul></div></div>';
+
+  // İmza ve onay HTML
+  const imzaHTML = '<div style="margin-top:14px;padding:12px;background:#f0fdf8;border:2px solid #059669;border-radius:8px"><div style="display:flex;justify-content:space-between;align-items:center;gap:16px"><div style="flex:1"><div style="font-size:11px;font-weight:700;color:#065f46;margin-bottom:5px">Beyan ve Onay</div><div style="font-size:10px;color:#374151">Üyelik kurallarını okudum, anladım ve kabul ediyorum.</div><div style="margin-top:6px;font-size:10px"><strong>'+m.name+' '+m.surname+'</strong> · '+(m.start||new Date().toLocaleDateString('tr-TR'))+'<br>'+(m.rulesAccepted?'<span style="color:#059669">✓ Kurallar kabul edildi</span> ':'')+' '+(m.healthAccepted?'<span style="color:#059669">✓ Sağlık formu onaylandı</span>':'')+'</div></div>'+(m.signature?'<div style="text-align:center"><div style="font-size:9px;color:#6b7280;margin-bottom:3px">IMZA</div><img src="'+m.signature+'" style="width:150px;height:56px;object-fit:contain;border:1px solid #a7f3d0;border-radius:4px;background:white;padding:3px;display:block"></div>':'<div style="width:150px;height:64px;border:1px solid #a7f3d0;border-radius:4px;background:white;display:flex;align-items:center;justify-content:center"><span style="font-size:9px;color:#9e9e96">Imza atilmadi</span></div>')+'</div></div>';
+
   const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
 <title>${m.name} ${m.surname} — NEW BREATH PILATES</title>
 <style>
@@ -2784,6 +2835,10 @@ ${memberEvents.length?`
     }).join('')}</tbody>
   </table>
 </div>`:''}
+
+${saglikHTML}
+${kurallarHTML}
+${imzaHTML}
 
 <div class="footer">
   <span>NEW BREATH PILATES — Üye Bilgi Raporu</span>
