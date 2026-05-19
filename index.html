@@ -2676,6 +2676,9 @@ function toggleShareMenu(id) {
 function closeShareMenus() {
   document.querySelectorAll('[id^="share-menu-"]').forEach(m=>m.style.display='none');
 }
+document.addEventListener('click', function(e){
+  if(!e.target.closest('[id^="share-menu-"]') && !e.target.closest('.btn-icon')) closeShareMenus();
+});
 
 function shareViaPDF(id, channel) {
   const m = S.members.find(x=>x.id===parseInt(id));
@@ -2843,29 +2846,24 @@ ${imzaHTML}
 </div>
 </body></html>`;
 
-  // Direkt indirme - kullanıcı etkileşimi anında
+  // İndir
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const url = URL.createObjectURL(blob);
-  const fileName = m.name+'_'+m.surname+'_NBP.html';
   const a = document.createElement('a');
   a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
+  a.download = m.name+'_'+m.surname+'_NBP.html';
   a.click();
-  document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
 
   if(channel === 'whatsapp') {
     const phone = (m.phone||'').replace(/\D/g,'');
     const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
-    const msg = encodeURIComponent('Merhaba '+m.name+' 👋\n\nNEW BREATH PILATES üye bilgi raporunuz hazır. PDF dosyasını bu mesaja ekleyebilirsiniz.\n\n📦 Paket: '+(m.package||'—')+'\n✅ Kalan Ders: '+remaining+'\n📅 Bitiş: '+endDate+'\n\n🌿 NEW BREATH PILATES');
-    setTimeout(()=>window.open('https://wa.me/'+(waPhone||'')+  '?text='+msg,'_blank'), 800);
-    toast('PDF indiriliyor — WhatsApp açılıyor...', 'success');
+    const msg = encodeURIComponent('Merhaba '+m.name+' 👋\n\nNEW BREATH PILATES üye bilgi raporunuz hazır.\n\n📦 Paket: '+(m.package||'—')+'\n✅ Kalan Ders: '+remaining+'\n📅 Bitiş: '+endDate+'\n\n🌿 NEW BREATH PILATES');
+    window.open('https://wa.me/'+(waPhone||'')+'?text='+msg, '_blank');
   } else {
     const subject = encodeURIComponent('NEW BREATH PILATES — Üye Bilgi Raporunuz');
-    const body = encodeURIComponent('Merhaba '+m.name+',\n\nÜye bilgi raporunuz ekte (PDF dosyası olarak) gönderilmektedir.\n\nPaket: '+(m.package||'—')+'\nKalan Ders: '+remaining+'\nPaket Bitiş: '+endDate+'\n\n🌿 NEW BREATH PILATES');
-    setTimeout(()=>window.open('mailto:'+(m.email||'')+'?subject='+subject+'&body='+body,'_blank'), 800);
-    toast('PDF indiriliyor — E-posta açılıyor...', 'success');
+    const body = encodeURIComponent('Merhaba '+m.name+',\n\nÜye bilgi raporunuz hazır.\n\nPaket: '+(m.package||'—')+'\nKalan Ders: '+remaining+'\nPaket Bitiş: '+endDate+'\n\n🌿 NEW BREATH PILATES');
+    window.open('mailto:'+(m.email||'')+'?subject='+subject+'&body='+body, '_blank');
   }
 }
 
