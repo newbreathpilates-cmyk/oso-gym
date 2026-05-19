@@ -2689,57 +2689,64 @@ function shareViaPDF(id, channel) {
     const remaining = total>0&&total<999 ? total-used : '—';
     const endDate = m.package&&m.start ? getEnd(m) : '—';
     const gecmis = (m.olcumGecmis||[]).sort((a,b)=>a.tarih>b.tarih?1:-1);
-    const sonOlcum = gecmis.length ? gecmis[gecmis.length-1] : null;
     const s = m.saglik||{};
     const sLabels = ['Kalp/Tansiyon','Nefes Darlığı/Astım','Diyabet','Bel Fıtığı','Eklem Hastalığı','Son 6 Ay Ameliyat','Hamilelik','Düzenli İlaç'];
     const sIds = ['sh1','sh2','sh3','sh4','sh5','sh6','sh7','sh8'];
+    const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed).sort((a,b)=>b.date>a.date?1:-1).slice(0,5);
 
-    let msg = '🌿 NEW BREATH PILATES — ÜYE BİLGİ FORMU\n\n';
-    msg += '━━━━━━━━━━━━━━━━━━━━━\n👤 KİŞİSEL BİLGİLER\n━━━━━━━━━━━━━━━━━━━━━\n';
-    msg += 'Ad Soyad: '+m.name+' '+m.surname+'\n';
-    if(m.phone) msg += 'Telefon: '+m.phone+'\n';
-    if(m.email) msg += 'E-posta: '+m.email+'\n';
-    if(m.yas) msg += 'Yaş: '+m.yas+'\n';
-    if(m.kanGrubu) msg += 'Kan Grubu: '+m.kanGrubu+'\n';
-    if(m.il||m.ilce) msg += 'Şehir: '+(m.il||'')+(m.ilce?' / '+m.ilce:'')+'\n';
+    // Sağlık formu HTML
+    const saglikHTML = '<div style="margin-top:12px"><b>SAĞLIK FORMU</b><br>'+
+      sIds.map(function(sid,i){ const v=s[sid]||''; return sLabels[i]+': '+(v==='evet'?'Evet':v==='hayir'?'Hayır':'—'); }).join('<br>')+
+      (m.healthNotes?'<br>Not: '+m.healthNotes:'')+'</div>';
 
-    msg += '\n━━━━━━━━━━━━━━━━━━━━━\n📦 PAKET BİLGİSİ\n━━━━━━━━━━━━━━━━━━━━━\n';
-    msg += 'Paket: '+(m.package||'Tanımlanmamış')+'\n';
-    msg += 'Toplam Ders: '+(total===999?'Sınırsız':total||'—')+'\n';
-    msg += 'Yapılan: '+used+' | Kalan: '+remaining+'\n';
-    msg += 'Başlangıç: '+(m.start||'—')+' | Bitiş: '+endDate+'\n';
+    const kurallarHTML = '<div style="margin-top:12px;font-size:11px"><b>ÜYELİK KURALLARI</b><br>8 Ders paketleri 30 gün, 10-15 Ders paketleri 60 gün içinde kullanılmalıdır. Süre sonunda kullanılmayan dersler geçersiz sayılır. Dersler en az 24 saat öncesinden rezerve edilmelidir. Her pakette 2 ücretsiz iptal hakkı vardır. İlk 7 gün içinde iptal talebinde tam iade yapılır. Paketler dondurulamaz.</div>';
 
-    if(sonOlcum) {
-      msg += '\n━━━━━━━━━━━━━━━━━━━━━\n📏 SON ÖLÇÜMLER ('+sonOlcum.tarih+')\n━━━━━━━━━━━━━━━━━━━━━\n';
-      if(sonOlcum.boy) msg += 'Boy: '+sonOlcum.boy+' cm\n';
-      if(sonOlcum.kilo) msg += 'Kilo: '+sonOlcum.kilo+' kg\n';
-      if(sonOlcum.bel) msg += 'Bel: '+sonOlcum.bel+' cm\n';
-      if(sonOlcum.kalca) msg += 'Kalça: '+sonOlcum.kalca+' cm\n';
-      if(sonOlcum.gogus) msg += 'Göğüs: '+sonOlcum.gogus+' cm\n';
-      if(sonOlcum.kol) msg += 'Kol: '+sonOlcum.kol+' cm\n';
-      if(sonOlcum.bmi) msg += 'VKİ: '+sonOlcum.bmi+'\n';
-    }
+    const imzaHTML = '<div style="margin-top:12px;padding:10px;background:#f0fdf8;border:1px solid #059669;border-radius:6px"><b>BEYAN VE ONAY</b><br>'+(m.rulesAccepted?'✓ Kurallar kabul edildi':'')+' '+(m.healthAccepted?'✓ Sağlık formu onaylandı':'')+'<br>'+m.name+' '+m.surname+' · '+(m.start||new Date().toLocaleDateString('tr-TR'))+(m.signature?'<br><img src="'+m.signature+'" style="width:200px;height:70px;object-fit:contain;margin-top:6px">':'')+'</div>';
 
-    msg += '\n━━━━━━━━━━━━━━━━━━━━━\n🏥 SAĞLIK FORMU\n━━━━━━━━━━━━━━━━━━━━━\n';
-    sIds.forEach(function(sid,i){
-      const val=s[sid]||'';
-      msg += sLabels[i]+': '+(val==='evet'?'Evet ⚠️':val==='hayir'?'Hayır ✓':'Belirtilmemiş')+'\n';
-    });
-    if(m.healthNotes) msg += 'Not: '+m.healthNotes+'\n';
+    const html = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>'+m.name+' '+m.surname+' — NEW BREATH PILATES</title>'+
+    '<style>body{font-family:Arial,sans-serif;padding:24px;font-size:12px;color:#1a1a18}h2{color:#1D9E75}.section{margin-bottom:14px;padding:10px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb}.label{color:#6b7280;font-size:10px}.val{font-weight:600}.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.box{background:#f5f3ff;padding:8px;border-radius:4px}.footer{margin-top:20px;font-size:10px;color:#9e9e96;border-top:1px solid #e5e7eb;padding-top:8px}</style>'+
+    '</head><body>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1D9E75;padding-bottom:12px;margin-bottom:16px"><div><div style="font-size:18px;font-weight:700;color:#1D9E75">🌿 NEW BREATH PILATES</div><div style="font-size:11px;color:#6b7280">Üye Bilgi Formu</div></div><div style="font-size:11px;color:#6b7280">'+new Date().toLocaleDateString('tr-TR')+'</div></div>'+
+    '<div class="section"><div style="font-size:15px;font-weight:700;margin-bottom:8px">'+m.name+' '+m.surname+'</div><div class="grid">'+
+    '<div><div class="label">Telefon</div><div class="val">'+(m.phone||'—')+'</div></div>'+
+    '<div><div class="label">E-posta</div><div class="val">'+(m.email||'—')+'</div></div>'+
+    (m.yas?'<div><div class="label">Yaş</div><div class="val">'+m.yas+'</div></div>':'')+
+    (m.kanGrubu?'<div><div class="label">Kan Grubu</div><div class="val" style="color:#b91c1c;font-size:14px">'+m.kanGrubu+'</div></div>':'')+
+    (m.il||m.ilce?'<div><div class="label">Şehir</div><div class="val">'+(m.il||'')+(m.ilce?' / '+m.ilce:'')+'</div></div>':'')+
+    '</div></div>'+
+    '<div class="section" style="background:#eff6ff"><div style="font-weight:700;margin-bottom:8px">📦 PAKET</div>'+
+    '<div style="font-size:14px;font-weight:700;color:#1e3a8a">'+(m.package||'Paket yok')+'</div>'+
+    '<div class="grid" style="margin-top:8px">'+
+    '<div class="box"><div style="font-size:18px;font-weight:700;color:#2563EB">'+(total===999?'∞':total||'—')+'</div><div style="font-size:9px;color:#6b7280">TOPLAM</div></div>'+
+    '<div class="box"><div style="font-size:18px;font-weight:700;color:#2563EB">'+used+'</div><div style="font-size:9px;color:#6b7280">YAPILAN</div></div>'+
+    '<div class="box"><div style="font-size:18px;font-weight:700;color:#059669">'+remaining+'</div><div style="font-size:9px;color:#6b7280">KALAN</div></div>'+
+    '<div class="box"><div style="font-size:12px;font-weight:700">'+(endDate)+'</div><div style="font-size:9px;color:#6b7280">BİTİŞ</div></div>'+
+    '</div></div>'+
+    (gecmis.length?'<div class="section"><div style="font-weight:700;margin-bottom:8px">📏 ÖLÇÜMLER</div>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#e0d9ff"><th style="padding:5px;text-align:left">Tarih</th><th>Kilo</th><th>Bel</th><th>Kalça</th><th>VKİ</th></tr></thead><tbody>'+
+    gecmis.map(function(o){ return '<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:5px">'+o.tarih+'</td><td style="text-align:center">'+(o.kilo?o.kilo+' kg':'—')+'</td><td style="text-align:center">'+(o.bel?o.bel+' cm':'—')+'</td><td style="text-align:center">'+(o.kalca?o.kalca+' cm':'—')+'</td><td style="text-align:center">'+(o.bmi||'—')+'</td></tr>'; }).join('')+
+    '</tbody></table></div>':'')+
+    saglikHTML+kurallarHTML+imzaHTML+
+    '<div class="footer"><span>NEW BREATH PILATES Üye Yönetim Sistemi</span> · <span>'+m.name+' '+m.surname+'</span></div>'+
+    '</body></html>';
 
-    msg += '\n━━━━━━━━━━━━━━━━━━━━━\n📋 ONAY\n━━━━━━━━━━━━━━━━━━━━━\n';
-    msg += (m.rulesAccepted?'✅ Üyelik kuralları kabul edildi':'❌ Kurallar kabul edilmedi')+'\n';
-    if(m.healthAccepted) msg += '✅ Sağlık formu onaylandı\n';
-    msg += 'Tarih: '+(m.start||new Date().toLocaleDateString('tr-TR'))+'\n';
-    msg += '\n🌿 NEW BREATH PILATES';
+    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = m.name+'_'+m.surname+'_NBP.html';
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
 
     if(channel === 'whatsapp') {
       const phone = (m.phone||'').replace(/\D/g,'');
       const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
-      window.open('https://wa.me/'+(waPhone||'')+'?text='+encodeURIComponent(msg), '_blank');
+      const msg = encodeURIComponent('Merhaba '+m.name+' 👋\n\nNEW BREATH PILATES üye bilgi formunuz hazır. Dosyayı WhatsApp\'tan ekleyip gönderin.\n\n📦 Paket: '+(m.package||'—')+'\n✅ Kalan Ders: '+remaining+'\n📅 Bitiş: '+endDate+'\n\n🌿 NEW BREATH PILATES');
+      window.open('https://wa.me/'+(waPhone||'')+'?text='+msg, '_blank');
     } else {
       const subject = encodeURIComponent('NEW BREATH PILATES — '+m.name+' '+m.surname+' Üye Bilgi Formu');
-      window.open('mailto:'+(m.email||'')+'?subject='+subject+'&body='+encodeURIComponent(msg), '_blank');
+      const body = encodeURIComponent('Merhaba '+m.name+',\n\nÜye bilgi formunuz ekte gönderilmektedir.\n\nPaket: '+(m.package||'—')+'\nKalan Ders: '+remaining+'\nBitiş: '+endDate+'\n\n🌿 NEW BREATH PILATES');
+      window.open('mailto:'+(m.email||'')+'?subject='+subject+'&body='+body, '_blank');
     }
   } catch(e) { console.error(e); }
 }
