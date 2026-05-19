@@ -2697,6 +2697,7 @@ function shareViaPDF(id, channel) {
 
   const sHealthLabels = ['Kalp/Tansiyon/Damar','Nefes Darlığı/Astım','Diyabet','Omurga/Bel Fıtığı','Eklem/Kemik Hastalığı','Son 6 Ay Ameliyat','Hamilelik/Doğum Sonrası','Düzenli İlaç'];
   const sHealthIds = ['sh1','sh2','sh3','sh4','sh5','sh6','sh7','sh8'];
+  const s = m.saglik||{};
 
   // Sağlık formu HTML
   const saglikHTML = '<div class="section" style="margin-top:16px"><div class="section-title" style="color:#1e3a8a;border-bottom:1px solid #bfdbfe">Sağlık Formu '+(m.healthAccepted?'✓ Onaylandı':'')+'</div><div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px">'+
