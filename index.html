@@ -2846,30 +2846,35 @@ ${imzaHTML}
 </div>
 </body></html>`;
 
-  // PDF blob oluştur
-  const blob = new Blob([html],{type:'text/html;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
+  // PDF blob oluştur ve indir
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const fileName = m.name+'_'+m.surname+'_NBP.html';
 
-  if(channel === 'whatsapp') {
-    // Önce PDF'i indir, sonra WhatsApp aç
-    const a = document.createElement('a');
-    a.href = url; a.download = `${m.name}_${m.surname}_OSO_GYM.html`; a.click();
-    setTimeout(()=>{
-      const phone = m.phone ? m.phone.replace(/\D/g,'') : '';
-      const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
-      const msg = encodeURIComponent(`Merhaba ${m.name} 👋\n\nNEW BREATH PILATES üye bilgi raporunuzu ekte bulabilirsiniz.\n\n📦 Paket: ${m.package||'—'}\n✅ Kalan Ders: ${remaining}\n📅 Bitiş: ${endDate}`);
-      window.open(`https://wa.me/${waPhone}?text=${msg}`, '_blank');
-      URL.revokeObjectURL(url);
-    }, 1000);
-  } else if(channel === 'email') {
-    const a = document.createElement('a');
-    a.href = url; a.download = `${m.name}_${m.surname}_OSO_GYM.html`; a.click();
-    setTimeout(()=>{
-      const subject = encodeURIComponent('NEW BREATH PILATES — Üye Bilgi Raporunuz');
-      const body = encodeURIComponent(`Merhaba ${m.name},\n\nÜye bilgi raporunuzu ekte bulabilirsiniz.\n\nPaket: ${m.package||'—'}\nKalan Ders: ${remaining}\nPaket Bitiş: ${endDate}\n\nNEW BREATH PILATES`);
-      window.open(`mailto:${m.email||''}?subject=${subject}&body=${body}`);
-      URL.revokeObjectURL(url);
-    }, 1000);
+  if(channel === 'whatsapp' || channel === 'email') {
+    // Data URL yöntemi - mobilde daha uyumlu
+    const reader = new FileReader();
+    reader.onload = function() {
+      const a = document.createElement('a');
+      a.href = reader.result;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      setTimeout(()=>{
+        if(channel === 'whatsapp') {
+          const phone = m.phone ? m.phone.replace(/\D/g,'') : '';
+          const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
+          const msg = encodeURIComponent('Merhaba '+m.name+' 👋\n\nNEW BREATH PILATES üye bilgi raporunuz indirildi. Lütfen dosyayı bu mesaja ekleyerek onaylayın.\n\n📦 Paket: '+(m.package||'—')+'\n✅ Kalan Ders: '+remaining+'\n📅 Bitiş: '+endDate);
+          window.open('https://wa.me/'+waPhone+'?text='+msg, '_blank');
+        } else {
+          const subject = encodeURIComponent('NEW BREATH PILATES — Üye Bilgi Raporunuz');
+          const body = encodeURIComponent('Merhaba '+m.name+',\n\nÜye bilgi raporunuz indirildi. Lütfen indirilen dosyayı bu e-postaya ekleyerek gönderin.\n\nPaket: '+(m.package||'—')+'\nKalan Ders: '+remaining+'\nPaket Bitiş: '+endDate+'\n\nNEW BREATH PILATES');
+          window.location.href = 'mailto:'+(m.email||'')+'?subject='+subject+'&body='+body;
+        }
+      }, 1500);
+    };
+    reader.readAsDataURL(blob);
   }
 }
 
