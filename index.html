@@ -3658,6 +3658,10 @@ function savePayment(){
   if(eid){
     const i=S.payments.findIndex(p=>p.id==eid);
     if(i>-1) S.payments[i]={...S.payments[i],...d};
+    // Üyenin aktif paketi bu ödemeye aitse tarihi de güncelle
+    if(m && m.package===pkg) {
+      m.start=date;
+    }
   } else {
     d.id=S.nextId++;S.payments.push(d);
     if(m){
