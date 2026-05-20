@@ -1697,7 +1697,7 @@ function renderWeekView() {
     last.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
 
   const hours = [];
-  for(let h=7;h<=21;h++) hours.push(h);
+  for(let h=6;h<=23;h++) hours.push(h);
 
   const eventsFiltered = getFilteredEvents();
   const TIME_W = 36;
@@ -1733,7 +1733,7 @@ function renderWeekView() {
             function getEventSlots(evs) {
               const slots = evs.map(ev=>{
                 const [sh,sm]=ev.startTime.split(':').map(Number);
-                const start=(sh-7)*60+sm;
+                const start=(sh-6)*60+sm;
                 const end=start+(ev.duration||45);
                 return {ev,start,end,col:0,total:1};
               });
@@ -1811,7 +1811,7 @@ function renderNowLine() {
   const days = getWeekDates();
   const di = days.findIndex(d=>d.toISOString().split('T')[0]===todayStr);
   if(di<0) return '';
-  const top = ((now.getHours()-7)*60+now.getMinutes());
+  const top = ((now.getHours()-6)*60+now.getMinutes());
   if(top<0||top>14*60) return '';
   // position inside grid col
   const pct = ((di)/7)*100;
