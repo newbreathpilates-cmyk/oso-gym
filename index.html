@@ -1962,9 +1962,9 @@ function openNewEventAtTime(dateStr, e) {
   // Each hour = 60px, starts at hour 7
   const totalMins = Math.max(0, Math.floor(relY));
   const roundedMins = Math.floor(totalMins / 60) * 60; // snap to full hour
-  const hour = 7 + Math.floor(roundedMins / 60);
+  const hour = 6 + Math.floor(roundedMins / 60);
   const min = roundedMins % 60;
-  const timeStr = String(Math.min(hour,21)).padStart(2,'0') + ':' + String(min).padStart(2,'0');
+  const timeStr = String(Math.min(hour,23)).padStart(2,'0') + ':' + String(min).padStart(2,'0');
   openNewEvent(dateStr, timeStr);
 }
 
