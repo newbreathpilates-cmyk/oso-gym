@@ -1433,6 +1433,11 @@ function updateFAB(page) {
 }
 
 function navigateTo(page) {
+  // Takvimden ayrılınca page-content'i sıfırla
+  if(page !== 'calendar') {
+    const pc = document.getElementById('page-content');
+    if(pc) { pc.style.overflowY = ''; pc.style.display = ''; pc.style.flexDirection = ''; }
+  }
   currentPage = page;
   document.querySelectorAll('.nav-item[data-page]').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
@@ -1626,8 +1631,11 @@ function renderCalendar() {
   `;
 
   const content = document.getElementById('page-content');
+  content.style.overflowY = 'hidden';
+  content.style.display = 'flex';
+  content.style.flexDirection = 'column';
   content.innerHTML = `
-    <div class="cal-controls">
+    <div class="cal-controls" style="flex-shrink:0">
       <div class="cal-nav">
         <button class="btn btn-icon" onclick="calPrev()"><i class="ti ti-chevron-left"></i></button>
         <span class="cal-title" id="cal-title"></span>
@@ -1640,7 +1648,7 @@ function renderCalendar() {
       </div>
       ${!isTrainer ? `<div class="trainer-filter" id="trainer-filter-row"></div>` : ''}
     </div>
-    <div id="cal-body" style="flex:1;display:flex;flex-direction:column"></div>
+    <div id="cal-body" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden"></div>
   `;
 
   if(!isTrainer) renderTrainerFilter();
@@ -1694,8 +1702,8 @@ function renderWeekView() {
   const eventsFiltered = getFilteredEvents();
   const TIME_W = 36;
 
-  let html = `<div style="display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:white;flex:1;height:100%">
-    <!-- HEADER: saat boşluğu + 7 gün başlığı (sabit) -->
+  let html = `<div style="display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:white;flex:1">
+    <!-- HEADER: sabit üst bar -->
     <div style="display:flex;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0">
       <div style="width:${TIME_W}px;flex-shrink:0"></div>
       <div style="flex:1;display:grid;grid-template-columns:repeat(7,1fr)">
@@ -1704,22 +1712,21 @@ function renderWeekView() {
           const isToday=ds===todayStr;
           return `<div style="text-align:center;padding:6px 2px;cursor:pointer" onclick="openNewEventOnDay('${ds}')">
             <div style="font-size:9px;font-weight:600;color:var(--text2);text-transform:uppercase">${dayNames[i]}</div>
-            <div class="week-day-num ${isToday?'today':''}" style="font-size:16px;font-weight:600;line-height:1.3">${d.getDate()}</div>
+            <div class="week-day-num ${isToday?'today':''}" style="font-size:15px;font-weight:600;line-height:1.3">${d.getDate()}</div>
           </div>`;
         }).join('')}
       </div>
     </div>
-    <!-- BODY: saat sabit + grid, sadece dikey kaydırma -->
-    <div style="display:flex;flex:1;overflow:hidden">
-      <!-- Sabit saat sütunu -->
-      <div style="width:${TIME_W}px;flex-shrink:0;overflow:hidden;border-right:1px solid var(--border)" id="week-times-col">
-        <div id="week-times-inner">
+    <!-- BODY: saatler + randevular birlikte dikey kayıyor -->
+    <div id="week-grid-scroll" style="flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch" 
+         ontouchstart="weekTouchStart(event)" ontouchend="weekTouchEnd(event)">
+      <div style="display:flex">
+        <!-- Saat sütunu (içerikle birlikte kayıyor) -->
+        <div style="width:${TIME_W}px;flex-shrink:0;border-right:1px solid var(--border)">
           ${hours.map(h=>`<div style="height:60px;display:flex;align-items:flex-start;justify-content:flex-end;padding:2px 4px 0 0;font-size:9px;color:var(--text3)">${h}:00</div>`).join('')}
         </div>
-      </div>
-      <!-- Grid: 7 gün yan yana, sadece dikey kaydırma -->
-      <div style="flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch" id="week-grid-scroll" onscroll="syncWeekScroll(this)">
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);position:relative">
+        <!-- 7 gün grid -->
+        <div style="flex:1;display:grid;grid-template-columns:repeat(7,1fr);position:relative">
           ${days.map((d,di)=>{
             const ds=d.toISOString().split('T')[0];
             const dayEvs=eventsFiltered.filter(e=>e.date===ds);
@@ -1732,11 +1739,9 @@ function renderWeekView() {
               });
               const groups = [];
               slots.forEach(slot=>{
-                let placed = false;
-                for(const grp of groups) {
-                  if(grp.some(s=>s.start<slot.end && slot.start<s.end)) {
-                    grp.push(slot); placed=true; break;
-                  }
+                let placed=false;
+                for(const grp of groups){
+                  if(grp.some(s=>s.start<slot.end&&slot.start<s.end)){grp.push(slot);placed=true;break;}
                 }
                 if(!placed) groups.push([slot]);
               });
@@ -1746,7 +1751,7 @@ function renderWeekView() {
               });
               return slots;
             }
-            const slots = getEventSlots(dayEvs);
+            const slots=getEventSlots(dayEvs);
             return `<div class="week-col" style="position:relative;border-left:1px solid var(--border)" onclick="openNewEventAtTime('${ds}',event)" data-date="${ds}">
               ${hours.map(h=>`<div style="height:60px;border-bottom:1px solid var(--border);position:relative"><div style="position:absolute;top:30px;left:0;right:0;height:1px;background:rgba(0,0,0,0.04)"></div></div>`).join('')}
               ${slots.map(({ev,start,col,total})=>{
@@ -1785,8 +1790,17 @@ function renderWeekView() {
   document.getElementById('cal-body').innerHTML = html;
 }
 
+let weekTouchStartX = 0;
+function weekTouchStart(e) { weekTouchStartX = e.touches[0].clientX; }
+function weekTouchEnd(e) {
+  const dx = e.changedTouches[0].clientX - weekTouchStartX;
+  if(Math.abs(dx) > 60) {
+    if(dx < 0) { calWeekOffset++; } else { calWeekOffset--; }
+    renderCalendar();
+  }
+}
+
 function syncWeekScroll(el) {
-  // Saat sütununu dikey scroll ile senkronize et
   const times = document.getElementById('week-times-col');
   if(times) times.scrollTop = el.scrollTop;
 }
