@@ -2260,10 +2260,10 @@ function renderAttendanceReport() {
         style="padding:6px 14px;border-radius:20px;border:1.5px solid ${window.statsFilter==='all'?'var(--green)':'var(--border)'};background:${window.statsFilter==='all'?'var(--green)':'white'};color:${window.statsFilter==='all'?'white':'var(--text)'};font-size:12px;cursor:pointer;font-weight:600">
         Tüm Üyeler
       </button>
-      <button onclick="window.statsFilter='mine';renderAttendanceReport()" 
+      ${tid ? `<button onclick="window.statsFilter='mine';renderAttendanceReport()" 
         style="padding:6px 14px;border-radius:20px;border:1.5px solid ${window.statsFilter==='mine'?'var(--green)':'var(--border)'};background:${window.statsFilter==='mine'?'var(--green)':'white'};color:${window.statsFilter==='mine'?'white':'var(--text)'};font-size:12px;cursor:pointer;font-weight:600">
         Benim Üyelerim
-      </button>
+      </button>` : ''}
     </div>
 
     ${members.length === 0 ? `<div class="card" style="text-align:center;padding:32px;color:var(--text3)">Bu dönemde tamamlanmış ders bulunamadı.</div>` : `
