@@ -1506,7 +1506,7 @@ function renderDashboard() {
             </div>
             <div style="flex:1">
               <div style="font-weight:600;font-size:13px">${ev.type}</div>
-              <div style="font-size:11px;color:var(--text2)">${ev.startTime} · ${tr?tr.name:'?'} · ${(ev.members||[]).length}/${ev.capacity} üye${ev.singleDropCount?` · +${ev.singleDropCount} tek`:''}</div>
+              <div style="font-size:11px;color:var(--text2)">${ev.startTime} · ${tr?tr.name:'?'} · ${(ev.members||[]).map(mid=>{const mem=S.members.find(x=>x.id===mid);return mem?mem.name+' '+mem.surname:'?';}).join(', ')||'Üye yok'}</div>
             </div>
             <div style="width:10px;height:10px;border-radius:50%;background:${c.dot}"></div>
           </div>`;
