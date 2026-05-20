@@ -1416,7 +1416,7 @@ function buildSidebar() {
     <button class="nav-item" data-page="calendar" onclick="navigateTo('calendar')"><i class="ti ti-calendar-event"></i> Takvimim</button>
     <div class="nav-section">Üye Yönetimi</div>
     <button class="nav-item" data-page="members" onclick="navigateTo('members')"><i class="ti ti-users"></i> Üyeler</button>
-    <button class="nav-item" data-page="attendance-report" onclick="navigateTo('attendance-report')"><i class="ti ti-checklist"></i> Devamsızlık</button>
+    <button class="nav-item" data-page="attendance-report" onclick="navigateTo('attendance-report')"><i class="ti ti-chart-bar"></i> İstatistik</button>
   `;
   document.getElementById('sidebar-nav').innerHTML = currentUser.role==='owner' ? ownerNav : trainerNav;
 }
@@ -1445,7 +1445,7 @@ function navigateTo(page) {
   document.querySelectorAll('.nav-item[data-page]').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
-  const titles = { dashboard:'Panel', calendar:'Takvim', members:'Üyeler', trainers:'Eğitmenler', payments:'Ödemeler', giderler:'Giderler', hakedis:'Hakediş', 'paket-fiyatlari':'Paket Fiyatları', export:'Dışa Aktar', 'trainer-portal':'Derslerim', 'attendance-report':'Devamsızlık Raporu' };
+  const titles = { dashboard:'Panel', calendar:'Takvim', members:'Üyeler', trainers:'Eğitmenler', payments:'Ödemeler', giderler:'Giderler', hakedis:'Hakediş', 'paket-fiyatlari':'Paket Fiyatları', export:'Dışa Aktar', 'trainer-portal':'Derslerim', 'attendance-report':'Üye İstatistikleri' };
   document.getElementById('topbar-title').textContent = titles[page] || page;
   document.getElementById('topbar-actions').innerHTML = '';
   const pages = { dashboard: renderDashboard, calendar: renderCalendar, members: renderMembers, trainers: renderTrainers, payments: renderPayments, giderler: renderGiderler, hakedis: renderHakedis, 'paket-fiyatlari': renderPaketFiyatlari, export: renderExport, 'trainer-portal': renderTrainerPortal, 'attendance-report': renderAttendanceReport };
@@ -2200,43 +2200,98 @@ function renderMembersTable(list) {
 }
 
 function renderAttendanceReport() {
-  // Show attendance summary per member for trainer's classes
   const tid = currentUser.trainerId;
-  const trainerEvents = S.events.filter(e => !tid || e.trainerId === tid);
+  if(!window.statsPeriod) window.statsPeriod = 'month';
+  if(!window.statsFilter) window.statsFilter = 'all';
 
-  // Build member attendance counts
-  const memberStats = {};
-  trainerEvents.forEach(ev => {
+  // Zaman filtresi
+  const now = new Date();
+  let dateFrom = new Date();
+  if(window.statsPeriod==='week') dateFrom.setDate(now.getDate()-7);
+  else if(window.statsPeriod==='month') dateFrom.setMonth(now.getMonth()-1);
+  else if(window.statsPeriod==='3month') dateFrom.setMonth(now.getMonth()-3);
+  else if(window.statsPeriod==='6month') dateFrom.setMonth(now.getMonth()-6);
+  else if(window.statsPeriod==='year') dateFrom.setFullYear(now.getFullYear()-1);
+  const fromStr = localDate(dateFrom);
+
+  // Tamamlanan randevuları filtrele
+  const completedEvs = S.events.filter(e => e.completed && e.date >= fromStr);
+
+  // Üye istatistikleri
+  const stats = {};
+  completedEvs.forEach(ev => {
     (ev.members||[]).forEach(mid => {
-      if(!memberStats[mid]) memberStats[mid] = { total:0, attended:0 };
-      memberStats[mid].total++;
-      if((ev.attendance||[]).includes(mid)) memberStats[mid].attended++;
+      if(!stats[mid]) stats[mid] = { count:0, lastDate:'', trainers:new Set() };
+      stats[mid].count++;
+      if(ev.date > stats[mid].lastDate) stats[mid].lastDate = ev.date;
+      if(ev.trainerId) stats[mid].trainers.add(ev.trainerId);
     });
   });
 
-  const rows = S.members.filter(m => memberStats[m.id]).map(m => {
-    const st = memberStats[m.id];
-    const rate = st.total > 0 ? Math.round(st.attended/st.total*100) : 0;
-    const cls = rate < 50 ? 'danger' : rate < 75 ? 'warn' : '';
-    return `<tr>
-      <td><div class="flex items-center gap-8"><div class="avatar" style="background:${abg(m.name)};color:${atcl(m.name)}">${ini(m.name,m.surname)}</div><div style="font-weight:600">${m.name} ${m.surname}</div></div></td>
-      <td style="font-size:12px">${m.package}</td>
-      <td>${st.total} ders</td>
-      <td>${st.attended} ders</td>
-      <td><div style="display:flex;align-items:center;gap:8px">
-        <div class="progress-bar" style="width:80px"><div class="progress-fill ${cls}" style="width:${rate}%"></div></div>
-        <span style="font-size:12px;font-weight:600;color:${rate<50?'#b91c1c':rate<75?'#92400e':'var(--green)'}">${rate}%</span>
-      </div></td>
-    </tr>`;
-  }).join('');
+  // Üye listesi
+  let members = S.members.filter(m => stats[m.id]);
+
+  // Eğitmen filtresi
+  if(window.statsFilter==='mine' && tid) {
+    members = members.filter(m => stats[m.id]?.trainers.has(tid));
+  }
+
+  // En çok → en az sırala
+  members.sort((a,b) => (stats[b.id]?.count||0) - (stats[a.id]?.count||0));
+
+  const max = members.length ? stats[members[0].id].count : 0;
+  const min = members.length ? stats[members[members.length-1].id].count : 0;
+
+  const periods = {week:'Hafta',month:'Ay','3month':'3 Ay','6month':'6 Ay',year:'Yıl'};
+
+  document.getElementById('topbar-actions').innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${Object.keys(periods).map(p=>`
+        <button onclick="window.statsPeriod='${p}';renderAttendanceReport()" 
+          style="padding:6px 10px;border-radius:20px;border:1.5px solid ${window.statsPeriod===p?'var(--green)':'var(--border)'};background:${window.statsPeriod===p?'var(--green)':'white'};color:${window.statsPeriod===p?'white':'var(--text)'};font-size:11px;cursor:pointer;font-weight:600">
+          ${periods[p]}
+        </button>`).join('')}
+    </div>`;
 
   document.getElementById('page-content').innerHTML = `
-    <div class="card" style="padding:0;overflow:hidden">
-      <table class="member-table">
-        <thead><tr><th>Üye</th><th>Paket</th><th>Toplam Ders</th><th>Katıldı</th><th>Devam Oranı</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Henüz devamsızlık kaydı yok</td></tr>`}</tbody>
-      </table>
-    </div>`;
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button onclick="window.statsFilter='all';renderAttendanceReport()" 
+        style="padding:6px 14px;border-radius:20px;border:1.5px solid ${window.statsFilter==='all'?'var(--green)':'var(--border)'};background:${window.statsFilter==='all'?'var(--green)':'white'};color:${window.statsFilter==='all'?'white':'var(--text)'};font-size:12px;cursor:pointer;font-weight:600">
+        Tüm Üyeler
+      </button>
+      <button onclick="window.statsFilter='mine';renderAttendanceReport()" 
+        style="padding:6px 14px;border-radius:20px;border:1.5px solid ${window.statsFilter==='mine'?'var(--green)':'var(--border)'};background:${window.statsFilter==='mine'?'var(--green)':'white'};color:${window.statsFilter==='mine'?'white':'var(--text)'};font-size:12px;cursor:pointer;font-weight:600">
+        Benim Üyelerim
+      </button>
+    </div>
+
+    ${members.length === 0 ? `<div class="card" style="text-align:center;padding:32px;color:var(--text3)">Bu dönemde tamamlanmış ders bulunamadı.</div>` : `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${members.map(m=>{
+        const st = stats[m.id];
+        const pct = max > 0 ? Math.round(st.count/max*100) : 0;
+        const isTop = st.count === max && max > 0;
+        const isLow = st.count === min && min < max;
+        return `<div class="card" style="padding:12px 14px;border-left:3px solid ${isTop?'#059669':isLow?'#f59e0b':'var(--border)'}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+              <div class="avatar" style="background:${abg(m.name)};color:${atcl(m.name)};flex-shrink:0">${ini(m.name,m.surname)}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:13px">${m.name} ${m.surname} ${isTop?'🏆':isLow?'⚠️':''}</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Son ders: ${st.lastDate||'—'}</div>
+                <div style="margin-top:6px;background:#f3f4f6;border-radius:10px;height:6px;overflow:hidden">
+                  <div style="height:6px;border-radius:10px;background:${isTop?'#059669':isLow?'#f59e0b':'var(--green)'};width:${pct}%"></div>
+                </div>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:22px;font-weight:700;color:${isTop?'#059669':isLow?'#f59e0b':'var(--text)'}">${st.count}</div>
+              <div style="font-size:10px;color:var(--text3)">ders</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`}`;
 }
 
 function openMemberModal(id) {
