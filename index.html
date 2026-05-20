@@ -381,10 +381,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   .week-header-time, .hour-label { width: 36px !important; font-size: 9px !important; }
   .cal-event { padding: 2px 4px !important; }
   .cal-event-title { font-size: 9px !important; }
-  /* Haftalık takvim — yatay kaydırma ile biraz daha geniş */
-  #cal-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .week-grid { min-width: 520px; }
-  .week-header { min-width: 520px; }
+  /* Haftalık takvim — saat sabit, sadece günler kaydırılır */
+  .week-cal { overflow: hidden; }
+  .week-header { overflow: hidden; display: flex !important; }
+  .week-header > div:first-child { width: 44px !important; flex-shrink: 0; background: var(--bg); }
+  .week-header-scroll { flex: 1; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .week-header-scroll-inner { display: grid; grid-template-columns: repeat(7,minmax(52px,1fr)); min-width: 370px; }
+  .week-body { overflow-x: hidden !important; }
+  .week-times { width: 44px !important; flex-shrink: 0; }
+  .week-grid-scroll { flex: 1; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .week-grid { min-width: 370px; grid-template-columns: repeat(7,minmax(52px,1fr)) !important; }
 
   /* ── EĞİTMEN KARTLARI ── */
   div[style*="grid-template-columns:repeat(3,1fr)"] { grid-template-columns: 1fr !important; }
@@ -1694,22 +1700,27 @@ function renderWeekView() {
   const eventsFiltered = getFilteredEvents();
 
   let html = `<div class="week-cal">
-    <div class="week-header" style="display:grid;grid-template-columns:54px repeat(7,1fr)">
-      <div style="width:54px"></div>
-      ${days.map((d,i)=>{
-        const ds=d.toISOString().split('T')[0];
-        const isToday=ds===todayStr;
-        return `<div class="week-day-header" onclick="openNewEventOnDay('${ds}')">
-          <div class="week-day-name">${dayNames[i]}</div>
-          <div class="week-day-num ${isToday?'today':''}">${d.getDate()}</div>
-        </div>`;
-      }).join('')}
+    <div class="week-header" style="display:flex;grid-template-columns:unset">
+      <div style="width:44px;flex-shrink:0"></div>
+      <div class="week-header-scroll">
+        <div class="week-header-scroll-inner">
+          ${days.map((d,i)=>{
+            const ds=d.toISOString().split('T')[0];
+            const isToday=ds===todayStr;
+            return `<div class="week-day-header" onclick="openNewEventOnDay('${ds}')">
+              <div class="week-day-name">${dayNames[i]}</div>
+              <div class="week-day-num ${isToday?'today':''}">${d.getDate()}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
     </div>
     <div class="week-body">
       <div class="week-times">
         ${hours.map(h=>`<div class="time-slot-label">${h}:00</div>`).join('')}
       </div>
-      <div class="week-grid" style="display:grid;grid-template-columns:repeat(7,1fr);position:relative">
+      <div class="week-grid-scroll">
+        <div class="week-grid" style="display:grid;grid-template-columns:repeat(7,minmax(52px,1fr));position:relative">
         ${days.map((d,di)=>{
           const ds=d.toISOString().split('T')[0];
           const dayEvs=eventsFiltered.filter(e=>e.date===ds);
@@ -1775,6 +1786,7 @@ function renderWeekView() {
           </div>`;
         }).join('')}
         ${renderNowLine()}
+      </div>
       </div>
     </div>
   </div>`;
