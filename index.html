@@ -156,14 +156,36 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 /* Month calendar */
 .month-cal { background: white; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .month-header { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--bg); border-bottom: 1px solid var(--border); }
-.month-day-name { text-align: center; padding: 10px; font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.3px; }
+.month-day-name { text-align: center; padding: 8px 2px; font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.3px; }
 .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
-.month-cell { min-height: 100px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 6px; }
+.month-cell { min-height: 80px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 4px; overflow: hidden; }
 .month-cell:nth-child(7n) { border-right: none; }
 .month-cell.other-month .month-date { color: var(--text3); }
-.month-date { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 4px; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; }
+.month-date { font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 2px; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; }
 .month-date.today { background: var(--green); color: white; }
-.month-event { border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 500; margin-bottom: 2px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 2px solid; }
+.month-event { border-radius: 3px; padding: 1px 3px; font-size: 9px; font-weight: 500; margin-bottom: 1px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 2px solid; }
+
+@media (max-width: 768px) {
+@media (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    max-height: 88dvh !important;
+    border-radius: 20px 20px 0 0 !important;
+    margin: 0 !important;
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+  }
+  /* Form inputs tam genişlik */
+  .form-input, .form-select { width: 100% !important; min-width: 0 !important; }
+  input[type="date"].form-input { width: 100% !important; }
+}
 
 /* ── MODALS ── */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
@@ -345,11 +367,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     margin: 0 !important;
     display: flex;
     flex-direction: column;
+    left: 0 !important;
+    right: 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
   }
   .modal-body { 
     padding: 12px 14px; 
     overflow-y: auto;
     flex: 1;
+    -webkit-overflow-scrolling: touch;
   }
   .modal-footer { 
     padding: 10px 14px; 
@@ -390,6 +417,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   .week-header-time, .hour-label { width: 36px !important; font-size: 9px !important; }
   .cal-event { padding: 2px 4px !important; }
   .cal-event-title { font-size: 9px !important; }
+  /* Haftalık takvim — yatay kaydırma ile biraz daha geniş */
+  #cal-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .week-grid { min-width: 520px; }
+  .week-header { min-width: 520px; }
 
   /* ── EĞİTMEN KARTLARI ── */
   div[style*="grid-template-columns:repeat(3,1fr)"] { grid-template-columns: 1fr !important; }
@@ -513,6 +544,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       </nav>
 
       <div class="sidebar-footer">
+        <button class="nav-item" onclick="openPinChange()" style="color:var(--text2)" id="pin-change-btn">
+          <i class="ti ti-lock"></i> PIN Değiştir
+        </button>
         <button class="nav-item" onclick="logout()" style="color:var(--text3)">
           <i class="ti ti-logout"></i> Çıkış Yap
         </button>
@@ -554,15 +588,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <select class="form-select" id="ev-trainer"></select>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Tarih</label>
-          <input type="date" class="form-input" id="ev-date">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Başlangıç Saati</label>
-          <input type="time" class="form-input" id="ev-start" value="09:00">
-        </div>
+      <div class="form-group">
+        <label class="form-label">Tarih</label>
+        <input type="date" class="form-input" id="ev-date" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Başlangıç Saati</label>
+        <input type="time" class="form-input" id="ev-start" value="09:00" style="width:100%">
       </div>
       <div class="form-group">
           <label class="form-label">Süre</label>
@@ -967,11 +999,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         </div>
         <div class="form-group"><label class="form-label">Tutar (₺)</label><input type="number" class="form-input" id="p-amount" placeholder="0"></div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Tarih</label><input type="date" class="form-input" id="p-date"></div>
-        <div class="form-group"><label class="form-label">Yöntem</label>
-          <select class="form-select" id="p-method"><option>Nakit</option><option>Kredi Kartı</option><option>Havale/EFT</option></select>
-        </div>
+      <div class="form-group"><label class="form-label">Tarih</label><input type="date" class="form-input" id="p-date" style="width:100%"></div>
+      <div class="form-group"><label class="form-label">Yöntem</label>
+        <select class="form-select" id="p-method" style="width:100%"><option>Nakit</option><option>Kredi Kartı</option><option>Havale/EFT</option></select>
       </div>
     </div>
     <div class="modal-footer">
@@ -1088,6 +1118,34 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 <!-- Mobil FAB butonu -->
 <button class="fab" id="fab-btn" style="display:none" onclick="fabAction()">+</button>
+
+<!-- PIN Değiştir Modal -->
+<div class="modal-overlay" id="pin-modal">
+  <div class="modal" style="width:360px">
+    <div class="modal-header">
+      <div class="modal-title">🔒 PIN Değiştir</div>
+      <button class="btn btn-icon" onclick="closeModal('pin-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Mevcut PIN</label>
+        <input type="password" class="form-input" id="pin-current" placeholder="Mevcut 4 haneli PIN" maxlength="4" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Yeni PIN</label>
+        <input type="password" class="form-input" id="pin-new" placeholder="Yeni 4 haneli PIN" maxlength="4" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Yeni PIN (Tekrar)</label>
+        <input type="password" class="form-input" id="pin-confirm" placeholder="Yeni PIN'i tekrar girin" maxlength="4" inputmode="numeric">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('pin-modal')">İptal</button>
+      <button class="btn btn-primary" onclick="savePinChange()"><i class="ti ti-check"></i> Kaydet</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1318,6 +1376,30 @@ function enterApp() {
   else navigateTo('trainer-portal');
 }
 
+function openPinChange() {
+  // Sadece işletme sahibi değiştirebilir
+  if(currentUser.role !== 'owner') { toast('Sadece işletme sahibi PIN değiştirebilir.','error'); return; }
+  document.getElementById('pin-current').value='';
+  document.getElementById('pin-new').value='';
+  document.getElementById('pin-confirm').value='';
+  openModal('pin-modal');
+}
+
+function savePinChange() {
+  const current = document.getElementById('pin-current').value.trim();
+  const newPin = document.getElementById('pin-new').value.trim();
+  const confirm = document.getElementById('pin-confirm').value.trim();
+
+  if(current !== S.ownerPin) { toast('Mevcut PIN hatalı!','error'); return; }
+  if(newPin.length !== 4 || !/^\d{4}$/.test(newPin)) { toast('Yeni PIN 4 haneli rakam olmalıdır!','error'); return; }
+  if(newPin !== confirm) { toast('Yeni PIN\'ler eşleşmiyor!','error'); return; }
+
+  S.ownerPin = newPin;
+  save();
+  closeModal('pin-modal');
+  toast('PIN başarıyla değiştirildi! ✓','success');
+}
+
 function logout() {
   currentUser = null;
   document.getElementById('login-screen').style.display = 'flex';
@@ -1337,6 +1419,9 @@ function buildSidebar() {
   document.getElementById('sidebar-avatar').textContent = trainer ? trainer.name.split(' ').map(w=>w[0]).join('').slice(0,2) : 'İS';
   document.getElementById('sidebar-name').textContent = trainer ? trainer.name : 'İşletme Sahibi';
   document.getElementById('sidebar-role').textContent = trainer ? 'Eğitmen' : 'Tam Yetki';
+  // PIN değiştir butonu sadece işletme sahibine görünsün
+  const pinBtn = document.getElementById('pin-change-btn');
+  if(pinBtn) pinBtn.style.display = trainer ? 'none' : '';
 
   const ownerNav = `
     <div class="nav-section">Genel</div>
@@ -2193,6 +2278,7 @@ function openMemberModal(id) {
     ['sedanter','aktif','sporcu'].forEach(v=>{const el=document.getElementById('lbl-'+v);if(el){el.style.borderColor='var(--border2)';el.style.background='white';el.style.color='#6b7280';}});
     const ad=document.getElementById('m-analysis-display');if(ad)ad.style.display='none';
     const yof=document.getElementById('yeni-olcum-form');if(yof)yof.style.display='none';
+    renderPaketGecmisi([], null);
     renderOlcumGecmis([]);
     document.getElementById('m-yas').value='';
     document.getElementById('m-dob').value='';
