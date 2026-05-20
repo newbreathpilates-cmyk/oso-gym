@@ -840,11 +840,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
             <div style="font-weight:700;color:var(--text);margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:0.4px">📅 Ders Rezervasyonu ve İptal</div>
             <ul style="padding-left:14px;margin:0;display:flex;flex-direction:column;gap:3px">
               <li>Dersler en az 24 saat öncesinden rezerve edilmelidir.</li>
-              <li>Ders iptali en az 24 saat öncesinden bildirilmelidir.</li>
-              <li>Her paket için 2 ücretsiz iptal hakkı tanınır; 24 saat öncesinde yapılan iptaller bu haktan düşer.</li>
+              <li>Her satın alınan paket için rezervasyondan 24 saat öncesinde 2 ücretsiz iptal hakkı vardır.</li>
               <li>24 saatten kısa süre içinde yapılan iptallerde ders yapılmış sayılır ve paketten düşer.</li>
               <li>Gelmeme (no-show) durumunda ders hakkı kullanılmış sayılır.</li>
-              <li>Stüdyo, katılımcı yetersizliğinde dersi iptal etme hakkını saklı tutar; bu durumda ders iadesi yapılır.</li>
             </ul>
           </div>
 
@@ -2735,14 +2733,24 @@ function shareViaPDF(id, channel) {
 
     const kurallarHTML = '<div style="margin-top:12px;padding:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;font-size:10px">'+
       '<div style="font-weight:700;margin-bottom:6px;font-size:11px">ÜYELİK KURALLARI</div>'+
-      '<ul style="padding-left:14px;margin:0;line-height:1.9">'+
+      '<p style="font-weight:700;margin:4px 0 2px">📦 Paket Süresi ve Kullanımı</p>'+
+      '<ul style="padding-left:14px;margin:0 0 5px;line-height:1.9">'+
       '<li>8 Ders paketleri 30 gün, 10-15 Ders paketleri 60 gün içinde kullanılmalıdır.</li>'+
       '<li>Süre sonunda kullanılmayan dersler geçersiz sayılır, iade yapılmaz.</li>'+
+      '</ul>'+
+      '<p style="font-weight:700;margin:4px 0 2px">📅 Rezervasyon ve İptal</p>'+
+      '<ul style="padding-left:14px;margin:0 0 5px;line-height:1.9">'+
       '<li>Dersler en az 24 saat öncesinden rezerve edilmelidir.</li>'+
-      '<li>Her pakette 2 ücretsiz iptal hakkı vardır.</li>'+
-      '<li>24 saatten kısa iptal ve no-show durumunda ders paketten düşer.</li>'+
-      '<li>İlk 7 gün içinde iptal talebinde tam iade yapılır.</li>'+
-      '<li>Paketler dondurulamaz.</li></ul></div>';
+      '<li>Her satın alınan paket için rezervasyondan 24 saat öncesinde 2 ücretsiz iptal hakkı vardır.</li>'+
+      '<li>24 saatten kısa süre içinde yapılan iptallerde ders yapılmış sayılır ve paketten düşer.</li>'+
+      '<li>Gelmeme (no-show) durumunda ders hakkı kullanılmış sayılır.</li>'+
+      '</ul>'+
+      '<p style="font-weight:700;margin:4px 0 2px">🔄 Paket İptali ve İade</p>'+
+      '<ul style="padding-left:14px;margin:0;line-height:1.9">'+
+      '<li>İptal talebi ilk 7 gün içinde iletilirse, kullanılmayan dersler için tam iade yapılır.</li>'+
+      '<li>7 günden sonra iade yapılmaz.</li>'+
+      '<li>Paketler hiçbir koşulda dondurulamaz.</li>'+
+      '</ul></div>';
 
     const imzaHTML = '<div style="margin-top:12px;padding:12px;background:#f0fdf8;border:2px solid #059669;border-radius:6px;display:flex;justify-content:space-between;align-items:center">'+
       '<div><div style="font-weight:700;color:#065f46;margin-bottom:4px;font-size:11px">✅ BEYAN VE ONAY</div>'+
