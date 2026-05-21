@@ -2909,7 +2909,7 @@ function shareViaPDF(id, channel) {
     const s = m.saglik||{};
     const sLabels = ['Kalp/Tansiyon/Damar','Nefes Darlığı/Astım','Diyabet','Omurga/Bel Fıtığı','Eklem/Kemik Hastalığı','Son 6 Ay Ameliyat','Hamilelik/Doğum Sonrası','Düzenli İlaç'];
     const sIds = ['sh1','sh2','sh3','sh4','sh5','sh6','sh7','sh8'];
-    const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed).sort((a,b)=>b.date>a.date?1:-1).slice(0,5);
+    const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed&&(!m.start||e.date>=m.start)).sort((a,b)=>b.date>a.date?1:-1);
 
     function diffHTML(curr, prev, unit) {
       if(!curr||!prev) return '';
@@ -3226,7 +3226,7 @@ function printMemberPDF(id) {
   const s = m.saglik||{};
   const sHealthIds = ['sh1','sh2','sh3','sh4','sh5','sh6','sh7','sh8'];
   const sHealthLabels = ['Kalp/Tansiyon/Damar','Nefes Darlığı/Astım/Akciğer','Diyabet','Omurga/Boyun/Bel Fıtığı','Eklem/Kıkırdak/Kemik','Son 6 Ay Ameliyat/Yaralanma','Hamilelik/Doğum Sonrası','Düzenli İlaç Kullanımı'];
-  const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)).sort((a,b)=>a.date<b.date?1:-1).slice(0,10);
+  const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed&&(!m.start||e.date>=m.start)).sort((a,b)=>a.date>b.date?1:-1);
 
   const bmi = o.boy&&o.kilo ? (parseFloat(o.kilo)/Math.pow(parseFloat(o.boy)/100,2)).toFixed(1) : '—';
   const whr = o.bel&&o.kalca ? (parseFloat(o.bel)/parseFloat(o.kalca)).toFixed(2) : '—';
