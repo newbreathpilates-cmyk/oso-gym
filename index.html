@@ -1536,34 +1536,36 @@ function renderDashboard() {
     },0);
 
   const monthLessonCount = S.events.filter(e=>e.date&&e.date.startsWith(tm)&&e.completed).length;
+  const todayCompletedCount = S.events.filter(e=>e.date===todayStr&&e.completed).length;
+  const todayCompletedRev = S.events.filter(e=>e.date===todayStr&&e.completed).reduce((total, ev) => {
+    return total + (ev.members||[]).reduce((sum, mid) => {
+      const m = S.members.find(x=>x.id===mid);
+      if(!m) return sum;
+      const payments = (S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
+      if(!payments.length) return sum;
+      const p = payments[0];
+      const lessons = pkgMap[p.package] || 1;
+      if(!lessons || lessons >= 999) return sum;
+      return sum + (p.amount / lessons);
+    }, 0);
+  }, 0);
 
   document.getElementById('page-content').innerHTML = `
-    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">
-      <div class="stat-card"><div class="stat-label">Toplam Üye</div><div class="stat-value">${S.members.length}</div><div class="stat-sub">${activeM} aktif</div></div>
-      <div class="stat-card"><div class="stat-label">Paketi Biten</div><div class="stat-value">${expiredM}</div><div class="stat-sub">yenileme gerekli</div></div>
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card">
+        <div class="stat-label">Toplam Üye</div>
+        <div class="stat-value">${S.members.length}</div>
+        <div class="stat-sub">${activeM} aktif</div>
+      </div>
       <div class="stat-card" style="border-color:rgba(29,158,117,0.25);background:#f0fdf8">
-        <div class="stat-label" style="color:#0a5c41">Bu Ay Ders Geliri</div>
+        <div class="stat-label" style="color:#0a5c41">Bu Ay Ders Cirosu</div>
         <div class="stat-value" style="color:#065f46">₺${Math.round(monthLessonRev).toLocaleString('tr-TR')}</div>
         <div class="stat-sub" style="color:#1D9E75">${monthLessonCount} tamamlanan ders</div>
       </div>
-      <div class="stat-card"><div class="stat-label">Bu Ay Ders</div><div class="stat-value">${monthLessonCount}</div><div class="stat-sub">tamamlanan</div></div>
-    </div>
-
-    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="stat-card" style="border-color:rgba(29,158,117,0.3);background:#f0fdf8">
-        <div class="stat-label" style="color:#0a5c41">Bugünkü Ders Sayısı</div>
-        <div class="stat-value" style="color:#0a5c41">${todayEvents.length}</div>
-        <div class="stat-sub" style="color:#1D9E75">${todayMemberCount} üye katılıyor</div>
-      </div>
       <div class="stat-card" style="border-color:rgba(29,158,117,0.3);background:#f0fdf8">
         <div class="stat-label" style="color:#0a5c41">Bugünkü Ders Geliri</div>
-        <div class="stat-value" style="color:#0a5c41">₺${Math.round(todayRev).toLocaleString('tr-TR')}</div>
-        <div class="stat-sub" style="color:#1D9E75">${todayEvents.filter(e=>e.completed).length} tamamlanan ders</div>
-      </div>
-      <div class="stat-card" style="border-color:rgba(29,158,117,0.3);background:#f0fdf8">
-        <div class="stat-label" style="color:#0a5c41">Tamamlanan Dersler</div>
-        <div class="stat-value" style="color:#0a5c41">${S.events.filter(e=>e.date===todayStr&&e.completed).length}</div>
-        <div class="stat-sub" style="color:#1D9E75">bugün tamamlandı</div>
+        <div class="stat-value" style="color:#0a5c41">₺${Math.round(todayCompletedRev).toLocaleString('tr-TR')}</div>
+        <div class="stat-sub" style="color:#1D9E75">${todayCompletedCount} ders tamamlandı</div>
       </div>
     </div>
     <div class="two-col">
