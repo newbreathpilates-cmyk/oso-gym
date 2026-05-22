@@ -1427,6 +1427,78 @@ function toggleReveal(id) {
   el.textContent = r.shown ? r.value : '••••••';
 }
 
+function checkSixMonthChampions() {
+  if(currentUser.role !== 'owner') return;
+  
+  // Hangi 6 aylık dönemdeyiz?
+  const now = new Date();
+  const year = now.getFullYear();
+  const half = now.getMonth() < 6 ? 1 : 2;
+  const periodKey = year + '-H' + half;
+  
+  // Bu dönem için zaten gösterildi mi?
+  const shownKey = 'nbp_champions_' + periodKey;
+  if(sessionStorage.getItem(shownKey)) return;
+  
+  // 6 aylık dönem tarihleri
+  const fromDate = year + (half===1?'-01-01':'-07-01');
+  const toDate = year + (half===1?'-06-30':'-12-31');
+  
+  // Tamamlanan dersler
+  const completedEvs = S.events.filter(e=>e.completed&&e.date>=fromDate&&e.date<=toDate);
+  if(completedEvs.length < 10) return; // Yeterli veri yok
+  
+  // En çok ders tamamlayan üye
+  const memberLessons = {};
+  completedEvs.forEach(ev=>{
+    (ev.members||[]).forEach(mid=>{
+      memberLessons[mid] = (memberLessons[mid]||0) + 1;
+    });
+  });
+  
+  const topMemberId = Object.keys(memberLessons).sort((a,b)=>memberLessons[b]-memberLessons[a])[0];
+  const topMember = S.members.find(m=>m.id===parseInt(topMemberId));
+  if(!topMember) return;
+  
+  // En çok paket alan üye
+  const memberPackages = {};
+  S.payments.filter(p=>p.date>=fromDate&&p.date<=toDate).forEach(p=>{
+    memberPackages[p.memberId] = (memberPackages[p.memberId]||0) + 1;
+  });
+  const topPackageMemberId = Object.keys(memberPackages).sort((a,b)=>memberPackages[b]-memberPackages[a])[0];
+  const topPackageMember = S.members.find(m=>m.id===parseInt(topPackageMemberId));
+  
+  sessionStorage.setItem(shownKey, '1');
+  
+  const periodLabel = half===1 ? (year+' Ocak-Haziran') : (year+' Temmuz-Aralık');
+  
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  el.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+      <div style="font-size:40px;margin-bottom:8px">🏆</div>
+      <div style="font-size:18px;font-weight:800;color:#065f46;margin-bottom:4px">${periodLabel}</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:20px">6 Aylık Şampiyonlar!</div>
+      
+      <div style="background:#f0fdf8;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">⭐ En Çok Ders Tamamlayan</div>
+        <div style="font-size:18px;font-weight:800;color:#065f46">${topMember.name} ${topMember.surname}</div>
+        <div style="font-size:13px;color:#059669;font-weight:600">${memberLessons[topMemberId]} ders tamamlandı! 💪</div>
+      </div>
+      
+      ${topPackageMember && topPackageMemberId !== topMemberId ? `
+      <div style="background:#fffbeb;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">📦 En Çok Paket Alan</div>
+        <div style="font-size:18px;font-weight:800;color:#92400e">${topPackageMember.name} ${topPackageMember.surname}</div>
+        <div style="font-size:13px;color:#d97706;font-weight:600">${memberPackages[topPackageMemberId]} paket aldı! 🌟</div>
+      </div>` : ''}
+      
+      <div style="font-size:24px;margin:12px 0">🎊🥇🎊</div>
+      <button onclick="this.parentElement.parentElement.remove()" style="padding:12px 32px;background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:20px;font-size:15px;font-weight:700;cursor:pointer;width:100%">Harika! Tebrikler 🎉</button>
+    </div>`;
+  document.body.appendChild(el);
+}
+
 function openPinChange() {
   // Sadece işletme sahibi değiştirebilir
   if(currentUser.role !== 'owner') { toast('Sadece işletme sahibi PIN değiştirebilir.','error'); return; }
@@ -1741,26 +1813,61 @@ function renderDashboard() {
           }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Bugün ders yapan eğitmen yok</div>'}
         </div>
         <div class="card">
-          <div class="card-title">Paketi Yakında Bitenler</div>
-          ${expiring.length ? expiring.slice(0,5).map(m=>{
-            const endDate = m.start ? getEnd(m) : '—';
-            return `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
-              <div style="display:flex;align-items:center;gap:8px">
-                <div class="avatar" style="background:${abg(m.name)};color:${atcl(m.name)}">${ini(m.name,m.surname)}</div>
-                <div>
-                  <div style="font-weight:500;font-size:13px">${m.name} ${m.surname}</div>
-                  <div style="font-size:10px;color:var(--text3)">${m.package}</div>
-                  <div style="font-size:10px;color:${m.days<=0?'#dc2626':'#6b7280'}">Bitiş: ${endDate}</div>
+          <div class="card-title">Paket Durumu</div>
+          ${(()=>{
+            // Paketi bitenler
+            const expired = S.members.filter(m=>m.status==='Süresi Doldu'||m.status==='Dersleri Bitti');
+            // Yakında bitecekler (aktif, 15 gün içinde veya son 2 ders)
+            const soon = S.members.filter(m=>{
+              if(m.status!=='Aktif') return false;
+              const days = daysLeft(m);
+              const total = pkgSessions(m.package||'');
+              const remaining = total>0&&total<999 ? Math.max(0,total-(m.used||0)) : null;
+              return (days>=0&&days<=15) || (remaining!==null&&remaining<=2&&remaining>0);
+            }).map(m=>{
+              const days = daysLeft(m);
+              const total = pkgSessions(m.package||'');
+              const remaining = total>0&&total<999 ? Math.max(0,total-(m.used||0)) : null;
+              return {...m, _days:days, _remaining:remaining};
+            }).sort((a,b)=>a._days-b._days);
+
+            const all = [
+              ...expired.map(m=>({...m, _type:'expired'})),
+              ...soon.map(m=>({...m, _type:'soon'}))
+            ];
+
+            if(!all.length) return '<div style="text-align:center;padding:20px;background:#f0fdf8;border-radius:8px"><div style="font-size:32px;margin-bottom:6px">✅</div><div style="font-size:13px;font-weight:600;color:#065f46">Tüm paketler takipte</div></div>';
+
+            return all.slice(0,8).map(m=>{
+              const endDate = m.start ? getEnd(m) : '—';
+              const total = pkgSessions(m.package||'');
+              const remaining = total>0&&total<999 ? Math.max(0,total-(m.used||0)) : null;
+              const days = daysLeft(m);
+
+              let statusText, statusColor, dot;
+              if(m.status==='Süresi Doldu') { statusText='Süresi Doldu'; statusColor='#dc2626'; dot='🔴'; }
+              else if(m.status==='Dersleri Bitti') { statusText='Dersleri Bitti'; statusColor='#dc2626'; dot='🔴'; }
+              else if(remaining!==null&&remaining<=2) { statusText='Son '+remaining+' ders'; statusColor='#d97706'; dot='🟡'; }
+              else { statusText=days+' gün kaldı'; statusColor='#d97706'; dot='🟡'; }
+
+              return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="avatar" style="background:${abg(m.name)};color:${atcl(m.name)}">${ini(m.name,m.surname)}</div>
+                  <div>
+                    <div style="font-weight:500;font-size:13px">${m.name} ${m.surname}</div>
+                    <div style="font-size:10px;color:var(--text3)">${m.package} · Bitiş: ${endDate}</div>
+                    <div style="font-size:10px;font-weight:600;color:${statusColor}">${dot} ${statusText}</div>
+                  </div>
                 </div>
-              </div>
-              <span class="badge ${m.days<=0?'badge-expired':m.days<=5?'badge-warn':'badge-active'}">${m.days<=0?'Bitti':m.days+' gün'}</span>
-            </div>`;
-          }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Yakın biten yok</div>'}
+              </div>`;
+            }).join('');
+          })()}
         </div>
       </div>
     </div>
   `;
+  // 6 aylık şampiyon kontrolü
+  setTimeout(checkSixMonthChampions, 1500);
 }
 
 // ══════════════════════════════════════
@@ -2266,7 +2373,6 @@ function renderMembers() {
         <option value="paket-yok">Paket Yok</option>
         <option value="son-10-gun">Paket Süresi Bitmek Üzere (Son 15 Gün)</option>
         <option value="son-2-ders">Son 2 Ders Kalan</option>
-        <option value="dersleri-biten">Dersleri Biten</option>
       </select>
       ${!isTrainer ? `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>` : `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>`}
     </div>`;
@@ -3155,10 +3261,15 @@ function shareViaPDF(id, channel) {
     (days>0?' &nbsp;·&nbsp; <span style="color:#d97706">'+days+' gün kaldı</span>':days===0&&m.start?' &nbsp;·&nbsp; <span style="color:#dc2626">Bugün bitiyor</span>':m.start&&days<0?' &nbsp;·&nbsp; <span style="color:#dc2626">Süresi doldu</span>':'')+'</div></div>'+
 
     // PAKET BİTİŞ UYARISI
-    (days<0||m.status==='Süresi Doldu'||m.status==='Dersleri Bitti'?'<div style="margin-bottom:12px;padding:14px 16px;background:#dc2626;border-radius:8px;text-align:center">'+
-    '<div style="font-size:15px;font-weight:900;color:white;letter-spacing:0.5px">🔴 PAKET YENİLEME GEREKLİ</div>'+
-    '<div style="font-size:12px;color:white;margin-top:6px;line-height:1.6">Paketiniz <strong>'+endDate+'</strong> tarihinde sona ermiştir.<br>Bir sonraki randevunuzda paket yenilemesi yapınız.</div>'+
-    '</div>':'')+
+    (days<0||m.status==='Süresi Doldu'||m.status==='Dersleri Bitti'?function(){
+      // Son ders tarihini bul
+      const completedEvs = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed&&e.date>=m.start);
+      const lastLesson = completedEvs.length ? completedEvs.sort((a,b)=>b.date>a.date?1:-1)[0].date : endDate;
+      return '<div style="margin-bottom:12px;padding:14px 16px;background:#dc2626;border-radius:8px;text-align:center">'+
+      '<div style="font-size:15px;font-weight:900;color:white;letter-spacing:0.5px">🔴 PAKET YENİLEME GEREKLİ</div>'+
+      '<div style="font-size:12px;color:white;margin-top:6px;line-height:1.6">Paketiniz <strong>'+lastLesson+'</strong> tarihinde sona ermiştir.<br>Bir sonraki randevunuzda paket yenilemesi yapınız.</div>'+
+      '</div>';
+    }():'')+ 
     ((m.paketGecmisi&&m.paketGecmisi.length)?'<div class="section">'+
     '<div class="sec-title">📋 PAKET GEÇMİŞİ</div>'+
     '<table><thead><tr><th>Paket</th><th>Başlangıç</th><th>Bitiş</th><th>Yapılan</th><th>Tutar</th></tr></thead><tbody>'+
@@ -4116,6 +4227,29 @@ function saveAllAttendance() {
   if(currentPage==='calendar') renderCalendar();
   if(currentPage==='dashboard') renderDashboard();
   toast('Ders tamamlandı — paketlerden düşüldü. ✓','success');
+
+  // Eğitmen motivasyon kontrolü — bugün 8 ders tamamladı mı?
+  if(currentUser && currentUser.role === 'trainer' && ev.trainerId === currentUser.trainerId) {
+    const todayStr = localDate();
+    const todayCompleted = S.events.filter(e=>e.trainerId===currentUser.trainerId&&e.date===todayStr&&e.completed).length;
+    const trainer = S.trainers.find(t=>t.id===currentUser.trainerId);
+    if(todayCompleted === 8) {
+      showMotivationMessage('🎉 Harika iş çıkardın ' + (trainer?trainer.name.split(' ')[0]:'') + '! Bugün 8 ders tamamladın! Muhteşemsin! 💪');
+    }
+  }
+}
+
+function showMotivationMessage(msg) {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.3s ease';
+  el.innerHTML = '<div style="background:white;border-radius:20px;padding:32px 28px;max-width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
+    '<div style="font-size:48px;margin-bottom:12px">🎉</div>' +
+    '<div style="font-size:16px;font-weight:700;color:#065f46;line-height:1.5">' + msg + '</div>' +
+    '<div style="margin-top:6px;font-size:28px">🏆⭐💚</div>' +
+    '<button onclick="this.parentElement.parentElement.remove()" style="margin-top:18px;padding:10px 28px;background:#059669;color:white;border:none;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer">Teşekkürler! 😊</button>' +
+    '</div>';
+  document.body.appendChild(el);
+  setTimeout(function(){ if(el.parentNode) el.remove(); }, 6000);
 }
 
 function toggleAttend(evId, memberId) {
