@@ -1528,7 +1528,7 @@ function renderDashboard() {
   }, 0);
 
   const trainerDailyStats = S.trainers.map(t => {
-    const evs = todayEvents.filter(e=>e.trainerId===t.id);
+    const evs = todayEvents.filter(e=>e.trainerId===t.id&&e.completed===true);
     const hakedis = evs.reduce((total, ev) => {
       return total + (ev.members||[]).reduce((sum, mid) => {
         const m = S.members.find(x=>x.id===mid);
@@ -1547,7 +1547,7 @@ function renderDashboard() {
 
   // Güncel ay hakediş hesapla (inline)
   const monthlyTrainerStats = S.trainers.map(t => {
-    const evs = S.events.filter(e=>e.trainerId===t.id&&e.date&&e.date.startsWith(tm));
+    const evs = S.events.filter(e=>e.trainerId===t.id&&e.date&&e.date.startsWith(tm)&&e.completed===true);
     const pct = (t.pct||0)/100;
     let total = 0;
     evs.forEach(ev=>{
@@ -1869,9 +1869,9 @@ function renderWeekView() {
                 const memberNames=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name:null;}).filter(Boolean).join(', ');
                 const height=Math.max(dur,45);
                 const isCompleted=ev.completed===true;
-                const evBg=isCompleted?'#d1fae5':c.bg;
-                const evBorder=isCompleted?'#059669':c.border;
-                const evColor=isCompleted?'#065f46':c.text;
+                const evBg=isCompleted?'#059669':c.bg;
+                const evBorder=isCompleted?'#047857':c.border;
+                const evColor=isCompleted?'#ffffff':c.text;
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
                 return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:2px 3px;position:absolute" onclick="openEditEvent(${ev.id},event)">
