@@ -1388,6 +1388,15 @@ function restoreSession() {
   return false;
 }
 
+function toggleReveal(id) {
+  if(!window._dashReveal || !window._dashReveal[id]) return;
+  const r = window._dashReveal[id];
+  const el = document.getElementById(id);
+  if(!el) return;
+  r.shown = !r.shown;
+  el.textContent = r.shown ? r.value : '••••••';
+}
+
 function openPinChange() {
   // Sadece işletme sahibi değiştirebilir
   if(currentUser.role !== 'owner') { toast('Sadece işletme sahibi PIN değiştirebilir.','error'); return; }
@@ -1620,17 +1629,30 @@ function renderDashboard() {
         <div class="stat-sub">${activeM} aktif</div>
       </div>
       <div class="stat-card" style="border-color:rgba(29,158,117,0.25);background:#f0fdf8">
-        <div class="stat-label" style="color:#0a5c41">Bu Ay Ders Cirosu</div>
-        <div class="stat-value" style="color:#065f46">₺${Math.round(monthLessonRev).toLocaleString('tr-TR')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="stat-label" style="color:#0a5c41">Bu Ay Ders Cirosu</div>
+          <button onclick="toggleReveal('month-rev')" style="border:none;background:none;cursor:pointer;color:#0a5c41;font-size:11px;padding:0">👁</button>
+        </div>
+        <div class="stat-value" style="color:#065f46" id="month-rev">••••••</div>
         <div class="stat-sub" style="color:#1D9E75">${monthLessonCount} tamamlanan ders</div>
       </div>
       <div class="stat-card" style="border-color:rgba(29,158,117,0.3);background:#f0fdf8">
-        <div class="stat-label" style="color:#0a5c41">Bugünkü Ders Cirosu</div>
-        <div class="stat-value" style="color:#0a5c41">₺${Math.round(todayCompletedRev).toLocaleString('tr-TR')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="stat-label" style="color:#0a5c41">Bugünkü Ders Cirosu</div>
+          <button onclick="toggleReveal('today-rev')" style="border:none;background:none;cursor:pointer;color:#0a5c41;font-size:11px;padding:0">👁</button>
+        </div>
+        <div class="stat-value" style="color:#0a5c41" id="today-rev">••••••</div>
         <div class="stat-sub" style="color:#1D9E75">${todayCompletedCount} ders tamamlandı</div>
       </div>
-    </div>
+    </div>`;
 
+  // Gerçek değerleri sakla
+  window._dashReveal = {
+    'month-rev': { value: '₺'+Math.round(monthLessonRev).toLocaleString('tr-TR'), shown: false },
+    'today-rev': { value: '₺'+Math.round(todayCompletedRev).toLocaleString('tr-TR'), shown: false }
+  };
+
+  document.getElementById('page-content').innerHTML += `
     ${birthdayMembers.length ? `
     <div class="card" style="border-color:#fbbf24;background:#fffbeb;margin-bottom:14px">
       <div class="card-title" style="color:#92400e">🎂 Bu Hafta Doğum Günleri</div>
@@ -1645,8 +1667,9 @@ function renderDashboard() {
           </div>
           <span style="font-size:20px">${m._bdays===0?'🎉':'🎂'}</span>
         </div>`).join('')}
-    </div>` : ''}
+    </div>` : ''}`;
 
+  document.getElementById('page-content').innerHTML += `
     <div class="two-col">
       <div class="card">
         <div class="card-title">Bugünkü Dersler <span style="font-size:11px;font-weight:400;color:var(--text3)">${new Date().toLocaleDateString('tr-TR')}</span></div>
