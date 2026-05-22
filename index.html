@@ -1127,7 +1127,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBJn872wAkBGgvlbqpXWa3_pBA2Zbsyz-A",
@@ -1179,6 +1179,28 @@ window.firebaseLoad().then(data => {
   // Ana scripti başlat
   window._firebaseReady = true;
   if(window._onFirebaseReady) window._onFirebaseReady();
+
+  // Gerçek zamanlı dinleyici — başka kullanıcılar değişiklik yapınca otomatik güncelle
+  let isFirstSnapshot = true;
+  onSnapshot(DOC_REF, (snap) => {
+    if(isFirstSnapshot) { isFirstSnapshot = false; return; } // İlk yüklemede tetikleme
+    if(!snap.exists()) return;
+    try {
+      const newData = JSON.parse(snap.data().data);
+      if(!newData) return;
+      // Mevcut state'i güncelle
+      if(window.S && window.loadState && window.save) {
+        window._firebaseData = newData;
+        window.S = newData;
+        // Aktif sayfayı yenile
+        if(window.currentPage && window.navigateTo) {
+          window.navigateTo(window.currentPage);
+        }
+      }
+    } catch(e) {
+      console.error('Gerçek zamanlı güncelleme hatası:', e);
+    }
+  });
 });
 </script>
 
@@ -1293,6 +1315,7 @@ function loginOwner() {
   const pin = getPin('owner-pin-input');
   if(pin === S.ownerPin) {
     currentUser = { role:'owner', trainerId: null };
+    sessionStorage.setItem('nbp_user', JSON.stringify(currentUser));
     enterApp();
   } else {
     showLoginError('Hatalı PIN. Lütfen tekrar deneyin.');
@@ -1329,6 +1352,7 @@ function loginTrainer() {
   const trainer = S.trainers.find(t=>t.id===selectedTrainerId);
   if(trainer) {
     currentUser = { role:'trainer', trainerId: trainer.id, trainerName: trainer.name };
+    sessionStorage.setItem('nbp_user', JSON.stringify(currentUser));
     enterApp();
   } else {
     showLoginError('Eğitmen bulunamadı.');
@@ -1349,6 +1373,19 @@ function enterApp() {
   // default page
   if(currentUser.role === 'owner') navigateTo('dashboard');
   else navigateTo('trainer-portal');
+}
+
+// Sayfa yenilenince oturumu geri yükle
+function restoreSession() {
+  try {
+    const saved = sessionStorage.getItem('nbp_user');
+    if(saved) {
+      currentUser = JSON.parse(saved);
+      enterApp();
+      return true;
+    }
+  } catch(e) {}
+  return false;
 }
 
 function openPinChange() {
@@ -1377,6 +1414,7 @@ function savePinChange() {
 
 function logout() {
   currentUser = null;
+  sessionStorage.removeItem('nbp_user');
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.querySelectorAll('.pin-digit').forEach(d=>d.value='');
@@ -1552,6 +1590,28 @@ function renderDashboard() {
     }, 0);
   }, 0);
 
+  // Doğum günü hesaplama
+  const todayMD = todayStr.slice(5); // MM-DD
+  const in7days = new Date(); in7days.setDate(in7days.getDate()+7);
+  const birthdayMembers = S.members.filter(m=>{
+    if(!m.dob) return false;
+    const dob = m.dob.slice ? m.dob : '';
+    if(!dob) return false;
+    // dob formatı: YYYY-MM-DD veya DD.MM.YYYY
+    let md = '';
+    if(dob.includes('-')) md = dob.slice(5); // MM-DD
+    else if(dob.includes('.')) { const p=dob.split('.'); md=p[1]+'-'+p[0]; }
+    if(!md) return false;
+    // Bu hafta içinde mi?
+    const thisYear = todayStr.slice(0,4);
+    const bDate = new Date(thisYear+'-'+md);
+    const today2 = new Date(todayStr);
+    const diff = (bDate - today2) / (1000*60*60*24);
+    m._bdays = Math.round(diff);
+    m._bmd = md;
+    return diff >= 0 && diff <= 7;
+  }).sort((a,b)=>a._bdays-b._bdays);
+
   document.getElementById('page-content').innerHTML = `
     <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
       <div class="stat-card">
@@ -1570,6 +1630,23 @@ function renderDashboard() {
         <div class="stat-sub" style="color:#1D9E75">${todayCompletedCount} ders tamamlandı</div>
       </div>
     </div>
+
+    ${birthdayMembers.length ? `
+    <div class="card" style="border-color:#fbbf24;background:#fffbeb;margin-bottom:14px">
+      <div class="card-title" style="color:#92400e">🎂 Bu Hafta Doğum Günleri</div>
+      ${birthdayMembers.map(m=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #fde68a">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="avatar" style="background:${abg(m.name)};color:${atcl(m.name)}">${ini(m.name,m.surname)}</div>
+            <div>
+              <div style="font-weight:600;font-size:13px">${m.name} ${m.surname}</div>
+              <div style="font-size:10px;color:#92400e">${m._bdays===0?'🎉 Bugün doğum günü!':m._bdays===1?'Yarın doğum günü':m._bdays+' gün sonra'}</div>
+            </div>
+          </div>
+          <span style="font-size:20px">${m._bdays===0?'🎉':'🎂'}</span>
+        </div>`).join('')}
+    </div>` : ''}
+
     <div class="two-col">
       <div class="card">
         <div class="card-title">Bugünkü Dersler <span style="font-size:11px;font-weight:400;color:var(--text3)">${new Date().toLocaleDateString('tr-TR')}</span></div>
@@ -2773,7 +2850,12 @@ function updateRatios() {
 function calcAge() {
   const dob = document.getElementById('m-dob').value;
   if(!dob) return;
-  const age = Math.floor((new Date() - new Date(dob)) / (365.25*24*60*60*1000));
+  const parts = dob.split('-');
+  const birthDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if(m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
   document.getElementById('m-yas').value = age;
 }
 
@@ -3812,11 +3894,43 @@ function renderTrainerPortal() {
   const upcomingEvs = S.events.filter(e=>e.trainerId===tid&&e.date>todayStr).sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:a.startTime>b.startTime?1:-1).slice(0,5);
   const c = trainer ? tc(trainer.color) : TC[1];
 
+  // Doğum günü hesaplama
+  const birthdayMembers = S.members.filter(m=>{
+    if(!m.dob) return false;
+    const dob = m.dob||'';
+    let md = '';
+    if(dob.includes('-')) md = dob.slice(5);
+    else if(dob.includes('.')) { const p=dob.split('.'); md=p[1]+'-'+p[0]; }
+    if(!md) return false;
+    const thisYear = todayStr.slice(0,4);
+    const bDate = new Date(thisYear+'-'+md);
+    const today2 = new Date(todayStr);
+    const diff = Math.round((bDate - today2) / (1000*60*60*24));
+    m._bdays = diff;
+    return diff >= 0 && diff <= 7;
+  }).sort((a,b)=>a._bdays-b._bdays);
+
   document.getElementById('page-content').innerHTML=`
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px;padding:14px 18px;background:${c.bg};border-radius:var(--radius);border:1px solid ${c.light}">
       <div style="width:44px;height:44px;border-radius:10px;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-user-check" style="color:${c.dot};font-size:22px"></i></div>
       <div><div style="font-weight:600;font-size:15px;color:${c.text}">${trainer?trainer.name:'Eğitmen'}</div><div style="font-size:12px;color:${c.text};opacity:0.7">${trainer?trainer.spec:''}</div></div>
     </div>
+
+    ${birthdayMembers.length ? `
+    <div class="card" style="border-color:#fbbf24;background:#fffbeb;margin-bottom:14px">
+      <div class="card-title" style="color:#92400e">🎂 Bu Hafta Doğum Günleri</div>
+      ${birthdayMembers.map(m=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #fde68a">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="avatar" style="background:${abg(m.name)};color:${atcl(m.name)}">${ini(m.name,m.surname)}</div>
+            <div>
+              <div style="font-weight:600;font-size:13px">${m.name} ${m.surname}</div>
+              <div style="font-size:10px;color:#92400e">${m._bdays===0?'🎉 Bugün doğum günü!':m._bdays===1?'Yarın doğum günü':m._bdays+' gün sonra'}</div>
+            </div>
+          </div>
+          <span style="font-size:20px">${m._bdays===0?'🎉':'🎂'}</span>
+        </div>`).join('')}
+    </div>` : ''}
 
     <div class="portal-card">
       <div class="card-title"><span>Bugünkü Derslerim</span><span style="font-size:11px;font-weight:400;color:var(--text3)">${new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</span></div>
@@ -4545,11 +4659,13 @@ window._onFirebaseReady = function() {
     S = loadState();
     populateTrainerSelect();
     if(currentUser) navigateTo(currentPage);
+    else restoreSession(); // Sayfa yenilenince oturumu geri yükle
   }
 };
 
 if(window._firebaseReady && window._firebaseData) {
   S = loadState();
+  restoreSession();
 }
 </script>
 </body>
