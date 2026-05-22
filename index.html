@@ -1712,14 +1712,21 @@ function renderDashboard() {
         </div>
         <div class="card">
           <div class="card-title">Paketi Yakında Bitenler</div>
-          ${expiring.length ? expiring.slice(0,5).map(m=>`
+          ${expiring.length ? expiring.slice(0,5).map(m=>{
+            const endDate = m.start ? getEnd(m) : '—';
+            return `
             <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
               <div style="display:flex;align-items:center;gap:8px">
                 <div class="avatar" style="background:${abg(m.name)};color:${atcl(m.name)}">${ini(m.name,m.surname)}</div>
-                <div><div style="font-weight:500;font-size:13px">${m.name} ${m.surname}</div><div style="font-size:10px;color:var(--text3)">${m.package}</div></div>
+                <div>
+                  <div style="font-weight:500;font-size:13px">${m.name} ${m.surname}</div>
+                  <div style="font-size:10px;color:var(--text3)">${m.package}</div>
+                  <div style="font-size:10px;color:${m.days<=0?'#dc2626':'#6b7280'}">Bitiş: ${endDate}</div>
+                </div>
               </div>
               <span class="badge ${m.days<=0?'badge-expired':m.days<=5?'badge-warn':'badge-active'}">${m.days<=0?'Bitti':m.days+' gün'}</span>
-            </div>`).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Yakın biten yok</div>'}
+            </div>`;
+          }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Yakın biten yok</div>'}
         </div>
       </div>
     </div>
@@ -3109,7 +3116,11 @@ function shareViaPDF(id, channel) {
     '<div style="margin-top:6px;font-size:10px;color:#1e3a8a">Başlangıç: <b>'+(m.start||'—')+'</b>'+
     (days>0?' &nbsp;·&nbsp; <span style="color:#d97706">'+days+' gün kaldı</span>':days===0&&m.start?' &nbsp;·&nbsp; <span style="color:#dc2626">Bugün bitiyor</span>':m.start&&days<0?' &nbsp;·&nbsp; <span style="color:#dc2626">Süresi doldu</span>':'')+'</div></div>'+
 
-    // PAKET GEÇMİŞİ
+    // PAKET BİTİŞ UYARISI
+    (m.start&&days<0?'<div style="margin-bottom:12px;padding:14px 16px;background:#dc2626;border-radius:8px;text-align:center">'+
+    '<div style="font-size:15px;font-weight:900;color:white;letter-spacing:0.5px">🔴 PAKET YENİLEME GEREKLİ</div>'+
+    '<div style="font-size:12px;color:white;margin-top:6px;line-height:1.6">Paketiniz <strong>'+endDate+'</strong> tarihinde sona ermiştir.<br>Bir sonraki randevunuzda paket yenilemesi yapınız.</div>'+
+    '</div>':'')+
     ((m.paketGecmisi&&m.paketGecmisi.length)?'<div class="section">'+
     '<div class="sec-title">📋 PAKET GEÇMİŞİ</div>'+
     '<table><thead><tr><th>Paket</th><th>Başlangıç</th><th>Bitiş</th><th>Yapılan</th><th>Tutar</th></tr></thead><tbody>'+
