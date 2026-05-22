@@ -3117,7 +3117,7 @@ function shareViaPDF(id, channel) {
     (days>0?' &nbsp;·&nbsp; <span style="color:#d97706">'+days+' gün kaldı</span>':days===0&&m.start?' &nbsp;·&nbsp; <span style="color:#dc2626">Bugün bitiyor</span>':m.start&&days<0?' &nbsp;·&nbsp; <span style="color:#dc2626">Süresi doldu</span>':'')+'</div></div>'+
 
     // PAKET BİTİŞ UYARISI
-    (m.start&&days<0?'<div style="margin-bottom:12px;padding:14px 16px;background:#dc2626;border-radius:8px;text-align:center">'+
+    (days<0||m.status==='Süresi Doldu'?'<div style="margin-bottom:12px;padding:14px 16px;background:#dc2626;border-radius:8px;text-align:center">'+
     '<div style="font-size:15px;font-weight:900;color:white;letter-spacing:0.5px">🔴 PAKET YENİLEME GEREKLİ</div>'+
     '<div style="font-size:12px;color:white;margin-top:6px;line-height:1.6">Paketiniz <strong>'+endDate+'</strong> tarihinde sona ermiştir.<br>Bir sonraki randevunuzda paket yenilemesi yapınız.</div>'+
     '</div>':'')+
