@@ -2152,7 +2152,9 @@ function populateEventTrainers() {
 }
 function populateEventMembers() {
   const sel=document.getElementById('ev-member-add');
-  const options = S.members.filter(m=>m.status==='Aktif').map(m=>{
+  const options = [...S.members].filter(m=>m.status==='Aktif')
+    .sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr'))
+    .map(m=>{
     const total = pkgSessions(m.package);
     const used = m.used||0;
     const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(m.id)).length;
@@ -2186,11 +2188,20 @@ function addMemberToEvent(mid) {
     document.getElementById('ev-member-add').value='';
     return;
   }
+  const m = S.members.find(x=>x.id===id);
   const remaining = getMemberRemainingLessons(id);
   if(remaining <= 0) {
     toast('Bu üyenin paketinde ders hakkı kalmadı!','error');
     document.getElementById('ev-member-add').value='';
     return;
+  }
+  // Süresi dolmuş ama dersi kalan üye uyarısı
+  if(m && m.status === 'Süresi Doldu' && remaining > 0) {
+    const endDate = getEnd(m);
+    if(!confirm(m.name+' '+m.surname+'\'ın paket süresi '+endDate+' tarihinde dolmuştur, ancak '+remaining+' ders hakkı kalmaktadır.\n\nYine de randevuya eklemek istiyor musunuz?')) {
+      document.getElementById('ev-member-add').value='';
+      return;
+    }
   }
   tempEventMembers.push(id);
   document.getElementById('ev-member-add').value='';
@@ -2276,11 +2287,20 @@ function addMemberToEvent(mid) {
     document.getElementById('ev-member-add').value='';
     return;
   }
+  const m = S.members.find(x=>x.id===id);
   const remaining = getMemberRemainingLessons(id);
   if(remaining <= 0) {
     toast('Bu üyenin paketinde ders hakkı kalmadı!','error');
     document.getElementById('ev-member-add').value='';
     return;
+  }
+  // Süresi dolmuş ama dersi kalan üye uyarısı
+  if(m && m.status === 'Süresi Doldu' && remaining > 0) {
+    const endDate = getEnd(m);
+    if(!confirm(m.name+' '+m.surname+'\'ın paket süresi '+endDate+' tarihinde dolmuştur, ancak '+remaining+' ders hakkı kalmaktadır.\n\nYine de randevuya eklemek istiyor musunuz?')) {
+      document.getElementById('ev-member-add').value='';
+      return;
+    }
   }
   tempEventMembers.push(id);
 
@@ -4090,7 +4110,7 @@ function openPaymentModal(){
   document.getElementById('p-id').value='';
   document.getElementById('payment-modal-title').textContent='Ödeme Ekle';
   const sel=document.getElementById('p-member');
-  sel.innerHTML=S.members.map(m=>`<option value="${m.id}">${m.name} ${m.surname}</option>`).join('');
+  sel.innerHTML=[...S.members].sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr')).map(m=>`<option value="${m.id}">${m.name} ${m.surname}</option>`).join('');
   document.getElementById('p-date').value=localDate();
   document.getElementById('p-amount').value='';
   autoFillPaymentAmount();
@@ -4102,7 +4122,7 @@ function editPayment(id){
   document.getElementById('p-id').value=p.id;
   document.getElementById('payment-modal-title').textContent='Ödeme Düzenle';
   const sel=document.getElementById('p-member');
-  sel.innerHTML=S.members.map(m=>`<option value="${m.id}">${m.name} ${m.surname}</option>`).join('');
+  sel.innerHTML=[...S.members].sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr')).map(m=>`<option value="${m.id}">${m.name} ${m.surname}</option>`).join('');
   sel.value=p.memberId;
   document.getElementById('p-package').value=p.package;
   document.getElementById('p-amount').value=p.amount;
