@@ -1591,7 +1591,12 @@ function navigateTo(page) {
   // Takvimden ayrılınca page-content'i sıfırla
   if(page !== 'calendar') {
     const pc = document.getElementById('page-content');
-    if(pc) { pc.style.overflowY = ''; pc.style.display = ''; pc.style.flexDirection = ''; }
+    if(pc) { 
+      pc.style.overflowY = ''; 
+      pc.style.display = ''; 
+      pc.style.flexDirection = ''; 
+      pc.innerHTML = '';
+    }
   }
   currentPage = page;
   document.querySelectorAll('.nav-item[data-page]').forEach(el => {
