@@ -2510,10 +2510,10 @@ function renderMembersTable(list) {
             <td style="font-size:12px">${!pkg?'<span style="color:#b91c1c;font-size:11px">—</span>':t===0?'<span style="color:var(--text3)">—</span>':t===999?u+' ders':u+'/'+t}${t>0&&t<999?'<div class="progress-bar" style="width:60px"><div class="progress-fill '+cls+'" style="width:'+pct+'%"></div></div>':''}</td>
             <td style="font-size:12px">${endDate}</td>
             <td><span class="badge ${m.status==='Aktif'?'badge-active':m.status==='Süresi Doldu'||m.status==='Dersleri Bitti'?'badge-expired':'badge-paused'}">${m.status||'Aktif'}</span></td>
-            <td><div class="flex gap-8" onclick="event.stopPropagation()">
+            <td onclick="event.stopPropagation()"><div class="flex gap-8">
               <button class="btn btn-sm btn-icon" onclick="openMemberModal(${m.id})"><i class="ti ti-edit"></i></button>
               ${!isTrainer?`<div style="position:relative;display:inline-block">
-                <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();toggleShareMenu(${m.id},this)" title="Gönder"><i class="ti ti-share"></i></button>
+                <button class="btn btn-sm btn-icon" onclick="toggleShareMenu(${m.id},this)" title="Gönder"><i class="ti ti-share"></i></button>
                 <div id="share-menu-${m.id}" style="display:none;position:fixed;right:10px;z-index:500;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:180px;padding:4px 0">
                   <button onclick="event.stopPropagation();event.preventDefault();closeShareMenus();shareViaPDF(${m.id},'download')" style="width:100%;padding:14px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:10px;color:#1a1a18"><i class="ti ti-file-download" style="font-size:18px"></i> PDF İndir</button>
                   <button onclick="event.stopPropagation();event.preventDefault();closeShareMenus();shareViaPDF(${m.id},'whatsapp')" style="width:100%;padding:14px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:10px;color:#25D366"><i class="ti ti-brand-whatsapp" style="font-size:18px"></i> WhatsApp</button>
