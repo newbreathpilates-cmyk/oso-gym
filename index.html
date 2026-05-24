@@ -2513,7 +2513,7 @@ function renderMembersTable(list) {
             <td><div class="flex gap-8" onclick="event.stopPropagation()">
               <button class="btn btn-sm btn-icon" onclick="openMemberModal(${m.id})"><i class="ti ti-edit"></i></button>
               ${!isTrainer?`<div style="position:relative;display:inline-block">
-                <button class="btn btn-sm btn-icon" onclick="toggleShareMenu(${m.id})" title="Gönder"><i class="ti ti-share"></i></button>
+                <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();toggleShareMenu(${m.id})" title="Gönder"><i class="ti ti-share"></i></button>
                 <div id="share-menu-${m.id}" style="display:none;position:fixed;right:10px;z-index:500;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:180px;padding:4px 0">
                   <button onclick="event.stopPropagation();event.preventDefault();closeShareMenus();shareViaPDF(${m.id},'download')" style="width:100%;padding:14px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:10px;color:#1a1a18"><i class="ti ti-file-download" style="font-size:18px"></i> PDF İndir</button>
                   <button onclick="event.stopPropagation();event.preventDefault();closeShareMenus();shareViaPDF(${m.id},'whatsapp')" style="width:100%;padding:14px 16px;text-align:left;background:none;border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:10px;color:#25D366"><i class="ti ti-brand-whatsapp" style="font-size:18px"></i> WhatsApp</button>
