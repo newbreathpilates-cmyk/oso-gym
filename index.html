@@ -2335,13 +2335,38 @@ function removeMemberFromEvent(id) {
 function renderEventMembersList() {
   const el=document.getElementById('ev-members-list');
   if(!tempEventMembers.length){el.innerHTML='<span style="font-size:11px;color:var(--text3)">Henüz üye eklenmedi</span>';return;}
+  
+  // Mevcut randevunun tarihi
+  const evDate = document.getElementById('ev-date')?.value || localDate();
+  const evTime = document.getElementById('ev-start')?.value || '00:00';
+  
   el.innerHTML=tempEventMembers.map(mid=>{
     const m=S.members.find(x=>x.id===mid);
     if(!m)return'';
     const total=pkgSessions(m.package);
-    const remaining=getMemberRemainingLessons(mid);
-    const remainText=total===999?'Sınırsız':`${remaining} ders kaldı`;
-    const remainColor=remaining<=2?'#b91c1c':remaining<=4?'#92400e':'var(--green-text)';
+    
+    // Bu randevudan önce yapılmış (tamamlandı) ders sayısı
+    const usedBefore = S.events.filter(e=>
+      e.completed &&
+      (e.members||[]).includes(mid) &&
+      m.start && e.date >= m.start &&
+      (e.date < evDate || (e.date === evDate && e.startTime < evTime)) &&
+      e.id !== editingEventId
+    ).length;
+    
+    // Bu randevudan önce planlanmış (tamamlanmamış) ders sayısı
+    const plannedBefore = S.events.filter(e=>
+      !e.completed &&
+      (e.members||[]).includes(mid) &&
+      m.start && e.date >= m.start &&
+      (e.date < evDate || (e.date === evDate && e.startTime < evTime)) &&
+      e.id !== editingEventId
+    ).length;
+    
+    const remaining = total===999 ? 999 : Math.max(0, total - usedBefore - plannedBefore);
+    const remainText = total===999 ? 'Sınırsız' : `${remaining} ders kaldı`;
+    const remainColor = remaining<=2?'#b91c1c':remaining<=4?'#92400e':'var(--green-text)';
+    
     return `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 8px 3px 4px;font-size:11px">
       <div class="avatar" style="width:20px;height:20px;font-size:9px;background:${abg(m.name)};color:${atcl(m.name)}">${ini(m.name,m.surname)}</div>
       <span>${m.name} ${m.surname}</span>
@@ -2523,7 +2548,7 @@ function renderMembersTable(list) {
                 <span class="badge ${m.status==='Aktif'?'badge-active':m.status==='Süresi Doldu'||m.status==='Dersleri Bitti'?'badge-expired':'badge-paused'}">${m.status||'Aktif'}</span>
                 <div style="display:flex;gap:6px" onclick="event.stopPropagation()">
                   <button class="btn btn-sm btn-icon" onclick="openMemberModal(${m.id})"><i class="ti ti-edit"></i></button>
-                  <button class="btn btn-sm btn-icon" onclick="toggleShareMenu(${m.id})"><i class="ti ti-share"></i></button>
+                  <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();toggleShareMenu(${m.id})"><i class="ti ti-share"></i></button>
                   ${!isTrainer?`<button class="btn btn-sm btn-icon btn-danger" onclick="deleteMember(${m.id})"><i class="ti ti-trash"></i></button>`:''}
                 </div>
                 <div id="share-menu-${m.id}" style="display:none;position:fixed;right:10px;z-index:500;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:180px;padding:4px 0">
@@ -4058,16 +4083,23 @@ function renderPayments() {
         ${[...S.payments].reverse().map(p=>{
           const lessonCount = pkgMap[p.package]||0;
           const perLesson = lessonCount>0 && lessonCount<999 ? Math.round(p.amount/lessonCount) : null;
-          return `<div style="padding:12px;border-bottom:1px solid var(--border)">
+          // Geçmiş paket kontrolü - üyenin aktif paketi bu ödeme değilse geçmiş
+          const member = S.members.find(m=>m.id===p.memberId);
+          const isActive = member && member.start === p.date && member.package === p.package;
+          const isPast = member && !isActive;
+          return `<div style="padding:12px;border-bottom:1px solid var(--border);${isPast?'opacity:0.55':''}">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
               <div style="flex:1;min-width:0">
-                <div style="font-weight:700;font-size:13px">${p.member}</div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div style="font-weight:700;font-size:13px">${p.member}</div>
+                  ${isPast?'<span style="background:#f3f4f6;color:#6b7280;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">Geçmiş</span>':'<span style="background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">Aktif</span>'}
+                </div>
                 <div style="font-size:12px;color:var(--text2);margin-top:2px">${p.package}</div>
                 <div style="font-size:11px;color:var(--text3);margin-top:2px">${p.date} · <span style="background:${p.method==='Nakit'?'#d1fae5':p.method==='Kredi Kartı'?'#fef3c7':'#eff6ff'};color:${p.method==='Nakit'?'#065f46':p.method==='Kredi Kartı'?'#92400e':'#1e3a8a'};padding:1px 6px;border-radius:8px;font-size:10px">${p.method}</span></div>
                 ${perLesson!=null?`<div style="font-size:11px;color:var(--text3);margin-top:2px">Ders başı: ₺${perLesson.toLocaleString('tr-TR')}</div>`:''}
               </div>
               <div style="text-align:right;flex-shrink:0;margin-left:10px">
-                <div style="font-weight:700;color:var(--green);font-size:15px">₺${p.amount.toLocaleString('tr-TR')}</div>
+                <div style="font-weight:700;color:${isPast?'var(--text3)':'var(--green)'};font-size:15px">₺${p.amount.toLocaleString('tr-TR')}</div>
                 <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
                   <button class="btn btn-sm btn-icon" onclick="editPayment(${p.id})"><i class="ti ti-edit"></i></button>
                   <button class="btn btn-sm btn-icon btn-danger" onclick="deletePayment(${p.id})"><i class="ti ti-trash"></i></button>
