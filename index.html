@@ -2550,7 +2550,7 @@ function renderMembersTable(list) {
                 <span class="badge ${m.status==='Aktif'?'badge-active':m.status==='Süresi Doldu'||m.status==='Dersleri Bitti'?'badge-expired':'badge-paused'}">${m.status||'Aktif'}</span>
                 <div style="display:flex;gap:6px" onclick="event.stopPropagation()">
                   <button class="btn btn-sm btn-icon" onclick="openMemberModal(${m.id})"><i class="ti ti-edit"></i></button>
-                  <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();toggleShareMenu(${m.id},this)"><i class="ti ti-share"></i></button>
+                  <button class="btn btn-sm btn-icon" onclick="event.stopPropagation();openShareModal(${m.id})"><i class="ti ti-share"></i></button>
                   ${!isTrainer?`<button class="btn btn-sm btn-icon btn-danger" onclick="deleteMember(${m.id})"><i class="ti ti-trash"></i></button>`:''}
                 </div>
                 <div id="share-menu-${m.id}" style="display:none;position:fixed;right:10px;z-index:500;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:180px;padding:4px 0">
@@ -2564,6 +2564,35 @@ function renderMembersTable(list) {
         }).join('')}
       </div>
     </div>`;
+}
+
+function openShareModal(id) {
+  const m = S.members.find(x=>x.id===parseInt(id));
+  if(!m) return;
+  // Eski varsa kaldır
+  const old = document.getElementById('share-modal-overlay');
+  if(old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'share-modal-overlay';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+  el.innerHTML = `
+    <div style="background:white;width:100%;border-radius:20px 20px 0 0;padding:20px;box-shadow:0 -4px 20px rgba(0,0,0,0.15)">
+      <div style="text-align:center;font-weight:700;font-size:15px;margin-bottom:16px">${m.name} ${m.surname}</div>
+      <button onclick="document.getElementById('share-modal-overlay').remove();shareViaPDF(${id},'download')" style="width:100%;padding:14px;margin-bottom:8px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:12px;color:#1a1a18">
+        <i class="ti ti-file-download" style="font-size:20px"></i> PDF İndir
+      </button>
+      <button onclick="document.getElementById('share-modal-overlay').remove();shareViaPDF(${id},'whatsapp')" style="width:100%;padding:14px;margin-bottom:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:12px;color:#15803d">
+        <i class="ti ti-brand-whatsapp" style="font-size:20px"></i> WhatsApp ile Gönder
+      </button>
+      <button onclick="document.getElementById('share-modal-overlay').remove();shareViaPDF(${id},'email')" style="width:100%;padding:14px;margin-bottom:16px;background:#eff6ff;border:1px solid #93c5fd;border-radius:10px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:12px;color:#1d4ed8">
+        <i class="ti ti-mail" style="font-size:20px"></i> E-posta ile Gönder
+      </button>
+      <button onclick="document.getElementById('share-modal-overlay').remove()" style="width:100%;padding:12px;background:#f1f5f9;border:none;border-radius:10px;cursor:pointer;font-size:14px;color:#64748b;font-weight:600">
+        İptal
+      </button>
+    </div>`;
+  el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
+  document.body.appendChild(el);
 }
 
 function openMemberView(id) {
