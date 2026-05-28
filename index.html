@@ -4127,8 +4127,8 @@ function renderPayments() {
           const perLesson = lessonCount>0 && lessonCount<999 ? Math.round(p.amount/lessonCount) : null;
           // Geçmiş paket kontrolü - üyenin aktif paketi bu ödeme değilse geçmiş
           const member = S.members.find(m=>m.id===p.memberId);
-          const isActive = member && member.start === p.date && member.package === p.package;
-          const isPast = member && !isActive;
+          const isActive = member && member.start === p.date && member.package === p.package && member.status === 'Aktif';
+          const isPast = !isActive;
           return `<div style="padding:12px;border-bottom:1px solid var(--border);${isPast?'opacity:0.55':''}">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
               <div style="flex:1;min-width:0">
