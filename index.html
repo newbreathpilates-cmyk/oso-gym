@@ -2801,20 +2801,20 @@ function openMemberModal(id) {
   openModal('member-modal');
   setTimeout(()=>{
     initSignature();
-    // Canvas'ı temizle
     if(signatureCanvas && signatureCtx) {
+      // Önce temizle
       signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-    }
-    // Mevcut imzayı canvas'a yükle
-    if(id) {
-      const m = S.members.find(x=>x.id===parseInt(id));
-      if(m && m.signature && signatureCanvas && signatureCtx) {
-        const img = new Image();
-        img.onload = () => {
-          signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-          signatureCtx.drawImage(img, 0, 0, signatureCanvas.width, signatureCanvas.height);
-        };
-        img.src = m.signature;
+      // Sonra bu üyenin imzasını yükle
+      if(id) {
+        const m = S.members.find(x=>x.id===parseInt(id));
+        if(m && m.signature) {
+          const img = new Image();
+          img.onload = () => {
+            signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+            signatureCtx.drawImage(img, 0, 0, signatureCanvas.width, signatureCanvas.height);
+          };
+          img.src = m.signature;
+        }
       }
     }
   }, 150);
@@ -4103,10 +4103,21 @@ function deleteTrainer(id){
 // ══════════════════════════════════════
 // PAYMENTS
 // ══════════════════════════════════════
-function renderPayments() {
-  const tm=new Date().toISOString().slice(0,7);
-  const monthRev=S.payments.filter(p=>p.date&&p.date.startsWith(tm)).reduce((a,p)=>a+p.amount,0);
-  const totalRev=S.payments.reduce((a,p)=>a+p.amount,0);
+function renderPayments(tab) {
+  if(!tab) tab = window.paymentsTab || 'guncel';
+  window.paymentsTab = tab;
+  
+  const tm = localDate().slice(0,7);
+  const monthRev = S.payments.filter(p=>p.date&&p.date.startsWith(tm)).reduce((a,p)=>a+p.amount,0);
+  const totalRev = S.payments.reduce((a,p)=>a+p.amount,0);
+  
+  // Güncel vs Arşiv ayrımı
+  const activeMembers = new Set(S.members.filter(m=>m.status==='Aktif').map(m=>m.id));
+  const allPayments = [...S.payments].reverse();
+  const guncelPayments = allPayments.filter(p=>activeMembers.has(p.memberId));
+  const arsivPayments = allPayments.filter(p=>!activeMembers.has(p.memberId));
+  const payments = tab==='guncel' ? guncelPayments : arsivPayments;
+
   document.getElementById('topbar-actions').innerHTML=`<button class="btn btn-primary" onclick="openPaymentModal()"><i class="ti ti-plus"></i> Ödeme Ekle</button>`;
   document.getElementById('page-content').innerHTML=`
     <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -4114,11 +4125,20 @@ function renderPayments() {
       <div class="stat-card"><div class="stat-label">Toplam Tahsilat</div><div class="stat-value">₺${totalRev.toLocaleString('tr-TR')}</div></div>
       <div class="stat-card"><div class="stat-label">İşlem Sayısı</div><div class="stat-value">${S.payments.length}</div></div>
     </div>
+    <!-- Sekmeler -->
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button onclick="renderPayments('guncel')" style="padding:8px 18px;border-radius:20px;border:1.5px solid ${tab==='guncel'?'var(--green)':'var(--border)'};background:${tab==='guncel'?'var(--green)':'white'};color:${tab==='guncel'?'white':'var(--text)'};font-size:13px;font-weight:600;cursor:pointer">
+        📋 Güncel <span style="background:${tab==='guncel'?'rgba(255,255,255,0.3)':'#f3f4f6'};padding:1px 7px;border-radius:10px;font-size:11px">${guncelPayments.length}</span>
+      </button>
+      <button onclick="renderPayments('arsiv')" style="padding:8px 18px;border-radius:20px;border:1.5px solid ${tab==='arsiv'?'var(--green)':'var(--border)'};background:${tab==='arsiv'?'var(--green)':'white'};color:${tab==='arsiv'?'white':'var(--text)'};font-size:13px;font-weight:600;cursor:pointer">
+        🗂️ Arşiv <span style="background:${tab==='arsiv'?'rgba(255,255,255,0.3)':'#f3f4f6'};padding:1px 7px;border-radius:10px;font-size:11px">${arsivPayments.length}</span>
+      </button>
+    </div>
     <div class="card" style="padding:0;overflow:hidden">
       <!-- Masaüstü tablo -->
       <table class="member-table hakedis-detail-table">
         <thead><tr><th>Tarih</th><th>Üye</th><th>Paket</th><th>Tutar</th><th>Ders Başı</th><th>Yöntem</th><th>Durum</th><th></th></tr></thead>
-        <tbody>${[...S.payments].reverse().map(p=>{
+        <tbody>${payments.map(p=>{
           const lessonCount = pkgMap[p.package]||0;
           const perLesson = lessonCount>0 && lessonCount<999 ? Math.round(p.amount/lessonCount) : null;
           return `<tr>
@@ -4142,7 +4162,7 @@ function renderPayments() {
       </table>
       <!-- Mobil kart listesi -->
       <div class="hakedis-mobile-list">
-        ${[...S.payments].reverse().map(p=>{
+        ${payments.map(p=>{
           const lessonCount = pkgMap[p.package]||0;
           const perLesson = lessonCount>0 && lessonCount<999 ? Math.round(p.amount/lessonCount) : null;
           // Geçmiş paket kontrolü - üyenin aktif paketi bu ödeme değilse geçmiş
