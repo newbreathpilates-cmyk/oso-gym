@@ -2160,7 +2160,8 @@ function populateEventTrainers() {
 }
 function populateEventMembers() {
   const sel=document.getElementById('ev-member-add');
-  const options = [...S.members].filter(m=>m.status==='Aktif')
+  const options = [...S.members]
+    .filter(m=>m.status==='Aktif' || (m.status==='Süresi Doldu' && (m.used||0) < pkgSessions(m.package)))
     .sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr'))
     .map(m=>{
     const total = pkgSessions(m.package);
@@ -2169,11 +2170,12 @@ function populateEventMembers() {
     const remaining = total===999 ? 999 : Math.max(0, total - used - planned);
     const noPackage = !m.package || total===0;
     const disabled = noPackage || (remaining <= 0 && !tempEventMembers.includes(m.id));
+    const expired = m.status==='Süresi Doldu';
     let label;
     if(noPackage) label = m.name+' '+m.surname+' — Paket yok';
     else if(total===999) label = m.name+' '+m.surname+' · '+m.package;
-    else label = m.name+' '+m.surname+' · '+m.package+' · '+remaining+' ders kaldı';
-    return '<option value="'+m.id+'"'+(disabled?' disabled style="color:#b91c1c"':'')+'>'+label+(disabled&&noPackage?' ❌':'')+(disabled&&!noPackage?' — DOLU':'')+'</option>';
+    else label = m.name+' '+m.surname+' · '+m.package+' · '+remaining+' ders kaldı'+(expired?' ⚠️ Süre doldu':'');
+    return '<option value="'+m.id+'"'+(disabled?' disabled style="color:#b91c1c"':expired?' style="color:#d97706"':'')+'>'+label+(disabled&&noPackage?' ❌':'')+(disabled&&!noPackage?' — DOLU':'')+'</option>';
   }).join('');
   sel.innerHTML='<option value="">— Üye seçin —</option>'+options;
 }
