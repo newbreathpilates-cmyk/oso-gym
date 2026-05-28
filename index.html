@@ -2799,7 +2799,18 @@ function openMemberModal(id) {
     toggleGroupMembers();
   }
   openModal('member-modal');
-  setTimeout(initSignature, 100);
+  setTimeout(()=>{
+    initSignature();
+    // Mevcut imzayı canvas'a yükle
+    if(id) {
+      const m = S.members.find(x=>x.id===parseInt(id));
+      if(m && m.signature && signatureCanvas) {
+        const img = new Image();
+        img.onload = () => signatureCtx.drawImage(img, 0, 0, signatureCanvas.width, signatureCanvas.height);
+        img.src = m.signature;
+      }
+    }
+  }, 100);
 }
 
 function setKanGrubu(val) {
