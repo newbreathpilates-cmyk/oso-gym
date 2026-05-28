@@ -2801,16 +2801,23 @@ function openMemberModal(id) {
   openModal('member-modal');
   setTimeout(()=>{
     initSignature();
+    // Canvas'ı temizle
+    if(signatureCanvas && signatureCtx) {
+      signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+    }
     // Mevcut imzayı canvas'a yükle
     if(id) {
       const m = S.members.find(x=>x.id===parseInt(id));
-      if(m && m.signature && signatureCanvas) {
+      if(m && m.signature && signatureCanvas && signatureCtx) {
         const img = new Image();
-        img.onload = () => signatureCtx.drawImage(img, 0, 0, signatureCanvas.width, signatureCanvas.height);
+        img.onload = () => {
+          signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+          signatureCtx.drawImage(img, 0, 0, signatureCanvas.width, signatureCanvas.height);
+        };
         img.src = m.signature;
       }
     }
-  }, 100);
+  }, 150);
 }
 
 function setKanGrubu(val) {
