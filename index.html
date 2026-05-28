@@ -4141,10 +4141,29 @@ function renderPayments(tab) {
   document.getElementById('topbar-actions').innerHTML=`<button class="btn btn-primary" onclick="openPaymentModal()"><i class="ti ti-plus"></i> Ödeme Ekle</button>`;
   document.getElementById('page-content').innerHTML=`
     <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="stat-card"><div class="stat-label">Bu Ay Tahsilat</div><div class="stat-value">₺${monthRev.toLocaleString('tr-TR')}</div></div>
-      <div class="stat-card"><div class="stat-label">Toplam Tahsilat</div><div class="stat-value">₺${totalRev.toLocaleString('tr-TR')}</div></div>
+      <div class="stat-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="stat-label">Bu Ay Tahsilat</div>
+          <button onclick="toggleReveal('pay-month-rev')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:11px;padding:0">👁</button>
+        </div>
+        <div class="stat-value" id="pay-month-rev">••••••</div>
+      </div>
+      <div class="stat-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="stat-label">Toplam Tahsilat</div>
+          <button onclick="toggleReveal('pay-total-rev')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:11px;padding:0">👁</button>
+        </div>
+        <div class="stat-value" id="pay-total-rev">••••••</div>
+      </div>
       <div class="stat-card"><div class="stat-label">İşlem Sayısı</div><div class="stat-value">${S.payments.length}</div></div>
-    </div>
+    </div>`;
+
+  // Gerçek değerleri sakla
+  window._dashReveal = window._dashReveal || {};
+  window._dashReveal['pay-month-rev'] = { value: '₺'+monthRev.toLocaleString('tr-TR'), shown: false };
+  window._dashReveal['pay-total-rev'] = { value: '₺'+totalRev.toLocaleString('tr-TR'), shown: false };
+
+  document.getElementById('page-content').innerHTML += `
     <!-- Sekmeler -->
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <button onclick="renderPayments('guncel')" style="padding:8px 18px;border-radius:20px;border:1.5px solid ${tab==='guncel'?'var(--green)':'var(--border)'};background:${tab==='guncel'?'var(--green)':'white'};color:${tab==='guncel'?'white':'var(--text)'};font-size:13px;font-weight:600;cursor:pointer">
