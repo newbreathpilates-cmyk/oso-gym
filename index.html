@@ -4112,10 +4112,30 @@ function renderPayments(tab) {
   const totalRev = S.payments.reduce((a,p)=>a+p.amount,0);
   
   // Güncel vs Arşiv ayrımı
-  const activeMembers = new Set(S.members.filter(m=>m.status==='Aktif').map(m=>m.id));
+  // Gerçek anlamda aktif üyeler — paketi geçerli ve dersi olan
+  const activeMemberIds = new Set(S.members.filter(m=>{
+    if(m.status==='Donduruldu') return false;
+    if(!m.package || !m.start) return false;
+    const endDate = getEnd(m);
+    const today = localDate();
+    if(endDate !== '—' && endDate < today) return false; // süresi dolmuş
+    const total = pkgSessions(m.package);
+    const remaining = total>0&&total<999 ? Math.max(0,total-(m.used||0)) : null;
+    if(remaining !== null && remaining === 0) return false; // dersleri bitmiş
+    return true;
+  }).map(m=>m.id));
   const allPayments = [...S.payments].reverse();
-  const guncelPayments = allPayments.filter(p=>activeMembers.has(p.memberId));
-  const arsivPayments = allPayments.filter(p=>!activeMembers.has(p.memberId));
+  // Sadece üyenin aktif paketiyle eşleşen ödeme Güncel, diğerleri Arşiv
+  const guncelPayments = allPayments.filter(p=>{
+    const m = S.members.find(x=>x.id===p.memberId);
+    if(!m) return false;
+    return m.status==='Aktif' && m.start===p.date && m.package===p.package;
+  });
+  const arsivPayments = allPayments.filter(p=>{
+    const m = S.members.find(x=>x.id===p.memberId);
+    if(!m) return true;
+    return !(m.status==='Aktif' && m.start===p.date && m.package===p.package);
+  });
   const payments = tab==='guncel' ? guncelPayments : arsivPayments;
 
   document.getElementById('topbar-actions').innerHTML=`<button class="btn btn-primary" onclick="openPaymentModal()"><i class="ti ti-plus"></i> Ödeme Ekle</button>`;
