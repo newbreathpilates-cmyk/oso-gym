@@ -4317,16 +4317,37 @@ function toggleOzelPaket() {
   if(pkg==='Özel Paket') {
     document.getElementById('ozel-ders-count').value = '1';
     document.getElementById('ozel-ders-sayi').textContent = '1';
+    const label = document.getElementById('ozel-ders-sayi')?.nextElementSibling;
+    if(label) label.textContent = 'ders';
   }
 }
 
 function ozelDersChange(delta) {
   const inp = document.getElementById('ozel-ders-count');
   const display = document.getElementById('ozel-ders-sayi');
-  let val = parseInt(inp.value)||1;
-  val = Math.max(1, Math.min(20, val+delta));
+  const label = display.nextElementSibling;
+  let val = inp.value === '0' ? 0 : (parseInt(inp.value)||1);
+  
+  if(delta === -1) {
+    if(val <= 1) {
+      // 1'den aşağı → Sınırsız
+      inp.value = '0';
+      display.textContent = '∞';
+      if(label) label.textContent = 'sınırsız';
+      return;
+    }
+    val = Math.max(1, val - 1);
+  } else {
+    if(val === 0) {
+      // Sınırsız'dan → 1'e
+      val = 1;
+    } else {
+      val = Math.min(50, val + 1);
+    }
+  }
   inp.value = val;
   display.textContent = val;
+  if(label) label.textContent = 'ders';
 }
 
 function autoFillPaymentAmount() {
