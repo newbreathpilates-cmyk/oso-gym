@@ -1929,6 +1929,8 @@ function renderCalendar() {
         <button class="btn btn-sm" onclick="calToday()" style="margin-left:4px">Bugün</button>
       </div>
       <div class="view-tabs">
+        <button class="view-tab ${calView==='day'?'active':''}" onclick="switchView('day')">Günlük</button>
+        <button class="view-tab ${calView==='3day'?'active':''}" onclick="switchView('3day')">3 Gün</button>
         <button class="view-tab ${calView==='week'?'active':''}" onclick="switchView('week')">Haftalık</button>
         <button class="view-tab ${calView==='month'?'active':''}" onclick="switchView('month')">Aylık</button>
       </div>
@@ -1959,7 +1961,10 @@ function toggleTrainer(id) {
   if(visibleTrainers.has(id)) visibleTrainers.delete(id);
   else visibleTrainers.add(id);
   renderTrainerFilter();
-  if(calView==='week') renderWeekView(); else renderMonthView();
+  if(calView==='week') renderWeekView();
+  else if(calView==='3day') renderMultiDayView(3);
+  else if(calView==='day') renderMultiDayView(1);
+  else renderMonthView();
 }
 
 function getWeekDates() {
@@ -1969,6 +1974,115 @@ function getWeekDates() {
   const days = [];
   for(let i=0;i<7;i++) { const d=new Date(mon); d.setDate(mon.getDate()+i); days.push(d); }
   return days;
+}
+
+function renderMultiDayView(numDays) {
+  const today = new Date();
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() + calWeekOffset);
+  
+  const days = [];
+  for(let i=0; i<numDays; i++) {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    days.push(d);
+  }
+  
+  const todayStr = localDate();
+  const hours = [];
+  for(let h=6; h<=23; h++) hours.push(h);
+  const eventsFiltered = getFilteredEvents();
+  const TIME_W = 44;
+  const dayNames = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+
+  // Title güncelle
+  if(numDays===1) {
+    const d = days[0];
+    document.getElementById('cal-title').textContent = d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
+  } else {
+    const first = days[0];
+    const last = days[days.length-1];
+    document.getElementById('cal-title').textContent = first.getDate()+' '+first.toLocaleDateString('tr-TR',{month:'short'})+' – '+last.getDate()+' '+last.toLocaleDateString('tr-TR',{month:'short',year:'numeric'});
+  }
+
+  let html = `<div style="display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:white;flex:1">
+    <div style="display:flex;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0">
+      <div style="width:${TIME_W}px;flex-shrink:0"></div>
+      <div style="flex:1;display:grid;grid-template-columns:repeat(${numDays},1fr)">
+        ${days.map(d=>{
+          const ds=localDate(d);
+          const isToday=ds===todayStr;
+          return `<div style="text-align:center;padding:8px 2px;cursor:pointer" onclick="openNewEventOnDay('${ds}')">
+            <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase">${dayNames[d.getDay()]}</div>
+            <div class="week-day-num ${isToday?'today':''}" style="font-size:20px;font-weight:700">${d.getDate()}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div id="week-grid-scroll" style="flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch" ontouchstart="weekTouchStart(event)" ontouchend="weekTouchEnd(event)">
+      <div style="display:flex">
+        <div style="width:${TIME_W}px;flex-shrink:0;border-right:1px solid var(--border)">
+          ${hours.map(h=>`<div style="height:60px;display:flex;align-items:flex-start;justify-content:flex-end;padding:2px 4px 0 0;font-size:10px;color:var(--text3)">${h}:00</div>`).join('')}
+        </div>
+        <div style="flex:1;display:grid;grid-template-columns:repeat(${numDays},1fr);position:relative">
+          ${days.map(d=>{
+            const ds=localDate(d);
+            const dayEvs=eventsFiltered.filter(e=>e.date===ds);
+            function getEventSlots(evs) {
+              const slots = evs.map(ev=>{
+                const [sh,sm]=ev.startTime.split(':').map(Number);
+                const start=(sh-6)*60+sm;
+                const end=start+(ev.duration||45);
+                return {ev,start,end,col:0,total:1};
+              });
+              const groups=[];
+              slots.forEach(slot=>{
+                let placed=false;
+                for(const grp of groups){
+                  if(grp.some(s=>s.start<slot.end&&slot.start<s.end)){grp.push(slot);placed=true;break;}
+                }
+                if(!placed) groups.push([slot]);
+              });
+              groups.forEach(grp=>{grp.sort((a,b)=>a.start-b.start);grp.forEach((s,i)=>{s.col=i;s.total=grp.length;});});
+              return slots;
+            }
+            const slots=getEventSlots(dayEvs);
+            return `<div class="week-col" style="position:relative;border-left:1px solid var(--border)" onclick="openNewEventAtTime('${ds}',event)" data-date="${ds}">
+              ${hours.map(h=>`<div style="height:60px;border-bottom:1px solid var(--border);position:relative"><div style="position:absolute;top:30px;left:0;right:0;height:1px;background:rgba(0,0,0,0.04)"></div></div>`).join('')}
+              ${slots.map(({ev,start,col,total})=>{
+                const tr=S.trainers.find(t=>t.id===ev.trainerId);
+                const c=tr?tc(tr.color):TC[1];
+                const dur=ev.duration||45;
+                const memberNames=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name:null;}).filter(Boolean).join(', ');
+                const height=Math.max(dur,45);
+                const isCompleted=ev.completed===true;
+                const evBg=isCompleted?'#059669':c.bg;
+                const evBorder=isCompleted?'#047857':c.border;
+                const evColor=isCompleted?'#ffffff':c.text;
+                const widthPct=total>1?(100/total-1):94;
+                const leftPct=total>1?(col*(100/total)+0.5):3;
+                const isOwnEvent = currentUser.role !== 'trainer' || ev.trainerId === currentUser.trainerId;
+                return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:3px 5px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}" ${isOwnEvent?`onclick="openEditEvent(${ev.id},event)"`:''}> 
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;height:100%;overflow:hidden">
+                    <div style="flex:1;min-width:0;overflow:hidden">
+                      <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.type}${isCompleted?' ✓':''}</div>
+                      <div style="font-size:10px;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.startTime}${tr?' · '+tr.name.split(' ')[0]:''}</div>
+                      <div style="font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${memberNames}</div>
+                    </div>
+                    ${isOwnEvent?`<button onclick="openYoklamaModal(${ev.id},event)" style="flex-shrink:0;width:16px;height:16px;border-radius:3px;border:1px solid ${isCompleted?'#059669':evBorder};background:${isCompleted?'#059669':'rgba(255,255,255,0.8)'};cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
+                      <i class="ti ti-${isCompleted?'x':'circle-check'}" style="font-size:10px;color:${isCompleted?'white':c.border}"></i>
+                    </button>`:''}
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>`;
+          }).join('')}
+          ${renderNowLine()}
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('cal-body').innerHTML = html;
 }
 
 function renderWeekView() {
@@ -2082,7 +2196,11 @@ function weekTouchStart(e) { weekTouchStartX = e.touches[0].clientX; }
 function weekTouchEnd(e) {
   const dx = e.changedTouches[0].clientX - weekTouchStartX;
   if(Math.abs(dx) > 60) {
-    if(dx < 0) { calWeekOffset++; } else { calWeekOffset--; }
+    if(calView==='3day') {
+      if(dx < 0) calWeekOffset+=3; else calWeekOffset-=3;
+    } else {
+      if(dx < 0) calWeekOffset++; else calWeekOffset--;
+    }
     renderCalendar();
   }
 }
@@ -2220,8 +2338,20 @@ function renderMonthView() {
   document.getElementById('cal-body').innerHTML=html;
 }
 
-function calPrev(){if(calView==='week')calWeekOffset--;else calMonthOffset--;renderCalendar();}
-function calNext(){if(calView==='week')calWeekOffset++;else calMonthOffset++;renderCalendar();}
+function calPrev(){
+  if(calView==='week') calWeekOffset--;
+  else if(calView==='3day') calWeekOffset -= 3;
+  else if(calView==='day') calWeekOffset--;
+  else calMonthOffset--;
+  renderCalendar();
+}
+function calNext(){
+  if(calView==='week') calWeekOffset++;
+  else if(calView==='3day') calWeekOffset += 3;
+  else if(calView==='day') calWeekOffset++;
+  else calMonthOffset++;
+  renderCalendar();
+}
 function calToday(){calWeekOffset=0;calMonthOffset=0;renderCalendar();}
 function switchView(v){calView=v;renderCalendar();}
 
