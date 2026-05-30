@@ -4391,8 +4391,9 @@ function savePayment(){
   const date=document.getElementById('p-date').value;
   let ozelDers = 0;
   if(pkg==='Özel Paket') {
-    ozelDers = parseInt(document.getElementById('ozel-ders-count').value)||1;
-    pkg = `Özel Paket (${ozelDers} Ders)`;
+    const countVal = document.getElementById('ozel-ders-count').value;
+    ozelDers = countVal === '0' ? 0 : (parseInt(countVal)||1);
+    pkg = ozelDers === 0 ? 'Özel Paket (Sınırsız)' : `Özel Paket (${ozelDers} Ders)`;
   }
   const payStatus = document.getElementById('p-status').value;
   const d={memberId:mid,member:m?m.name+' '+m.surname:'',package:pkg,amount:parseFloat(document.getElementById('p-amount').value)||0,date:date,method:document.getElementById('p-method').value,status:payStatus,paidDate:payStatus==='odendi'?localDate():null};
@@ -5167,6 +5168,8 @@ const pkgMap={'8 Ders Bireysel':8,'10 Ders Bireysel':10,'15 Ders Bireysel':15,'8
 const pkgDays={'8 Ders Bireysel':30,'10 Ders Bireysel':60,'15 Ders Bireysel':60,'8 Ders 3 Kişilik Grup':30,'8 Ders 2 Kişilik Düet':30,'10 Ders 2 Kişilik Düet':60,'10 Ders 3 Kişilik Grup':60,'Özel Paket':30};
 function pkgSessions(p){
   if(!p) return 0;
+  // Özel Paket (Sınırsız) formatı
+  if(p.includes('Özel Paket (Sınırsız)')) return 999;
   // Özel Paket (X Ders) formatını parse et
   const ozelMatch = p.match(/Özel Paket \((\d+) Ders\)/);
   if(ozelMatch) return parseInt(ozelMatch[1]);
