@@ -1941,6 +1941,8 @@ function renderCalendar() {
 
   if(!isTrainer) renderTrainerFilter();
   if(calView==='week') renderWeekView();
+  else if(calView==='3day') renderMultiDayView(3);
+  else if(calView==='day') renderMultiDayView(1);
   else renderMonthView();
 }
 
