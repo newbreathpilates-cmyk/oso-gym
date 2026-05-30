@@ -1912,6 +1912,7 @@ function renderCalendar() {
   topbarActions.innerHTML = `
     <div class="flex gap-8 items-center">
       <button class="btn btn-primary" onclick="openNewEvent()"><i class="ti ti-plus"></i> Randevu Ekle</button>
+      <button class="btn" onclick="openCalendarSearch()"><i class="ti ti-search"></i> Ara</button>
     </div>
   `;
 
@@ -2051,16 +2052,17 @@ function renderWeekView() {
                 const evColor=isCompleted?'#ffffff':c.text;
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
-                return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:2px 3px;position:absolute" onclick="openEditEvent(${ev.id},event)">
+                const isOwnEvent = currentUser.role !== 'trainer' || ev.trainerId === currentUser.trainerId;
+                return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:2px 3px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}cursor:${isOwnEvent?'pointer':'default'}" ${isOwnEvent?`onclick="openEditEvent(${ev.id},event)"`:''}">
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;height:100%;overflow:hidden">
                     <div style="flex:1;min-width:0;overflow:hidden">
                       <div style="font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${ev.type}${isCompleted?' ✓':''}</div>
                       <div style="font-size:8px;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${ev.startTime}</div>
                       <div style="font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${memberNames}</div>
                     </div>
-                    <button onclick="openYoklamaModal(${ev.id},event)" style="flex-shrink:0;width:13px;height:13px;border-radius:3px;border:1px solid ${isCompleted?'#059669':evBorder};background:${isCompleted?'#059669':'rgba(255,255,255,0.8)'};cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
+                    ${isOwnEvent?`<button onclick="openYoklamaModal(${ev.id},event)" style="flex-shrink:0;width:13px;height:13px;border-radius:3px;border:1px solid ${isCompleted?'#059669':evBorder};background:${isCompleted?'#059669':'rgba(255,255,255,0.8)'};cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
                       <i class="ti ti-${isCompleted?'x':'circle-check'}" style="font-size:8px;color:${isCompleted?'white':c.border}"></i>
-                    </button>
+                    </button>`:''}
                   </div>
                 </div>`;
               }).join('')}
@@ -2085,6 +2087,77 @@ function weekTouchEnd(e) {
   }
 }
 
+function openCalendarSearch() {
+  const old = document.getElementById('cal-search-overlay');
+  if(old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'cal-search-overlay';
+  el.className = 'modal-overlay open';
+  el.innerHTML = `
+    <div class="modal" style="max-width:520px;width:100%">
+      <div class="modal-header">
+        <div class="modal-title">🔍 Randevu Ara</div>
+        <button class="btn btn-icon" onclick="document.getElementById('cal-search-overlay').remove()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Üye Adı</label>
+          <input type="text" class="form-input" id="cal-search-input" placeholder="Üye adı yazın..." oninput="renderCalSearchResults(this.value)" autocomplete="off">
+        </div>
+        <div id="cal-search-results" style="margin-top:8px"></div>
+      </div>
+    </div>`;
+  el.addEventListener('click', e=>{ if(e.target===el) el.remove(); });
+  document.body.appendChild(el);
+  setTimeout(()=>document.getElementById('cal-search-input')?.focus(), 100);
+}
+
+function renderCalSearchResults(query) {
+  const el = document.getElementById('cal-search-results');
+  if(!el) return;
+  if(!query || query.trim().length < 2) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">En az 2 karakter yazın</div>';
+    return;
+  }
+  const q = query.toLowerCase();
+  // Üye bul
+  const matchedMembers = S.members.filter(m=>(m.name+' '+m.surname).toLowerCase().includes(q));
+  if(!matchedMembers.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">Üye bulunamadı</div>';
+    return;
+  }
+  const memberIds = new Set(matchedMembers.map(m=>m.id));
+  // Randevuları bul
+  const events = S.events.filter(e=>(e.members||[]).some(mid=>memberIds.has(mid)))
+    .sort((a,b)=>b.date>a.date?1:-1);
+  if(!events.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">Randevu bulunamadı</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">${events.length} randevu bulundu</div>
+    ${events.map(ev=>{
+      const tr = S.trainers.find(t=>t.id===ev.trainerId);
+      const members = (ev.members||[]).filter(mid=>memberIds.has(mid)).map(mid=>{
+        const m = S.members.find(x=>x.id===mid);
+        return m ? m.name+' '+m.surname : '';
+      }).filter(Boolean).join(', ');
+      return `<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:${ev.completed?'#f0fdf8':'white'}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:700;font-size:13px">${ev.type} ${ev.completed?'✅':''}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">👤 ${members}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">📅 ${ev.date} · ⏰ ${ev.startTime}</div>
+            ${tr?`<div style="font-size:11px;color:var(--text3)">🏋️ ${tr.name}</div>`:''}
+          </div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${ev.completed?'#d1fae5':'#f3f4f6'};color:${ev.completed?'#065f46':'#6b7280'};font-weight:600;flex-shrink:0">
+            ${ev.completed?'Tamamlandı':'Planlandı'}
+          </span>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
 function syncWeekScroll(el) {
   const times = document.getElementById('week-times-col');
   if(times) times.scrollTop = el.scrollTop;
@@ -2106,8 +2179,9 @@ function renderNowLine() {
 
 function getFilteredEvents() {
   let evs = S.events;
-  if(currentUser.role==='trainer') evs=evs.filter(e=>e.trainerId===currentUser.trainerId);
-  else evs=evs.filter(e=>visibleTrainers.has(e.trainerId));
+  // Eğitmen tüm randevuları görsün (kendi + diğerleri)
+  // İşletme sahibi görünür eğitmenlere göre filtreler
+  if(currentUser.role!=='trainer') evs=evs.filter(e=>visibleTrainers.has(e.trainerId));
   return evs;
 }
 
