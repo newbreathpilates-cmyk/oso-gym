@@ -1929,8 +1929,6 @@ function renderCalendar() {
         <button class="btn btn-sm" onclick="calToday()" style="margin-left:4px">Bugün</button>
       </div>
       <div class="view-tabs">
-        <button class="view-tab ${calView==='day'?'active':''}" onclick="switchView('day')">Günlük</button>
-        <button class="view-tab ${calView==='3day'?'active':''}" onclick="switchView('3day')">3 Gün</button>
         <button class="view-tab ${calView==='week'?'active':''}" onclick="switchView('week')">Haftalık</button>
         <button class="view-tab ${calView==='month'?'active':''}" onclick="switchView('month')">Aylık</button>
       </div>
@@ -1941,8 +1939,6 @@ function renderCalendar() {
 
   if(!isTrainer) renderTrainerFilter();
   if(calView==='week') renderWeekView();
-  else if(calView==='3day') renderMultiDayView(3);
-  else if(calView==='day') renderMultiDayView(1);
   else renderMonthView();
 }
 
@@ -2198,11 +2194,7 @@ function weekTouchStart(e) { weekTouchStartX = e.touches[0].clientX; }
 function weekTouchEnd(e) {
   const dx = e.changedTouches[0].clientX - weekTouchStartX;
   if(Math.abs(dx) > 60) {
-    if(calView==='3day') {
-      if(dx < 0) calWeekOffset+=3; else calWeekOffset-=3;
-    } else {
-      if(dx < 0) calWeekOffset++; else calWeekOffset--;
-    }
+    if(dx < 0) { calWeekOffset++; } else { calWeekOffset--; }
     renderCalendar();
   }
 }
@@ -2340,20 +2332,8 @@ function renderMonthView() {
   document.getElementById('cal-body').innerHTML=html;
 }
 
-function calPrev(){
-  if(calView==='week') calWeekOffset--;
-  else if(calView==='3day') calWeekOffset -= 3;
-  else if(calView==='day') calWeekOffset--;
-  else calMonthOffset--;
-  renderCalendar();
-}
-function calNext(){
-  if(calView==='week') calWeekOffset++;
-  else if(calView==='3day') calWeekOffset += 3;
-  else if(calView==='day') calWeekOffset++;
-  else calMonthOffset++;
-  renderCalendar();
-}
+function calPrev(){if(calView==='week')calWeekOffset--;else calMonthOffset--;renderCalendar();}
+function calNext(){if(calView==='week')calWeekOffset++;else calMonthOffset++;renderCalendar();}
 function calToday(){calWeekOffset=0;calMonthOffset=0;renderCalendar();}
 function switchView(v){calView=v;renderCalendar();}
 
