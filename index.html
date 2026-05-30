@@ -4375,7 +4375,7 @@ function savePayment(){
   }
   const payStatus = document.getElementById('p-status').value;
   const d={memberId:mid,member:m?m.name+' '+m.surname:'',package:pkg,amount:parseFloat(document.getElementById('p-amount').value)||0,date:date,method:document.getElementById('p-method').value,status:payStatus,paidDate:payStatus==='odendi'?localDate():null};
-  if(!d.amount||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
+  if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
   if(eid){
     const i=S.payments.findIndex(p=>p.id==eid);
     if(i>-1) S.payments[i]={...S.payments[i],...d};
@@ -5070,7 +5070,7 @@ function openGiderModal(id) {
 function saveGider() {
   const eid=document.getElementById('g-id').value;
   const d={category:document.getElementById('g-category').value,amount:parseFloat(document.getElementById('g-amount').value)||0,date:document.getElementById('g-date').value,note:document.getElementById('g-note').value.trim()};
-  if(!d.amount||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
+  if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
   if(eid){const i=S.giderler.findIndex(g=>g.id===parseInt(eid));if(i>-1)S.giderler[i]={...S.giderler[i],...d};}
   else{d.id=S.nextId++;S.giderler.push(d);}
   save();closeModal('gider-modal');renderGiderler();
