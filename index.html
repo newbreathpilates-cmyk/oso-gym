@@ -1932,14 +1932,28 @@ function renderCalendar() {
         <button class="view-tab ${calView==='week'?'active':''}" onclick="switchView('week')">Haftalık</button>
         <button class="view-tab ${calView==='month'?'active':''}" onclick="switchView('month')">Aylık</button>
       </div>
-      ${!isTrainer ? `<div class="trainer-filter" id="trainer-filter-row"></div>` : ''}
+      <div class="trainer-filter" id="trainer-filter-row"></div>
     </div>
     <div id="cal-body" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden"></div>
   `;
 
   if(!isTrainer) renderTrainerFilter();
+  else renderTrainerFilterForTrainer();
   if(calView==='week') renderWeekView();
   else renderMonthView();
+}
+
+function renderTrainerFilterForTrainer() {
+  const el = document.getElementById('trainer-filter-row');
+  if(!el) return;
+  el.innerHTML = `<span style="font-size:11px;color:var(--text3);font-weight:600">Eğitmen:</span>` +
+    S.trainers.map(t => {
+      const c = tc(t.color);
+      const on = visibleTrainers.has(t.id);
+      return `<div class="trainer-chip ${on?'':'off'}" style="background:${c.bg};border-color:${c.border};color:${c.text}" onclick="toggleTrainer(${t.id})">
+        <div style="width:8px;height:8px;border-radius:50%;background:${c.dot}"></div>${t.name.split(' ')[0]}
+      </div>`;
+    }).join('');
 }
 
 function renderTrainerFilter() {
@@ -1958,10 +1972,9 @@ function renderTrainerFilter() {
 function toggleTrainer(id) {
   if(visibleTrainers.has(id)) visibleTrainers.delete(id);
   else visibleTrainers.add(id);
-  renderTrainerFilter();
+  if(currentUser.role==='trainer') renderTrainerFilterForTrainer();
+  else renderTrainerFilter();
   if(calView==='week') renderWeekView();
-  else if(calView==='3day') renderMultiDayView(3);
-  else if(calView==='day') renderMultiDayView(1);
   else renderMonthView();
 }
 
@@ -2291,9 +2304,8 @@ function renderNowLine() {
 
 function getFilteredEvents() {
   let evs = S.events;
-  // Eğitmen tüm randevuları görsün (kendi + diğerleri)
-  // İşletme sahibi görünür eğitmenlere göre filtreler
-  if(currentUser.role!=='trainer') evs=evs.filter(e=>visibleTrainers.has(e.trainerId));
+  // Hem işletme sahibi hem eğitmen görünür eğitmenlere göre filtreler
+  evs = evs.filter(e=>visibleTrainers.has(e.trainerId));
   return evs;
 }
 
