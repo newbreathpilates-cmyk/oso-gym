@@ -3618,7 +3618,7 @@ function shareViaPDF(id, channel) {
 
     const imzaHTML = '<div style="margin-top:12px;padding:12px;background:#f0fdf8;border:2px solid #059669;border-radius:6px;display:flex;justify-content:space-between;align-items:center">'+
       '<div><div style="font-weight:700;color:#065f46;margin-bottom:4px;font-size:11px">✅ BEYAN VE ONAY</div>'+
-      '<div style="font-size:12px;color:#374151">Üyelik kurallarını okudum, anladım ve kabul ediyorum.</div>'+
+      '<div style="font-size:13px;font-weight:600;color:#374151">Üyelik kurallarını okudum, anladım ve kabul ediyorum.</div>'+
       '<div style="font-size:12px;margin-top:6px"><b>'+m.name+' '+m.surname+'</b> · '+(m.start||new Date().toLocaleDateString('tr-TR'))+'<br>'+
       (m.rulesAccepted?'<span style="color:#059669">✓ Kurallar kabul edildi</span> ':'')+
       (m.healthAccepted?'<span style="color:#059669">✓ Sağlık formu onaylandı</span>':'')+'</div></div>'+
@@ -3672,7 +3672,7 @@ function shareViaPDF(id, channel) {
     '<div class="stat"><div class="stat-val" style="color:'+(remaining===0?'#dc2626':'#059669')+'">'+remaining+'</div><div class="stat-lbl">Kalan</div></div>'+
     '<div class="stat"><div style="font-size:11px;font-weight:700;color:#1e3a8a">'+endDate+'</div><div class="stat-lbl">Bitiş</div></div>'+
     '</div>'+
-    '<div style="margin-top:6px;font-size:12px;color:#1e3a8a">Başlangıç: <b>'+(m.start||'—')+'</b>'+
+    '<div style="margin-top:8px;font-size:14px;font-weight:700;color:#1e3a8a">📅 Başlangıç: '+(m.start||'—')+
     (days>0?' &nbsp;·&nbsp; <span style="color:#d97706">'+days+' gün kaldı</span>':days===0&&m.start?' &nbsp;·&nbsp; <span style="color:#dc2626">Bugün bitiyor</span>':m.start&&days<0?' &nbsp;·&nbsp; <span style="color:#dc2626">Süresi doldu</span>':'')+'</div></div>'+
 
     // PAKET BİTİŞ UYARISI
