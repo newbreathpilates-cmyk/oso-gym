@@ -2802,8 +2802,6 @@ function openShareModal(id) {
 }
 
 function openMemberView(id) {
-  // Sadece mobilde çalışsın — masaüstünde düzenleme modalı açılsın
-  if(window.innerWidth > 768) { openMemberModal(id); return; }
   const m = S.members.find(x=>x.id===parseInt(id));
   if(!m) return;
   const pkg = m.package||'';
