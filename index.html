@@ -1264,8 +1264,12 @@ function updateMemberStatuses(data) {
   data.members.forEach(m => {
     if(!m.package || !m.start) return;
     const total = pkgSessions(m.package);
+    
+    // Sınırsız paket — süre kontrolü yapma, sadece elle durdurulabilir
+    if(total >= 999) return;
+    
     const used = m.used||0;
-    const remaining = total>0&&total<999 ? Math.max(0, total-used) : null;
+    const remaining = total>0 ? Math.max(0, total-used) : null;
     const endDate = getEnd(m);
 
     // Dersleri bitti mi?
