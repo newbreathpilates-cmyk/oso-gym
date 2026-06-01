@@ -3674,14 +3674,16 @@ function shareViaPDF(id, channel) {
     // PAKET
     '<div class="section" style="background:#eff6ff;border-color:#bfdbfe">'+
     '<div class="sec-title" style="color:#1e3a8a">📦 '+(m.package||'Paket tanımlanmamış')+'</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+
     '<div class="stat"><div class="stat-val">'+(total===999?'∞':total||'—')+'</div><div class="stat-lbl">Toplam</div></div>'+
     '<div class="stat"><div class="stat-val">'+used+'</div><div class="stat-lbl">Yapılan</div></div>'+
     '<div class="stat"><div class="stat-val" style="color:'+(remaining===0?'#dc2626':'#059669')+'">'+remaining+'</div><div class="stat-lbl">Kalan</div></div>'+
-    '<div class="stat"><div style="font-size:11px;font-weight:700;color:#1e3a8a">'+endDate+'</div><div class="stat-lbl">Bitiş</div></div>'+
     '</div>'+
     '<div style="margin-top:8px;font-size:14px;font-weight:700;color:#1e3a8a">📅 Başlangıç: '+(m.start||'—')+
-    (days>0?' &nbsp;·&nbsp; <span style="color:#d97706">'+days+' gün kaldı</span>':days===0&&m.start?' &nbsp;·&nbsp; <span style="color:#dc2626">Bugün bitiyor</span>':m.start&&days<0?' &nbsp;·&nbsp; <span style="color:#dc2626">Süresi doldu</span>':'')+'</div></div>'+
+    (days>0?' &nbsp;·&nbsp; <span style="color:#d97706">'+days+' gün kaldı</span>':days===0&&m.start?' &nbsp;·&nbsp; <span style="color:#dc2626">Bugün bitiyor</span>':m.start&&days<0?' &nbsp;·&nbsp; <span style="color:#dc2626">Süresi doldu</span>':'')+'</div>'+
+    (endDate!=='—'&&endDate!=='Sınırsız'?'<div style="margin-top:6px;font-size:14px;font-weight:700;color:#1e3a8a">🏁 Bitiş: '+endDate+'</div>':
+     endDate==='Sınırsız'?'<div style="margin-top:6px;font-size:14px;font-weight:700;color:#059669">♾️ Sınırsız Paket</div>':'')+
+    '</div>'+
 
     // PAKET BİTİŞ UYARISI
     (days<0||m.status==='Süresi Doldu'||m.status==='Dersleri Bitti'?function(){
