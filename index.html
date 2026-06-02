@@ -5176,6 +5176,7 @@ function renderFinansal() {
 
 function renderGiderler() {
   if(!S.giderler) S.giderler = [];
+  document.getElementById('page-content').innerHTML = ''; // Önce temizle!
   const tm = new Date().toISOString().slice(0,7);
   const months = getMonthOptions();
   document.getElementById('topbar-actions').innerHTML = `
