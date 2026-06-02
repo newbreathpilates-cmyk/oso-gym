@@ -5226,7 +5226,7 @@ function renderGiderler() {
   // Eğitmen hakedişini de kategoriye ekle
   if(Math.round(ayHakedis)>0) katOzet['Eğitmen Hakedişi'] = Math.round(ayHakedis);
 
-  const ayDersCount = S.events.filter(e=>e.date&&e.date.startsWith(selMonth)&&e.completed).length;
+  const ayDersCount = S.events.filter(e=>e.date&&e.date.startsWith(selAy||tm)&&e.completed).length;
 
   document.getElementById('page-content').innerHTML = `
     <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)">
