@@ -1573,6 +1573,7 @@ function buildSidebar() {
     <button class="nav-item" data-page="payments" onclick="navigateTo('payments')"><i class="ti ti-credit-card"></i> Ödemeler</button>
 
     <button class="nav-item" data-page="hakedis" onclick="navigateTo('hakedis')"><i class="ti ti-wallet"></i> Hakediş</button>
+    <button class="nav-item" data-page="giderler" onclick="navigateTo('giderler')"><i class="ti ti-receipt"></i> Giderler</button>
     <button class="nav-item" data-page="paket-fiyatlari" onclick="navigateTo('paket-fiyatlari')"><i class="ti ti-tag"></i> Paket Fiyatları</button>
     <div class="nav-section">Veri</div>
     <button class="nav-item" data-page="attendance-report" onclick="navigateTo('attendance-report')"><i class="ti ti-chart-bar"></i> İstatistik</button>
@@ -1615,10 +1616,10 @@ function navigateTo(page) {
   document.querySelectorAll('.nav-item[data-page]').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
-  const titles = { dashboard:'Panel', calendar:'Takvim', members:'Üyeler', trainers:'Eğitmenler', payments:'Ödemeler', giderler:'Giderler', hakedis:'Hakediş', 'paket-fiyatlari':'Paket Fiyatları', export:'Dışa Aktar', 'trainer-portal':'Derslerim', 'attendance-report':'Üye İstatistikleri' };
+  const titles = { dashboard:'Panel', calendar:'Takvim', members:'Üyeler', trainers:'Eğitmenler', payments:'Ödemeler', giderler:'Giderler', finansal:'Finansal Özet', hakedis:'Hakediş', 'paket-fiyatlari':'Paket Fiyatları', export:'Dışa Aktar', 'trainer-portal':'Derslerim', 'attendance-report':'Üye İstatistikleri' };
   document.getElementById('topbar-title').textContent = titles[page] || page;
   document.getElementById('topbar-actions').innerHTML = '';
-  const pages = { dashboard: renderDashboard, calendar: renderCalendar, members: renderMembers, trainers: renderTrainers, payments: renderPayments, giderler: renderGiderler, hakedis: renderHakedis, 'paket-fiyatlari': renderPaketFiyatlari, export: renderExport, 'trainer-portal': renderTrainerPortal, 'attendance-report': renderAttendanceReport };
+  const pages = { dashboard: renderDashboard, calendar: renderCalendar, members: renderMembers, trainers: renderTrainers, payments: renderPayments, giderler: renderGiderler, finansal: renderFinansal, hakedis: renderHakedis, 'paket-fiyatlari': renderPaketFiyatlari, export: renderExport, 'trainer-portal': renderTrainerPortal, 'attendance-report': renderAttendanceReport };
   if(pages[page]) pages[page]();
   updateFAB(page);
 }
@@ -1767,6 +1768,9 @@ function renderDashboard() {
     </div>`;
 
   // Gerçek değerleri sakla
+  const monthGider = (S.giderler||[]).filter(g=>g.date&&g.date.startsWith(tm)).reduce((a,g)=>a+g.amount,0);
+  const netKar = monthLessonRev - monthGider;
+
   window._dashReveal = {
     'month-rev': { value: '₺'+Math.round(monthLessonRev).toLocaleString('tr-TR'), shown: false },
     'today-rev': { value: '₺'+Math.round(todayCompletedRev).toLocaleString('tr-TR'), shown: false }
@@ -5104,6 +5108,71 @@ function getPaketFiyati(pkg) {
 // ══════════════════════════════════════
 const GIDER_KATEGORILER = ['Kira','Elektrik','Su','Doğalgaz','İnternet','Malzeme / Ekipman','Temizlik','Muhasebe','Reklam / Pazarlama','Sigorta','Vergi','Diğer'];
 const GIDER_RENK = {'Kira':'#7C3AED','Aidat':'#0F766E','Elektrik':'#D97706','Su':'#0891B2','Doğalgaz':'#EA580C','İnternet':'#2563EB','Malzeme / Ekipman':'#059669','Temizlik':'#0D9488','Muhasebe':'#6366F1','Reklam / Pazarlama':'#DB2777','Sigorta':'#64748B','Vergi':'#B91C1C','Eğitmen Hakedişi':'#7C3AED','Diğer':'#6B7280'};
+
+function renderFinansal() {
+  const tm = localDate().slice(0,7);
+  const monthLessonRev = S.events.filter(e=>e.date&&e.date.startsWith(tm)&&e.completed).reduce((total,ev)=>{
+    return total+(ev.members||[]).reduce((sum,mid)=>{
+      const m=S.members.find(x=>x.id===mid);if(!m)return sum;
+      const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
+      if(!pays.length)return sum;
+      const lessons=pkgMap[pays[0].package]||1;
+      if(!lessons||lessons>=999)return sum;
+      return sum+(pays[0].amount/lessons);
+    },0);
+  },0);
+  const monthGider = (S.giderler||[]).filter(g=>g.date&&g.date.startsWith(tm)).reduce((a,g)=>a+g.amount,0);
+  const netKar = monthLessonRev - monthGider;
+  const ay = new Date().toLocaleDateString('tr-TR',{month:'long',year:'numeric'});
+
+  document.getElementById('page-content').innerHTML = `
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card" style="background:#f0fdf8;border-color:rgba(29,158,117,0.3)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="stat-label" style="color:#065f46">💰 Bu Ay Gelir</div>
+          <button onclick="toggleReveal('fin-gelir2')" style="border:none;background:none;cursor:pointer;color:#065f46;font-size:11px">👁</button>
+        </div>
+        <div class="stat-value" style="color:#059669" id="fin-gelir2">••••••</div>
+        <div class="stat-sub">${S.events.filter(e=>e.date&&e.date.startsWith(tm)&&e.completed).length} tamamlanan ders</div>
+      </div>
+      <div class="stat-card" style="background:#fff5f5;border-color:rgba(220,38,38,0.3)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="stat-label" style="color:#991b1b">📉 Bu Ay Gider</div>
+          <button onclick="toggleReveal('fin-gider2')" style="border:none;background:none;cursor:pointer;color:#991b1b;font-size:11px">👁</button>
+        </div>
+        <div class="stat-value" style="color:#dc2626" id="fin-gider2">••••••</div>
+        <div class="stat-sub">${(S.giderler||[]).filter(g=>g.date&&g.date.startsWith(tm)).length} gider kalemi</div>
+      </div>
+      <div class="stat-card" style="background:${netKar>=0?'#f0fdf8':'#fff5f5'};border-color:${netKar>=0?'rgba(29,158,117,0.3)':'rgba(220,38,38,0.3)'}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="stat-label" style="color:${netKar>=0?'#065f46':'#991b1b'}">📊 Net Kar</div>
+          <button onclick="toggleReveal('fin-kar2')" style="border:none;background:none;cursor:pointer;color:${netKar>=0?'#065f46':'#991b1b'};font-size:11px">👁</button>
+        </div>
+        <div class="stat-value" style="color:${netKar>=0?'#059669':'#dc2626'}" id="fin-kar2">••••••</div>
+        <div class="stat-sub">${ay}</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">Bu Ay Gider Detayı</div>
+      ${(S.giderler||[]).filter(g=>g.date&&g.date.startsWith(tm)).length === 0
+        ? '<div style="text-align:center;padding:20px;color:var(--text3)">Bu ay gider kaydı yok</div>'
+        : (S.giderler||[]).filter(g=>g.date&&g.date.startsWith(tm)).sort((a,b)=>b.date>a.date?1:-1).map(g=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-weight:500;font-size:13px">${g.desc}</div>
+              <div style="font-size:11px;color:var(--text3)">${g.category||'Diğer'} · ${g.date}</div>
+            </div>
+            <div style="font-weight:700;color:#dc2626">-₺${g.amount.toLocaleString('tr-TR')}</div>
+          </div>`).join('')
+      }
+    </div>`;
+
+  window._dashReveal = window._dashReveal || {};
+  window._dashReveal['fin-gelir2'] = { value: '₺'+Math.round(monthLessonRev).toLocaleString('tr-TR'), shown: false };
+  window._dashReveal['fin-gider2'] = { value: '₺'+Math.round(monthGider).toLocaleString('tr-TR'), shown: false };
+  window._dashReveal['fin-kar2'] = { value: (netKar>=0?'+':'')+'₺'+Math.round(Math.abs(netKar)).toLocaleString('tr-TR'), shown: false };
+}
 
 function renderGiderler() {
   if(!S.giderler) S.giderler = [];
