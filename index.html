@@ -1244,6 +1244,7 @@ function defaultState() {
     payments: [],
     hakedisPayments:[],
     giderler:[],
+    sabitGiderler:[],
     paketFiyatlari:{
       '8 Ders Bireysel': 0,
       '10 Ders Bireysel': 0,
@@ -1313,6 +1314,7 @@ function loadState() {
       }
       if(!parsed.paketFiyatlari) parsed.paketFiyatlari = defaultState().paketFiyatlari;
       if(!parsed.giderler) parsed.giderler = [];
+      if(!parsed.sabitGiderler) parsed.sabitGiderler = [];
       updateMemberStatuses(parsed);
       return parsed;
     }
@@ -5185,12 +5187,15 @@ function renderGiderler() {
         ${months.map(m=>`<option value="${m}" ${m===tm?'selected':''}>${new Date(m+'-01').toLocaleDateString('tr-TR',{month:'long',year:'numeric'})}</option>`).join('')}
         <option value="">Tümü</option>
       </select>
+      <button class="btn" onclick="openSabitGiderModal()"><i class="ti ti-refresh"></i> Sabit Giderler</button>
       <button class="btn btn-primary" onclick="openGiderModal()"><i class="ti ti-plus"></i> Gider Ekle</button>
     </div>`;
 
   const selAy = document.getElementById('gider-ay-filter')?.value ?? tm;
+  if(!S.sabitGiderler) S.sabitGiderler = [];
+  const sabitToplam = S.sabitGiderler.reduce((a,g)=>a+g.amount,0);
   const filtered = selAy ? S.giderler.filter(g=>g.date&&g.date.startsWith(selAy)) : S.giderler;
-  const toplam = filtered.reduce((a,g)=>a+g.amount,0);
+  const toplam = filtered.reduce((a,g)=>a+g.amount,0) + sabitToplam;
 
   const ayGelir = S.events.filter(e=>e.date&&e.date.startsWith(selAy||tm)&&e.completed)
     .reduce((total,ev)=>{
@@ -5229,11 +5234,16 @@ function renderGiderler() {
   const ayDersCount = S.events.filter(e=>e.date&&e.date.startsWith(selAy||tm)&&e.completed).length;
 
   document.getElementById('page-content').innerHTML = `
-    <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)">
-      <div class="stat-card"><div class="stat-label">İş Yeri Giderleri</div><div class="stat-value" style="color:#b91c1c">₺${Math.round(toplam).toLocaleString('tr-TR')}</div><div class="stat-sub">${filtered.length} kalem</div></div>
-      <div class="stat-card"><div class="stat-label">Eğitmen Hakedişi</div><div class="stat-value" style="color:#b91c1c">₺${Math.round(ayHakedis).toLocaleString('tr-TR')}</div><div class="stat-sub">toplam hakediş</div></div>
-      <div class="stat-card" style="background:#f0fdf8;border-color:rgba(29,158,117,0.25)"><div class="stat-label" style="color:#0a5c41">Ders Cirosu</div><div class="stat-value" style="color:var(--green)">₺${Math.round(ayGelir).toLocaleString('tr-TR')}</div><div class="stat-sub" style="color:#1D9E75">${ayDersCount} tamamlanan ders</div></div>
-      <div class="stat-card" style="background:${netKar>=0?'#f0fdf8':'#fef2f2'}"><div class="stat-label">Net Kâr</div><div class="stat-value" style="color:${netKar>=0?'#065f46':'#b91c1c'}">₺${Math.round(netKar).toLocaleString('tr-TR')}</div><div class="stat-sub" style="color:${netKar>=0?'#059669':'#b91c1c'}">gelir − gider − hakediş</div></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <button onclick="toggleGiderCards()" id="gider-toggle-btn" style="border:none;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text2)">
+        👁 <span id="gider-toggle-label">Tutarları Göster</span>
+      </button>
+    </div>
+    <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)" id="gider-cards">
+      <div class="stat-card"><div class="stat-label">İş Yeri Giderleri</div><div class="stat-value gider-val" style="color:#b91c1c">••••••</div><div class="stat-sub">${filtered.length} kalem</div><div class="gider-real" style="display:none">₺${Math.round(toplam).toLocaleString('tr-TR')}</div></div>
+      <div class="stat-card"><div class="stat-label">Eğitmen Hakedişi</div><div class="stat-value gider-val" style="color:#b91c1c">••••••</div><div class="stat-sub">toplam hakediş</div><div class="gider-real" style="display:none">₺${Math.round(ayHakedis).toLocaleString('tr-TR')}</div></div>
+      <div class="stat-card" style="background:#f0fdf8;border-color:rgba(29,158,117,0.25)"><div class="stat-label" style="color:#0a5c41">Ders Cirosu</div><div class="stat-value gider-val" style="color:var(--green)">••••••</div><div class="stat-sub" style="color:#1D9E75">${ayDersCount} tamamlanan ders</div><div class="gider-real" style="display:none">₺${Math.round(ayGelir).toLocaleString('tr-TR')}</div></div>
+      <div class="stat-card" style="background:${netKar>=0?'#f0fdf8':'#fef2f2'}"><div class="stat-label">Net Kâr</div><div class="stat-value gider-val" style="color:${netKar>=0?'#065f46':'#b91c1c'}">••••••</div><div class="stat-sub" style="color:${netKar>=0?'#059669':'#b91c1c'}">gelir − gider − hakediş</div><div class="gider-real" style="display:none">₺${Math.round(netKar).toLocaleString('tr-TR')}</div></div>
     </div>
     <div class="two-col">
       <div class="card">
@@ -5273,7 +5283,124 @@ function renderGiderler() {
           </tr>`;
         }).join('')}</tbody>
       </table>` : '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px"><i class="ti ti-receipt-off" style="font-size:28px;display:block;margin-bottom:8px"></i>Bu ay gider yok</div>'}
+    </div>
+
+    <!-- Sabit Giderler -->
+    ${S.sabitGiderler.length > 0 ? `
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">🔄 Sabit Giderler (Her Ay)</div>
+      ${S.sabitGiderler.map(g=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:500;font-size:13px">${g.name}</div>
+            <div style="font-size:11px;color:var(--text3)">${g.category}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="font-weight:700;color:#b91c1c">₺${g.amount.toLocaleString('tr-TR')}</div>
+            <button class="btn btn-sm btn-icon" onclick="editSabitGider(${g.id})"><i class="ti ti-edit"></i></button>
+            <button class="btn btn-sm btn-icon btn-danger" onclick="deleteSabitGider(${g.id})"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>`).join('')}
+      <div style="display:flex;justify-content:space-between;padding-top:8px;font-weight:700">
+        <span>Toplam Sabit Gider</span>
+        <span style="color:#b91c1c">₺${sabitToplam.toLocaleString('tr-TR')}</span>
+      </div>
+    </div>` : ''}
+    `;
+}
+
+function toggleGiderCards() {
+  const vals = document.querySelectorAll('.gider-val');
+  const reals = document.querySelectorAll('.gider-real');
+  const btn = document.getElementById('gider-toggle-label');
+  const isHidden = vals[0]?.textContent === '••••••';
+  vals.forEach((el, i) => {
+    if(isHidden) {
+      el.textContent = reals[i]?.textContent || '';
+      el.style.display = '';
+    } else {
+      el.textContent = '••••••';
+    }
+  });
+  if(btn) btn.textContent = isHidden ? 'Tutarları Gizle' : 'Tutarları Göster';
+}
+
+function openSabitGiderModal(id) {
+  const existing = id ? S.sabitGiderler.find(g=>g.id===parseInt(id)) : null;
+  const el = document.createElement('div');
+  el.className = 'modal-overlay open';
+  el.id = 'sabit-gider-overlay';
+  el.innerHTML = `
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <div class="modal-title">${existing ? 'Sabit Gider Düzenle' : '+ Sabit Gider Ekle'}</div>
+        <button class="btn btn-icon" onclick="document.getElementById('sabit-gider-overlay').remove()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Gider Adı</label>
+          <input type="text" class="form-input" id="sg-name" placeholder="Örn: Kira, Aidat..." value="${existing?existing.name:''}">
+        </div>
+        <div class="form-group"><label class="form-label">Kategori</label>
+          <select class="form-select" id="sg-category">
+            ${['Kira','Aidat','Muhasebe','Banka Kredisi','Sigorta','İnternet','Telefon','Diğer'].map(k=>`<option ${existing&&existing.category===k?'selected':''}>${k}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Aylık Tutar (₺)</label>
+          <input type="number" class="form-input" id="sg-amount" value="${existing?existing.amount:''}">
+        </div>
+        ${S.sabitGiderler.length > 0 && !existing ? `
+        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+          <div class="form-label" style="margin-bottom:8px">Mevcut Sabit Giderler</div>
+          ${S.sabitGiderler.map(g=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+              <div><div style="font-size:13px;font-weight:500">${g.name}</div><div style="font-size:11px;color:var(--text3)">${g.category}</div></div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-weight:600;color:#b91c1c">₺${g.amount.toLocaleString('tr-TR')}</span>
+                <button class="btn btn-sm btn-icon" onclick="editSabitGider(${g.id})"><i class="ti ti-edit"></i></button>
+                <button class="btn btn-sm btn-icon btn-danger" onclick="deleteSabitGider(${g.id})"><i class="ti ti-trash"></i></button>
+              </div>
+            </div>`).join('')}
+        </div>` : ''}
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="document.getElementById('sabit-gider-overlay').remove()">İptal</button>
+        <button class="btn btn-primary" onclick="saveSabitGider(${existing?existing.id:'null'})">Kaydet</button>
+      </div>
     </div>`;
+  el.addEventListener('click', e=>{ if(e.target===el) el.remove(); });
+  document.body.appendChild(el);
+}
+
+function saveSabitGider(id) {
+  const name = document.getElementById('sg-name').value.trim();
+  const category = document.getElementById('sg-category').value;
+  const amount = parseFloat(document.getElementById('sg-amount').value)||0;
+  if(!name || !amount) { toast('Ad ve tutar zorunludur.','error'); return; }
+  if(!S.sabitGiderler) S.sabitGiderler = [];
+  if(id && id !== 'null') {
+    const i = S.sabitGiderler.findIndex(g=>g.id===parseInt(id));
+    if(i>-1) S.sabitGiderler[i] = {...S.sabitGiderler[i], name, category, amount};
+  } else {
+    S.sabitGiderler.push({id:S.nextId++, name, category, amount});
+  }
+  save();
+  document.getElementById('sabit-gider-overlay').remove();
+  renderGiderler();
+  toast('Sabit gider kaydedildi ✓','success');
+}
+
+function editSabitGider(id) {
+  document.getElementById('sabit-gider-overlay')?.remove();
+  openSabitGiderModal(id);
+}
+
+function deleteSabitGider(id) {
+  if(!confirm('Bu sabit gideri silmek istiyor musunuz?')) return;
+  S.sabitGiderler = S.sabitGiderler.filter(g=>g.id!==parseInt(id));
+  save();
+  document.getElementById('sabit-gider-overlay')?.remove();
+  renderGiderler();
+  toast('Sabit gider silindi.','success');
 }
 
 function openGiderModal(id) {
