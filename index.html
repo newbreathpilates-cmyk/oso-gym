@@ -5267,7 +5267,8 @@ function renderGiderler() {
     </div>
     <div class="card" style="padding:0;overflow:hidden">
       <div style="padding:14px 16px;font-weight:600;font-size:13px;border-bottom:1px solid var(--border)">Gider Listesi</div>
-      ${filtered.length ? `<table class="member-table">
+      ${filtered.length ? `
+      <table class="member-table hakedis-detail-table">
         <thead><tr><th>Tarih</th><th>Kategori</th><th>Tutar</th><th>Not</th><th></th></tr></thead>
         <tbody>${[...filtered].sort((a,b)=>b.date>a.date?1:-1).map(g=>{
           const renk=GIDER_RENK[g.category]||'#6B7280';
@@ -5282,7 +5283,28 @@ function renderGiderler() {
             </div></td>
           </tr>`;
         }).join('')}</tbody>
-      </table>` : '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px"><i class="ti ti-receipt-off" style="font-size:28px;display:block;margin-bottom:8px"></i>Bu ay gider yok</div>'}
+      </table>
+      <!-- Mobil kart görünümü -->
+      <div class="hakedis-mobile-list">
+        ${[...filtered].sort((a,b)=>b.date>a.date?1:-1).map(g=>{
+          const renk=GIDER_RENK[g.category]||'#6B7280';
+          return `<div style="padding:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#b91c1c">₺${g.amount.toLocaleString('tr-TR')}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                <div style="width:8px;height:8px;border-radius:50%;background:${renk}"></div>
+                <span style="font-size:12px;color:var(--text2)">${g.category}</span>
+                <span style="font-size:11px;color:var(--text3)">· ${g.date}</span>
+              </div>
+              ${g.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${g.note}</div>`:''}
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-sm btn-icon" onclick="openGiderModal(${g.id})"><i class="ti ti-edit"></i></button>
+              <button class="btn btn-sm btn-icon btn-danger" onclick="deleteGider(${g.id})"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>` : '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px"><i class="ti ti-receipt-off" style="font-size:28px;display:block;margin-bottom:8px"></i>Bu ay gider yok</div>'}
     </div>
 
     <!-- Sabit Giderler -->
