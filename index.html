@@ -1599,11 +1599,7 @@ function fabAction() {
 function updateFAB(page) {
   const fab = document.getElementById('fab-btn');
   if(!fab) return;
-  if(page === 'members') {
-    fab.style.display = '';
-  } else {
-    fab.style.display = 'none';
-  }
+  fab.style.display = 'none';
 }
 
 function navigateTo(page) {
@@ -4701,13 +4697,20 @@ function renderTrainerMonthlyLessons() {
   if(!evs.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Bu ay ders yok</div>';return;}
   
   var completedCount = evs.filter(function(e){return e.completed;}).length;
+  
+  // Sadece özet kartlar
   var html = '<div style="display:flex;gap:12px;margin-bottom:12px">'+
-    '<div style="flex:1;background:#f0fdf8;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:#059669">'+evs.length+'</div><div style="font-size:10px;color:#065f46">TOPLAM</div></div>'+
-    '<div style="flex:1;background:#f0fdf8;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:#059669">'+completedCount+'</div><div style="font-size:10px;color:#065f46">TAMAMLANDI</div></div>'+
-    '<div style="flex:1;background:#f9fafb;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:#6b7280">'+(evs.length-completedCount)+'</div><div style="font-size:10px;color:#6b7280">PLANLANDI</div></div>'+
+    '<div style="flex:1;background:#f0fdf8;border-radius:10px;padding:10px;text-align:center"><div style="font-size:24px;font-weight:700;color:#059669">'+evs.length+'</div><div style="font-size:10px;color:#065f46">TOPLAM</div></div>'+
+    '<div style="flex:1;background:#f0fdf8;border-radius:10px;padding:10px;text-align:center"><div style="font-size:24px;font-weight:700;color:#059669">'+completedCount+'</div><div style="font-size:10px;color:#065f46">TAMAMLANDI</div></div>'+
+    '<div style="flex:1;background:#f9fafb;border-radius:10px;padding:10px;text-align:center"><div style="font-size:24px;font-weight:700;color:#6b7280">'+(evs.length-completedCount)+'</div><div style="font-size:10px;color:#6b7280">PLANLANDI</div></div>'+
     '</div>';
   
-  // Tarihe göre grupla
+  // Detay toggle butonu
+  html += '<button onclick="toggleMonthlyDetail()" id="monthly-detail-btn" style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:center;gap:6px">'+
+    '<i class="ti ti-list" style="font-size:14px"></i> Detayı Göster ▼</button>';
+  
+  // Gizli detay listesi
+  html += '<div id="monthly-detail-list" style="display:none;margin-top:8px">';
   var grouped = {};
   evs.forEach(function(ev){if(!grouped[ev.date])grouped[ev.date]=[];grouped[ev.date].push(ev);});
   Object.keys(grouped).forEach(function(date){
@@ -4717,14 +4720,25 @@ function renderTrainerMonthlyLessons() {
       new Date(date+'T12:00:00').toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})+'</div>';
     dayEvs.forEach(function(ev){
       var members=(ev.members||[]).map(function(mid){var m=S.members.find(function(x){return x.id===mid;});return m?m.name+' '+m.surname:'';}).filter(Boolean).join(', ');
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">'+
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0">'+
         '<div><div style="font-size:13px;font-weight:500">'+ev.startTime+' · '+ev.type+'</div>'+
         '<div style="font-size:11px;color:var(--text3)">'+(members||'Üye yok')+'</div></div>'+
         '<span style="font-size:16px">'+(ev.completed?'✅':'⬜')+'</span></div>';
     });
     html += '</div>';
   });
+  html += '</div>';
+  
   el.innerHTML = html;
+}
+
+function toggleMonthlyDetail() {
+  var list = document.getElementById('monthly-detail-list');
+  var btn = document.getElementById('monthly-detail-btn');
+  if(!list) return;
+  var isHidden = list.style.display === 'none';
+  list.style.display = isHidden ? 'block' : 'none';
+  if(btn) btn.innerHTML = '<i class="ti ti-list" style="font-size:14px"></i> ' + (isHidden ? 'Detayı Gizle ▲' : 'Detayı Göster ▼');
 }
 
 let yoklamaEventId = null;
