@@ -4648,7 +4648,7 @@ function renderTrainerPortal() {
     </div>` : ''}
 
     <div class="portal-card">
-      <div class="card-title"><span>Bugünkü Derslerim</span><span style="font-size:11px;font-weight:400;color:var(--text3)">${new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</span></div>
+      <div class="card-title"><span>Bugünkü Derslerim</span><span style="font-size:11px;font-weight:400;color:var(--text3)">${new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</span><span style="font-size:12px;font-weight:600;color:#059669;margin-left:8px">✅ ${todayEvs.filter(e=>e.completed).length}/${todayEvs.length}</span></div>
       ${todayEvs.length ? todayEvs.map(ev=>{
         const isCompleted = ev.completed===true;
         const members = (ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name+' '+m.surname:'';}).filter(Boolean).join(', ');
