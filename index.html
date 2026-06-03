@@ -4653,27 +4653,39 @@ function renderTrainerPortal() {
 
     <div class="portal-card">
       <div class="card-title"><span>Bugünkü Derslerim</span><span style="font-size:11px;font-weight:400;color:var(--text3)">${new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</span></div>
-      ${todayEvs.length ? todayEvs.map(ev=>`
-        <div style="border:1px solid ${c.light};border-radius:var(--radius);padding:14px;margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-            <div>
-              <div style="font-weight:600;font-size:14px">${ev.type}</div>
-              <div style="font-size:12px;color:var(--text2)">${ev.startTime} · ${ev.duration||55} dk · ${(ev.members||[]).length}/${ev.capacity} üye${ev.singleDropCount?` · +${ev.singleDropCount} tek ders`:''}${ev.specialCount?` · ${ev.specialCount} özel talep`:''}</div>
+      ${todayEvs.length ? todayEvs.map(ev=>{
+        const members = (ev.members||[]).map(mid=>{
+          const m=S.members.find(x=>x.id===mid);
+          return m?m.name+' '+m.surname:'';
+        }).filter(Boolean).join(', ');
+        const isCompleted = ev.completed===true;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:8px;background:${isCompleted?'#059669':c.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-yoga" style="color:${isCompleted?'white':c.dot};font-size:17px"></i>
             </div>
-            <span style="background:${c.bg};color:${c.text};border:1px solid ${c.light};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600">${ev.startTime}</span>
+            <div>
+              <div style="font-weight:600;font-size:13px">${ev.startTime} · ${ev.type}</div>
+              <div style="font-size:11px;color:var(--text3)">${members||'Üye yok'}</div>
+            </div>
           </div>
-          <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px">Yoklama</div>
-          ${(ev.members||[]).length ? (ev.members).map(mid=>{
-            const mem=S.members.find(x=>x.id===mid);if(!mem)return'';
-            const checked=(ev.attendance||[]).includes(mid);
-            return `<div class="attend-row">
-              <div class="flex items-center gap-8">
-                <div class="avatar" style="background:${abg(mem.name)};color:${atcl(mem.name)}">${ini(mem.name,mem.surname)}</div>
-                <div><div style="font-weight:500;font-size:13px">${mem.name} ${mem.surname}</div><div style="font-size:10px;color:var(--text3)">${mem.package}</div></div>
-              </div>
-            </div>`;
-          }).join('') : '<div style="font-size:12px;color:var(--text3);text-align:center;padding:10px">Bu derse kayıtlı üye yok</div>'}
-        </div>`).join('') : `<div style="text-align:center;padding:32px;color:var(--text3)"><i class="ti ti-calendar-off" style="font-size:32px;display:block;margin-bottom:8px"></i><div style="font-size:13px">Bugün için ders yok</div></div>`}
+          <span style="font-size:18px">${isCompleted?'✅':'⬜'}</span>
+        </div>`;
+      }).join('') : `<div style="text-align:center;padding:32px;color:var(--text3)"><i class="ti ti-calendar-off" style="font-size:32px;display:block;margin-bottom:8px"></i><div style="font-size:13px">Bugün için ders yok</div></div>`}
+    </div>
+
+    <div class="portal-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="card-title" style="margin:0">📅 Aylık Derslerim</div>
+        <select id="trainer-month-filter" style="padding:5px 10px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;font-family:inherit" onchange="renderTrainerMonthlyLessons()">
+          ${Array.from({length:6},(_,i)=>{
+            const d=new Date(); d.setMonth(d.getMonth()-i);
+            const val=d.toISOString().slice(0,7);
+            return `<option value="${val}">${d.toLocaleDateString('tr-TR',{month:'long',year:'numeric'})}</option>`;
+          }).join('')}
+        </select>
+      </div>
+      <div id="trainer-monthly-list"></div>
     </div>
 
     <div class="portal-card">
@@ -4687,6 +4699,55 @@ function renderTrainerPortal() {
           <span class="badge badge-active">${(ev.members||[]).length} üye</span>
         </div>`).join('') : '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">Yaklaşan ders yok</div>'}
     </div>`;
+}
+
+  setTimeout(renderTrainerMonthlyLessons, 100);
+}
+
+function renderTrainerMonthlyLessons() {
+  const el = document.getElementById('trainer-monthly-list');
+  if(!el) return;
+  const sel = document.getElementById('trainer-month-filter')?.value || localDate().slice(0,7);
+  const trainerId = currentUser.trainerId;
+  const evs = S.events.filter(e=>e.trainerId===trainerId && e.date && e.date.startsWith(sel))
+    .sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:a.startTime>b.startTime?1:-1);
+  
+  if(!evs.length) { el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Bu ay ders yok</div>'; return; }
+  
+  // Toplam özet
+  const completedCount = evs.filter(e=>e.completed).length;
+  el.innerHTML = `<div style="display:flex;gap:12px;margin-bottom:12px">
+    <div style="flex:1;background:#f0fdf8;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:#059669">${evs.length}</div>
+      <div style="font-size:10px;color:#065f46">TOPLAM</div>
+    </div>
+    <div style="flex:1;background:#f0fdf8;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:#059669">${completedCount}</div>
+      <div style="font-size:10px;color:#065f46">TAMAMLANDI</div>
+    </div>
+    <div style="flex:1;background:#f9fafb;border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:#6b7280">${evs.length-completedCount}</div>
+      <div style="font-size:10px;color:#6b7280">PLANLANDI</div>
+    </div>
+  </div>` +
+  // Tarihe göre grupla
+  Object.entries(evs.reduce((acc,ev)=>{if(!acc[ev.date])acc[ev.date]=[];acc[ev.date].push(ev);return acc;},{}))
+    .map(([date, dayEvs])=>`
+      <div style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:4px">
+          ${new Date(date+'T12:00:00').toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}
+        </div>
+        ${dayEvs.map(ev=>{
+          const members=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name+' '+m.surname:'';}).filter(Boolean).join(', ');
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+            <div>
+              <div style="font-size:13px;font-weight:500">${ev.startTime} · ${ev.type}</div>
+              <div style="font-size:11px;color:var(--text3)">${members||'Üye yok'}</div>
+            </div>
+            <span style="font-size:16px">${ev.completed?'✅':'⬜'}</span>
+          </div>`;
+        }).join('')}
+      </div>`).join('');
 }
 
 let yoklamaEventId = null;
