@@ -4583,11 +4583,16 @@ function deletePayment(id){
   if(!confirm(payment.member + ' adlı üyenin ' + payment.date + ' tarihli ' + payment.package + ' ödemesini silmek istediğinizden emin misiniz?')) return;
   const m = S.members.find(x=>x.id===payment.memberId);
   if(m) {
+    // Paket geçmişinden de sil
+    if(m.paketGecmisi) {
+      m.paketGecmisi = m.paketGecmisi.filter(p=>!(p.package===payment.package && p.date===payment.date));
+    }
     const otherPayments = S.payments.filter(p=>p.id!==id && p.memberId===payment.memberId);
     if(otherPayments.length > 0) {
       const latest = otherPayments.sort((a,b)=>b.date>a.date?1:-1)[0];
       m.package = latest.package;
       m.start = latest.date;
+      m.used = 0;
     } else {
       m.package = '';
       m.start = '';
