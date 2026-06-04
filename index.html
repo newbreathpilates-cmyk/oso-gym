@@ -556,6 +556,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <select class="form-select" id="ev-type" onchange="toggleGuestField()">
             <option value="Pilates">Pilates</option>
             <option value="Fonksiyonel">Fonksiyonel</option>
+            <option value="Online Ders">Online Ders</option>
             <option value="Deneme / Tanışma">Deneme / Tanışma</option>
           </select>
         </div>
@@ -1271,8 +1272,14 @@ function updateMemberStatuses(data) {
     if(!m.package || !m.start) return;
     const total = pkgSessions(m.package);
     
-    // Sınırsız paket — süre kontrolü yapma, sadece elle durdurulabilir
-    if(total >= 999) return;
+    // Sınırsız paket — süresi doldu ise düzelt, Aktif yap
+    if(total >= 999) {
+      if(m.status === 'Süresi Doldu' || m.status === 'Dersleri Bitti') {
+        m.status = 'Aktif';
+        changed = true;
+      }
+      return;
+    }
     
     const used = m.used||0;
     const remaining = total>0 ? Math.max(0, total-used) : null;
@@ -1845,7 +1852,7 @@ function renderDashboard() {
   document.getElementById('page-content').innerHTML += `
     <div class="two-col">
       <div class="card">
-        <div class="card-title">Bugünkü Dersler <span style="font-size:11px;font-weight:400;color:var(--text3)">${new Date().toLocaleDateString('tr-TR')}</span></div>
+        <div class="card-title">Bugünkü Dersler <span style="font-size:11px;font-weight:400;color:var(--text3)">${new Date().toLocaleDateString('tr-TR')}</span><span style="font-size:12px;font-weight:600;color:#059669;margin-left:8px">✅ ${todayEvents.filter(e=>e.completed).length}/${todayEvents.length}</span></div>
         ${todayEvents.length ? todayEvents.sort((a,b)=>a.startTime>b.startTime?1:-1).map(ev=>{
           const tr=S.trainers.find(t=>t.id===ev.trainerId);
           const c=tr?tc(tr.color):TC[1];
@@ -2688,8 +2695,9 @@ function deleteEvent() {
   if(currentUser.role !== 'owner') { toast('Randevu silme yetkisi yalnızca işletme sahibine aittir.','error'); return; }
   const id = parseInt(editingEventId);
   const ev = S.events.find(e=>parseInt(e.id)===id);
+  const confirmMsg = ev ? (ev.date+' '+ev.startTime+' · '+ev.type+' randevusunu silmek istediğinizden emin misiniz?') : 'Bu randevuyu silmek istediğinizden emin misiniz?';
+  if(!confirm(confirmMsg)) return;
   if(ev && ev.completed) {
-    // Tamamlandı işaretli silme — üyelere ders iade et
     (ev.members||[]).forEach(mid=>{
       const m=S.members.find(x=>x.id===mid);
       if(m) m.used=Math.max(0,(m.used||0)-1);
@@ -4543,7 +4551,7 @@ function ozelDersChange(delta) {
       // Sınırsız'dan → 1'e
       val = 1;
     } else {
-      val = Math.min(50, val + 1);
+      val = Math.min(100, val + 1);
     }
   }
   inp.value = val;
@@ -5362,7 +5370,7 @@ function renderGiderler() {
       </button>
     </div>
     <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)" id="gider-cards">
-      <div class="stat-card"><div class="stat-label">İş Yeri Giderleri</div><div class="stat-value gider-val" style="color:#b91c1c">••••••</div><div class="stat-sub">${filtered.length} kalem</div><div class="gider-real" style="display:none">₺${Math.round(toplam).toLocaleString('tr-TR')}</div></div>
+      <div class="stat-card"><div class="stat-label">Genel Giderler</div><div class="stat-value gider-val" style="color:#b91c1c">••••••</div><div class="gider-real" style="display:none">₺${Math.round(toplam).toLocaleString('tr-TR')}</div></div>
       <div class="stat-card"><div class="stat-label">Eğitmen Hakedişi</div><div class="stat-value gider-val" style="color:#b91c1c">••••••</div><div class="stat-sub">toplam hakediş</div><div class="gider-real" style="display:none">₺${Math.round(ayHakedis).toLocaleString('tr-TR')}</div></div>
       <div class="stat-card" style="background:#f0fdf8;border-color:rgba(29,158,117,0.25)"><div class="stat-label" style="color:#0a5c41">Ders Cirosu</div><div class="stat-value gider-val" style="color:var(--green)">••••••</div><div class="stat-sub" style="color:#1D9E75">${ayDersCount} tamamlanan ders</div><div class="gider-real" style="display:none">₺${Math.round(ayGelir).toLocaleString('tr-TR')}</div></div>
       <div class="stat-card" style="background:${netKar>=0?'#f0fdf8':'#fef2f2'}"><div class="stat-label">Net Kâr</div><div class="stat-value gider-val" style="color:${netKar>=0?'#065f46':'#b91c1c'}">••••••</div><div class="stat-sub" style="color:${netKar>=0?'#059669':'#b91c1c'}">gelir − gider − hakediş</div><div class="gider-real" style="display:none">₺${Math.round(netKar).toLocaleString('tr-TR')}</div></div>
