@@ -1436,6 +1436,50 @@ function restoreSession() {
   return false;
 }
 
+function updateDashDay() {
+  const picker = document.getElementById('dash-day-picker');
+  if(!picker) return;
+  const selDay = picker.value;
+  const rev = S.events.filter(e=>e.date===selDay&&e.completed).reduce((total,ev)=>{
+    return total+(ev.members||[]).reduce((sum,mid)=>{
+      const m=S.members.find(x=>x.id===mid);if(!m)return sum;
+      const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
+      if(!pays.length)return sum;
+      const lessons=pkgMap[pays[0].package]||1;
+      if(!lessons||lessons>=999)return sum;
+      return sum+(pays[0].amount/lessons);
+    },0);
+  },0);
+  const count = S.events.filter(e=>e.date===selDay&&e.completed).length;
+  if(window._dashReveal) window._dashReveal['today-rev'] = {value:'₺'+Math.round(rev).toLocaleString('tr-TR'),shown:false};
+  const el = document.getElementById('today-rev');
+  const cnt = document.getElementById('today-count');
+  if(el) el.textContent='••••••';
+  if(cnt) cnt.textContent=count+' ders tamamlandı';
+}
+
+function updateDashMonth() {
+  const picker = document.getElementById('dash-month-picker');
+  if(!picker) return;
+  const selMonth = picker.value;
+  const rev = S.events.filter(e=>e.date&&e.date.startsWith(selMonth)&&e.completed).reduce((total,ev)=>{
+    return total+(ev.members||[]).reduce((sum,mid)=>{
+      const m=S.members.find(x=>x.id===mid);if(!m)return sum;
+      const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
+      if(!pays.length)return sum;
+      const lessons=pkgMap[pays[0].package]||1;
+      if(!lessons||lessons>=999)return sum;
+      return sum+(pays[0].amount/lessons);
+    },0);
+  },0);
+  const count = S.events.filter(e=>e.date&&e.date.startsWith(selMonth)&&e.completed).length;
+  if(window._dashReveal) window._dashReveal['month-rev'] = {value:'₺'+Math.round(rev).toLocaleString('tr-TR'),shown:false};
+  const el = document.getElementById('month-rev');
+  const cnt = document.getElementById('month-count');
+  if(el) el.textContent='••••••';
+  if(cnt) cnt.textContent=count+' tamamlanan ders';
+}
+
 function toggleReveal(id) {
   if(!window._dashReveal || !window._dashReveal[id]) return;
   const r = window._dashReveal[id];
@@ -1752,16 +1796,18 @@ function renderDashboard() {
           <div class="stat-label" style="color:#0a5c41">Bu Ay Ders Cirosu</div>
           <button onclick="toggleReveal('month-rev')" style="border:none;background:none;cursor:pointer;color:#0a5c41;font-size:11px;padding:0">👁</button>
         </div>
+        <input type="month" id="dash-month-picker" value="${tm}" onchange="updateDashMonth()" style="width:100%;margin:4px 0;padding:3px 6px;border:1px solid #a7f3d0;border-radius:6px;font-size:11px;color:#065f46;background:white">
         <div class="stat-value" style="color:#065f46" id="month-rev">••••••</div>
-        <div class="stat-sub" style="color:#1D9E75">${monthLessonCount} tamamlanan ders</div>
+        <div class="stat-sub" style="color:#1D9E75" id="month-count">${monthLessonCount} tamamlanan ders</div>
       </div>
       <div class="stat-card" style="border-color:rgba(29,158,117,0.3);background:#f0fdf8">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div class="stat-label" style="color:#0a5c41">Bugünkü Ders Cirosu</div>
           <button onclick="toggleReveal('today-rev')" style="border:none;background:none;cursor:pointer;color:#0a5c41;font-size:11px;padding:0">👁</button>
         </div>
+        <input type="date" id="dash-day-picker" value="${todayStr}" onchange="updateDashDay()" style="width:100%;margin:4px 0;padding:3px 6px;border:1px solid #a7f3d0;border-radius:6px;font-size:11px;color:#065f46;background:white">
         <div class="stat-value" style="color:#0a5c41" id="today-rev">••••••</div>
-        <div class="stat-sub" style="color:#1D9E75">${todayCompletedCount} ders tamamlandı</div>
+        <div class="stat-sub" style="color:#1D9E75" id="today-count">${todayCompletedCount} ders tamamlandı</div>
       </div>
     </div>`;
 
