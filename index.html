@@ -553,9 +553,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Ders Adı</label>
-          <select class="form-select" id="ev-type">
+          <select class="form-select" id="ev-type" onchange="toggleGuestField()">
             <option value="Pilates">Pilates</option>
             <option value="Fonksiyonel">Fonksiyonel</option>
+            <option value="Deneme / Tanışma">Deneme / Tanışma</option>
           </select>
         </div>
         <div class="form-group">
@@ -578,6 +579,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <input type="hidden" id="ev-capacity" value="1">
         </div>
 
+      <div class="form-group" id="guest-name-group" style="display:none">
+        <label class="form-label">Misafir Adı Soyadı</label>
+        <input type="text" class="form-input" id="ev-guest-name" placeholder="Ad Soyad...">
+      </div>
       <div class="form-group">
         <label class="form-label">Üye Ekle (Paketten seans düşer)</label>
         <select class="form-select" id="ev-member-add" onchange="addMemberToEvent(this.value)">
@@ -2122,12 +2127,13 @@ function renderMultiDayView(numDays) {
                 const tr=S.trainers.find(t=>t.id===ev.trainerId);
                 const c=tr?tc(tr.color):TC[1];
                 const dur=ev.duration||45;
-                const memberNames=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name:null;}).filter(Boolean).join(', ');
+                const isDeneme=ev.type==='Deneme / Tanışma';
+                const memberNames=isDeneme&&ev.guestName?ev.guestName:(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name:null;}).filter(Boolean).join(', ');
                 const height=Math.max(dur,45);
                 const isCompleted=ev.completed===true;
-                const evBg=isCompleted?'#059669':c.bg;
-                const evBorder=isCompleted?'#047857':c.border;
-                const evColor=isCompleted?'#ffffff':c.text;
+                const evBg=isCompleted?'#059669':isDeneme?'#fff7ed':c.bg;
+                const evBorder=isCompleted?'#047857':isDeneme?'#f97316':c.border;
+                const evColor=isCompleted?'#ffffff':isDeneme?'#9a3412':c.text;
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
                 const isOwnEvent = currentUser.role !== 'trainer' || ev.trainerId === currentUser.trainerId;
@@ -2227,12 +2233,13 @@ function renderWeekView() {
                 const tr=S.trainers.find(t=>t.id===ev.trainerId);
                 const c=tr?tc(tr.color):TC[1];
                 const dur=ev.duration||45;
-                const memberNames=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name:null;}).filter(Boolean).join(', ');
+                const isDeneme=ev.type==='Deneme / Tanışma';
+                const memberNames=isDeneme&&ev.guestName?ev.guestName:(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name:null;}).filter(Boolean).join(', ');
                 const height=Math.max(dur,45);
                 const isCompleted=ev.completed===true;
-                const evBg=isCompleted?'#059669':c.bg;
-                const evBorder=isCompleted?'#047857':c.border;
-                const evColor=isCompleted?'#ffffff':c.text;
+                const evBg=isCompleted?'#059669':isDeneme?'#fff7ed':c.bg;
+                const evBorder=isCompleted?'#047857':isDeneme?'#f97316':c.border;
+                const evColor=isCompleted?'#ffffff':isDeneme?'#9a3412':c.text;
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
                 const isOwnEvent = currentUser.role !== 'trainer' || ev.trainerId === currentUser.trainerId;
@@ -2488,6 +2495,13 @@ function setCounter(id, val) {
   document.getElementById(id+'-val').textContent = v;
 }
 
+function toggleGuestField() {
+  const type = document.getElementById('ev-type')?.value;
+  const group = document.getElementById('guest-name-group');
+  const memberGroup = document.querySelector('[id="ev-member-add"]')?.closest('.form-group');
+  if(group) group.style.display = type==='Deneme / Tanışma' ? '' : 'none';
+}
+
 function openNewEvent(date='', time='09:00') {
   editingEventId=null;tempEventMembers=[];
   document.getElementById('event-modal-title').textContent='Randevu Ekle';
@@ -2540,6 +2554,8 @@ function openEditEvent(id, e) {
   document.getElementById('ev-duration').value=ev.duration||45;
   document.getElementById('ev-capacity').value=ev.capacity||1;
   document.getElementById('ev-note').value=ev.note||'';
+  document.getElementById('ev-guest-name').value=ev.guestName||'';
+  toggleGuestField();
   populateEventTrainers();
   document.getElementById('ev-trainer').value=ev.trainerId;
   populateEventMembers();renderEventMembersList();
@@ -2650,16 +2666,16 @@ function saveEvent() {
   const duration=parseInt(document.getElementById('ev-duration').value);
   const capacity=parseInt(document.getElementById('ev-capacity').value);
   const note=document.getElementById('ev-note').value;
+  const guestName=document.getElementById('ev-guest-name')?.value||'';
   const specialCount=0;
   const singleDropCount=0;
   if(!date||!startTime){toast('Tarih ve saat zorunludur.','error');return;}
 
   if(editingEventId) {
     const i=S.events.findIndex(e=>e.id===editingEventId);
-    if(i>-1) S.events[i]={...S.events[i],type,trainerId,date,startTime,duration,capacity,note,members:tempEventMembers,specialCount,singleDropCount};
+    if(i>-1) S.events[i]={...S.events[i],type,trainerId,date,startTime,duration,capacity,note,guestName,members:tempEventMembers,specialCount,singleDropCount};
   } else {
-    S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,members:tempEventMembers,specialCount,singleDropCount,completed:false});
-    // NOT: ders paketten düşme işlemi randevu tamamlandığında yapılır
+    S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,guestName,members:tempEventMembers,specialCount,singleDropCount,completed:false});
   }
   save();closeModal('event-modal');
   if(currentPage==='calendar')renderCalendar();
