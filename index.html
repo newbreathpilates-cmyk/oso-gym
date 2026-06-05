@@ -4419,7 +4419,8 @@ function renderPayments(tab) {
     if(!m) return true;
     return !(m.status==='Aktif' && m.start===p.date && m.package===p.package);
   });
-  const payments = tab==='guncel' ? guncelPayments : arsivPayments;
+  const archiveSearch = tab==='arsiv' ? (document.getElementById('arsiv-search')?.value||'').toLowerCase() : '';
+  const payments = tab==='guncel' ? guncelPayments : arsivPayments.filter(p=>!archiveSearch||p.member.toLowerCase().includes(archiveSearch));
 
   document.getElementById('topbar-actions').innerHTML=`<button class="btn btn-primary" onclick="openPaymentModal()"><i class="ti ti-plus"></i> Ödeme Ekle</button>`;
   document.getElementById('page-content').innerHTML=`
@@ -4456,6 +4457,9 @@ function renderPayments(tab) {
         🗂️ Arşiv <span style="background:${tab==='arsiv'?'rgba(255,255,255,0.3)':'#f3f4f6'};padding:1px 7px;border-radius:10px;font-size:11px">${arsivPayments.length}</span>
       </button>
     </div>
+    ${tab==='arsiv'?`<div style="margin-bottom:12px">
+      <input type="text" id="arsiv-search" placeholder="🔍 Üye adı ara..." oninput="renderPayments('arsiv')" class="form-input" style="width:100%;font-size:13px">
+    </div>`:''}
     <div class="card" style="padding:0;overflow:hidden">
       <!-- Masaüstü tablo -->
       <table class="member-table hakedis-detail-table">
