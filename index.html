@@ -4419,7 +4419,7 @@ function renderPayments(tab) {
     if(!m) return true;
     return !(m.status==='Aktif' && m.start===p.date && m.package===p.package);
   });
-  const archiveSearch = tab==='arsiv' ? (document.getElementById('arsiv-search')?.value||'').toLowerCase() : '';
+  const archiveSearch = tab==='arsiv' ? (window._arsivSearch||'').toLowerCase() : '';
   const payments = tab==='guncel' ? guncelPayments : arsivPayments.filter(p=>!archiveSearch||p.member.toLowerCase().includes(archiveSearch));
 
   document.getElementById('topbar-actions').innerHTML=`<button class="btn btn-primary" onclick="openPaymentModal()"><i class="ti ti-plus"></i> Ödeme Ekle</button>`;
@@ -4458,7 +4458,7 @@ function renderPayments(tab) {
       </button>
     </div>
     ${tab==='arsiv'?`<div style="margin-bottom:12px">
-      <input type="text" id="arsiv-search" placeholder="🔍 Üye adı ara..." oninput="renderPayments('arsiv')" class="form-input" style="width:100%;font-size:13px">
+      <input type="text" id="arsiv-search" placeholder="🔍 Üye adı ara..." oninput="window._arsivSearch=this.value;filterArsivList()" class="form-input" style="width:100%;font-size:13px">
     </div>`:''}
     <div class="card" style="padding:0;overflow:hidden">
       <!-- Masaüstü tablo -->
@@ -4495,7 +4495,7 @@ function renderPayments(tab) {
           const member = S.members.find(m=>m.id===p.memberId);
           const isActive = member && member.start === p.date && member.package === p.package && member.status === 'Aktif';
           const isPast = !isActive;
-          return `<div style="padding:12px;border-bottom:1px solid var(--border);${isPast?'opacity:0.55':''}">
+          return `<div class="arsiv-mobile-item" data-member="${p.member}" style="padding:12px;border-bottom:1px solid var(--border);${isPast?'opacity:0.55':''}">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
               <div style="flex:1;min-width:0">
                 <div style="display:flex;align-items:center;gap:6px">
@@ -4642,6 +4642,20 @@ function savePayment(){
     }
   }
   save();closeModal('payment-modal');renderPayments();toast(eid?'Ödeme güncellendi.':'Ödeme kaydedildi — paket tanımlandı.','success');
+}
+
+function filterArsivList() {
+  const q = (window._arsivSearch||'').toLowerCase();
+  // Masaüstü tablo satırları
+  document.querySelectorAll('#payments-table-body tr').forEach(tr=>{
+    const name = tr.querySelector('td:nth-child(2)')?.textContent?.toLowerCase()||'';
+    tr.style.display = !q||name.includes(q) ? '' : 'none';
+  });
+  // Mobil kartlar
+  document.querySelectorAll('.arsiv-mobile-item').forEach(el=>{
+    const name = el.dataset.member?.toLowerCase()||'';
+    el.style.display = !q||name.includes(q) ? '' : 'none';
+  });
 }
 
 function markPaymentPaid(id) {
