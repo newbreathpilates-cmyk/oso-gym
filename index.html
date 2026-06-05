@@ -4883,16 +4883,33 @@ function saveAllAttendance() {
   const ev = S.events.find(x=>x.id===yoklamaEventId);
   if(!ev) return;
   ev.completed = true;
-  // Paketten ders düş
+  // Paketten ders düş ve paket bitti mi kontrol et
+  const finishedMembers = [];
   (ev.members||[]).forEach(mid=>{
     const m=S.members.find(x=>x.id===mid);
-    if(m) m.used=(m.used||0)+1;
+    if(m) {
+      m.used=(m.used||0)+1;
+      const total = pkgSessions(m.package);
+      if(total>0 && total<999 && m.used>=total) {
+        m.status = 'Dersleri Bitti';
+        finishedMembers.push(m);
+      }
+    }
   });
   save();
   closeModal('yoklama-modal');
   if(currentPage==='calendar') renderCalendar();
   if(currentPage==='dashboard') renderDashboard();
   toast('Ders tamamlandı — paketlerden düşüldü. ✓','success');
+
+  // Paketi biten üye uyarısı
+  if(finishedMembers.length > 0) {
+    setTimeout(()=>{
+      finishedMembers.forEach(m=>{
+        showMotivationMessage('🎯 '+m.name+' '+m.surname+'\'ın paketi tamamlandı!\n\nYeni paket için ödeme ekleyebilirsiniz.');
+      });
+    }, 500);
+  }
 
   // Eğitmen motivasyon kontrolü — bugün 8 ders tamamladı mı?
   if(currentUser && currentUser.role === 'trainer' && ev.trainerId === currentUser.trainerId) {
