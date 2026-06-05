@@ -4691,24 +4691,6 @@ function deletePayment(id){
     }
   }
   S.payments=S.payments.filter(p=>p.id!==id);
-  // Üyenin durumunu yeniden hesapla
-  if(m) {
-    const total = pkgSessions(m.package||'');
-    const used = m.used||0;
-    const endDate = getEnd(m);
-    const today = localDate();
-    if(!m.package || !m.start) {
-      m.status = 'Paket Yok';
-    } else if(total>=999) {
-      m.status = 'Aktif';
-    } else if(total>0 && used>=total) {
-      m.status = 'Dersleri Bitti';
-    } else if(endDate!=='—' && endDate<today) {
-      m.status = 'Süresi Doldu';
-    } else {
-      m.status = 'Aktif';
-    }
-  }
   save();renderPayments();toast('Ödeme silindi — üye paketi güncellendi.');
 }
 
