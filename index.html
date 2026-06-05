@@ -628,7 +628,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div class="form-group"><label class="form-label">Adres</label><input class="form-input" id="m-adres" placeholder="Mahalle, cadde, sokak, no..."></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Durum</label>
-          <select class="form-select" id="m-status"><option>Aktif</option><option>Donduruldu</option><option>Süresi Doldu</option></select>
+          <select class="form-select" id="m-status"><option>Aktif</option><option>Donduruldu</option><option>Süresi Doldu</option><option>Dersleri Bitti</option><option>Paket Yok</option></select>
         </div>
         <div class="form-group"><label class="form-label">Cinsiyet</label>
           <select class="form-select" id="m-gender" onchange="updateBMI()"><option>Kadın</option><option>Erkek</option><option>Belirtmek istemiyorum</option></select>
@@ -4691,6 +4691,24 @@ function deletePayment(id){
     }
   }
   S.payments=S.payments.filter(p=>p.id!==id);
+  // Üyenin durumunu yeniden hesapla
+  if(m) {
+    const total = pkgSessions(m.package||'');
+    const used = m.used||0;
+    const endDate = getEnd(m);
+    const today = localDate();
+    if(!m.package || !m.start) {
+      m.status = 'Paket Yok';
+    } else if(total>=999) {
+      m.status = 'Aktif';
+    } else if(total>0 && used>=total) {
+      m.status = 'Dersleri Bitti';
+    } else if(endDate!=='—' && endDate<today) {
+      m.status = 'Süresi Doldu';
+    } else {
+      m.status = 'Aktif';
+    }
+  }
   save();renderPayments();toast('Ödeme silindi — üye paketi güncellendi.');
 }
 
