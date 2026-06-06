@@ -4845,12 +4845,21 @@ function openYoklamaModal(evId, e) {
   if(!ev) return;
   yoklamaEventId = parseInt(evId);
 
+  // Gelecekteki randevu kontrolü
+  const today = localDate();
+  const isFuture = ev.date > today;
+
+  // Eğitmen gelecekteki randevuyu tamamlandı yapamaz
+  if(isFuture && currentUser.role === 'trainer') {
+    toast('Tarihi henüz gelmemiş randevuyu tamamlandı yapamazsınız.', 'error');
+    return;
+  }
+
   // If already completed
   if(ev.completed) {
     if(currentUser.role!=='owner') { toast('Tamamlandı işaretini yalnızca işletme sahibi kaldırabilir.','error'); return; }
     if(!confirm('Bu dersi "Tamamlandı" durumundan çıkarmak istiyor musunuz? Üyelerin paketlerine ders iade edilecek.')) return;
     ev.completed = false;
-    // Dersi pakete iade et
     (ev.members||[]).forEach(mid=>{
       const m=S.members.find(x=>x.id===mid);
       if(m) m.used=Math.max(0,(m.used||0)-1);
@@ -4860,6 +4869,11 @@ function openYoklamaModal(evId, e) {
     if(currentPage==='dashboard') renderDashboard();
     toast('Tamamlandı geri alındı — dersler pakete iade edildi.');
     return;
+  }
+
+  // İşletme sahibi gelecekteki randevuyu tamamlandı yaparsa uyar
+  if(isFuture && currentUser.role === 'owner') {
+    if(!confirm('Bu randevunun tarihi henüz gelmedi ('+ev.date+'). Yine de tamamlandı yapmak istiyor musunuz?')) return;
   }
 
   const tr = S.trainers.find(t=>t.id===ev.trainerId);
