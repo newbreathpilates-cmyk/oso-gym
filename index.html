@@ -5348,15 +5348,15 @@ function renderGiderler() {
   const months = getMonthOptions();
   document.getElementById('topbar-actions').innerHTML = `
     <div class="flex gap-8">
-      <select id="gider-ay-filter" style="padding:7px 12px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;font-family:inherit" onchange="renderGiderler()">
-        ${months.map(m=>`<option value="${m}" ${m===tm?'selected':''}>${new Date(m+'-01').toLocaleDateString('tr-TR',{month:'long',year:'numeric'})}</option>`).join('')}
-        <option value="">Tümü</option>
+      <select id="gider-ay-filter" style="padding:7px 12px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;font-family:inherit" onchange="window._giderAy=this.value;renderGiderler()">
+        ${months.map(m=>`<option value="${m}" ${m===(window._giderAy||tm)?'selected':''}>${new Date(m+'-01').toLocaleDateString('tr-TR',{month:'long',year:'numeric'})}</option>`).join('')}
+        <option value="" ${!window._giderAy?'selected':''}>Tümü</option>
       </select>
       <button class="btn" onclick="openSabitGiderModal()"><i class="ti ti-refresh"></i> Sabit Giderler</button>
       <button class="btn btn-primary" onclick="openGiderModal()"><i class="ti ti-plus"></i> Gider Ekle</button>
     </div>`;
 
-  const selAy = document.getElementById('gider-ay-filter')?.value ?? tm;
+  const selAy = window._giderAy !== undefined ? window._giderAy : tm;
   if(!S.sabitGiderler) S.sabitGiderler = [];
   const sabitToplam = S.sabitGiderler.reduce((a,g)=>a+g.amount,0);
   const filtered = selAy ? S.giderler.filter(g=>g.date&&g.date.startsWith(selAy)) : S.giderler;
