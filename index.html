@@ -2148,7 +2148,7 @@ function renderMultiDayView(numDays) {
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
                 const isOwnEvent = currentUser.role !== 'trainer' || ev.trainerId === currentUser.trainerId;
-                return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:3px 5px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}" ${isOwnEvent?`onclick="openEditEvent(${ev.id},event)"`:''}> 
+                return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:3px 5px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}cursor:pointer" onclick="openEditEvent(${ev.id},event)"> 
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;height:100%;overflow:hidden">
                     <div style="flex:1;min-width:0;overflow:hidden">
                       <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.type}${isCompleted?' ✓':''}</div>
@@ -2254,7 +2254,7 @@ function renderWeekView() {
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
                 const isOwnEvent = currentUser.role !== 'trainer' || ev.trainerId === currentUser.trainerId;
-                return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:2px 3px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}cursor:${isOwnEvent?'pointer':'default'}" ${isOwnEvent?`onclick="openEditEvent(${ev.id},event)"`:''}">
+                return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:2px 3px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}cursor:pointer" onclick="openEditEvent(${ev.id},event)">
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;height:100%;overflow:hidden">
                     <div style="flex:1;min-width:0;overflow:hidden">
                       <div style="font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${ev.type}${isCompleted?' ✓':''}</div>
@@ -2555,10 +2555,25 @@ function openNewEventOnDay(dateStr, e) {
 function openEditEvent(id, e) {
   if(e){e.stopPropagation();}
   const ev=S.events.find(x=>x.id===id);if(!ev)return;
-  if(currentUser.role==='trainer'&&ev.trainerId!==currentUser.trainerId)return;
-  editingEventId=parseInt(id);tempEventMembers=[...(ev.members||[])];
-  document.getElementById('event-modal-title').textContent='Randevu Düzenle';
-  document.getElementById('ev-delete-btn').style.display=currentUser.role==='owner'?'':'none';
+  
+  const isOwnEvent = currentUser.role==='owner' || ev.trainerId===currentUser.trainerId;
+  
+  editingEventId = isOwnEvent ? parseInt(id) : null;
+  tempEventMembers=[...(ev.members||[])];
+  
+  document.getElementById('event-modal-title').textContent = isOwnEvent ? 'Randevu Düzenle' : 'Randevu Bilgileri (Salt Okunur)';
+  document.getElementById('ev-delete-btn').style.display = currentUser.role==='owner' ? '' : 'none';
+  
+  // Salt okunur modda kaydet butonu gizlensin
+  const saveBtn = document.querySelector('#event-modal .btn-primary');
+  if(saveBtn) saveBtn.style.display = isOwnEvent ? '' : 'none';
+  
+  // Formu readonly yap
+  ['ev-type','ev-date','ev-start','ev-duration','ev-capacity','ev-note','ev-guest-name','ev-trainer'].forEach(fid=>{
+    const el = document.getElementById(fid);
+    if(el) el.disabled = !isOwnEvent;
+  });
+  
   document.getElementById('ev-type').value=ev.type;
   document.getElementById('ev-date').value=ev.date;
   document.getElementById('ev-start').value=ev.startTime;
