@@ -4770,14 +4770,19 @@ function renderTrainerPortal() {
 
     <div class="portal-card">
       <div class="card-title">Yaklaşan Derslerim</div>
-      ${upcomingEvs.length ? upcomingEvs.map(ev=>`
-        <div class="attend-row">
+      ${upcomingEvs.length ? upcomingEvs.map(ev=>{
+        const memberNames=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name+' '+m.surname:'';}).filter(Boolean).join(', ');
+        const guestName=ev.guestName||'';
+        const displayName=memberNames||(guestName?(guestName+' (Misafir)'):'Üye yok');
+        return `<div class="attend-row">
           <div>
             <div style="font-weight:600;font-size:13px">${ev.type}</div>
             <div style="font-size:11px;color:var(--text2)">${new Date(ev.date).toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})} · ${ev.startTime}</div>
+            <div style="font-size:12px;color:var(--text);margin-top:2px">${displayName}</div>
           </div>
           <span class="badge badge-active">${(ev.members||[]).length} üye</span>
-        </div>`).join('') : '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">Yaklaşan ders yok</div>'}
+        </div>`;
+      }).join('') : '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">Yaklaşan ders yok</div>'}
     </div>`;
   setTimeout(renderTrainerMonthlyLessons, 50);
 }
