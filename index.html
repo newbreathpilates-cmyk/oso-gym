@@ -1291,7 +1291,7 @@ function updateMemberStatuses(data) {
       changed = true;
     }
     // Süresi doldu mu?
-    else if(endDate !== '—' && endDate < today && m.status==='Aktif') {
+    else if(endDate !== '—' && endDate <= today && m.status==='Aktif') {
       m.status = 'Süresi Doldu';
       changed = true;
     }
