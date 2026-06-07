@@ -1429,8 +1429,12 @@ function enterApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   buildSidebar();
-  visibleTrainers = new Set(S.trainers.map(t=>t.id));
-  // default page
+  // Eğitmen girince sadece kendisi görünsün, işletme sahibi herkesi görsün
+  if(currentUser.role === 'trainer') {
+    visibleTrainers = new Set([currentUser.trainerId]);
+  } else {
+    visibleTrainers = new Set(S.trainers.map(t=>t.id));
+  }
   if(currentUser.role === 'owner') navigateTo('dashboard');
   else navigateTo('trainer-portal');
 }
