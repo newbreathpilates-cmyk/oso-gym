@@ -1996,6 +1996,7 @@ function renderDashboard() {
 // CALENDAR
 // ══════════════════════════════════════
 function renderCalendar() {
+  startNowLineTimer();
   const isTrainer = currentUser.role === 'trainer';
   const topbarActions = document.getElementById('topbar-actions');
   topbarActions.innerHTML = `
@@ -2391,6 +2392,23 @@ function renderNowLine() {
   const pct = ((di)/7)*100;
   const w = (1/7)*100;
   return `<div class="now-line" style="top:${top}px;left:${pct}%;width:${w}%;"></div>`;
+}
+
+function updateNowLinePosition() {
+  const now = new Date();
+  const top = ((now.getHours()-6)*60+now.getMinutes());
+  const lines = document.querySelectorAll('.now-line');
+  lines.forEach(el => {
+    if(top < 0 || top > 14*60) { el.style.display='none'; }
+    else { el.style.display=''; el.style.top=top+'px'; }
+  });
+}
+
+// Her dakika kırmızı çizgiyi güncelle
+let _nowLineInterval = null;
+function startNowLineTimer() {
+  if(_nowLineInterval) clearInterval(_nowLineInterval);
+  _nowLineInterval = setInterval(updateNowLinePosition, 60000);
 }
 
 function getFilteredEvents() {
