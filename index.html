@@ -4544,7 +4544,7 @@ function renderPayments(tab) {
                 :`<span style="color:#059669;font-size:11px;font-weight:600">✅ Ödendi${p.paidDate?' · '+p.paidDate:''}</span>`
               }
             </td>
-            <td><div class="flex gap-8"><button class="btn btn-sm btn-icon" onclick="openShareModal(${p.memberId})"><i class="ti ti-share"></i></button><button class="btn btn-sm btn-icon" onclick="editPayment(${p.id})"><i class="ti ti-edit"></i></button><button class="btn btn-sm btn-icon btn-danger" onclick="deletePayment(${p.id})"><i class="ti ti-trash"></i></button></div></td>
+            <td><div class="flex gap-8"><button class="btn btn-sm btn-icon" onclick="editPayment(${p.id})"><i class="ti ti-edit"></i></button><button class="btn btn-sm btn-icon btn-danger" onclick="deletePayment(${p.id})"><i class="ti ti-trash"></i></button></div></td>
           </tr>`;
         }).join('')}</tbody>
       </table>
@@ -4574,7 +4574,6 @@ function renderPayments(tab) {
               <div style="text-align:right;flex-shrink:0;margin-left:10px">
                 <div style="font-weight:700;color:${isPast?'var(--text3)':'var(--green)'};font-size:15px">₺${p.amount.toLocaleString('tr-TR')}</div>
                 <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
-                  <button class="btn btn-sm btn-icon" onclick="openShareModal(${p.memberId})"><i class="ti ti-share"></i></button>
                   <button class="btn btn-sm btn-icon" onclick="editPayment(${p.id})"><i class="ti ti-edit"></i></button>
                   <button class="btn btn-sm btn-icon btn-danger" onclick="deletePayment(${p.id})"><i class="ti ti-trash"></i></button>
                 </div>
@@ -4737,9 +4736,14 @@ function deletePayment(id){
   if(!confirm(payment.member + ' adlı üyenin ' + payment.date + ' tarihli ' + payment.package + ' ödemesini silmek istediğinizden emin misiniz?')) return;
   const m = S.members.find(x=>x.id===payment.memberId);
   if(m) {
-    // Paket geçmişinden de sil
+    // Paket geçmişinden sil — package adı ve tarih eşleşmesi ile
     if(m.paketGecmisi) {
-      m.paketGecmisi = m.paketGecmisi.filter(p=>!(p.package===payment.package && p.date===payment.date));
+      m.paketGecmisi = m.paketGecmisi.filter(pg=>!(pg.package===payment.package && (pg.date===payment.date||pg.startDate===payment.date)));
+      // Aktif olan paketi de geçmişten kaldır
+      m.paketGecmisi = m.paketGecmisi.map(pg=>{
+        if(pg.status==='Aktif' && pg.package===payment.package) return null;
+        return pg;
+      }).filter(Boolean);
     }
     const otherPayments = S.payments.filter(p=>p.id!==id && p.memberId===payment.memberId);
     if(otherPayments.length > 0) {
@@ -4751,6 +4755,7 @@ function deletePayment(id){
       // Durum güncelle
       const total = pkgSessions(m.package);
       if(total>0 && total<999 && m.used>=total) m.status='Dersleri Bitti';
+      else if(getEnd(m)!=='—' && getEnd(m)!=='Sınırsız' && getEnd(m)<=localDate()) m.status='Süresi Doldu';
       else m.status='Aktif';
     } else {
       m.package = '';
