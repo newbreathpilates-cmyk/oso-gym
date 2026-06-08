@@ -1502,11 +1502,13 @@ function updateDashMonth() {
 
 function refreshApp() {
   const btn = document.getElementById('refresh-btn');
-  if(btn) { btn.style.animation='spin 0.6s linear'; setTimeout(()=>btn.style.animation='',700); }
-  loadState().then(()=>{
+  if(btn) btn.style.animation='spin 0.6s linear';
+  setTimeout(()=>{ if(btn) btn.style.animation=''; }, 700);
+  loadState();
+  setTimeout(()=>{
     navigateTo(currentPage);
     toast('Veriler güncellendi ✓','success');
-  });
+  }, 1000);
 }
 
 function toggleReveal(id) {
