@@ -1205,16 +1205,13 @@ window.firebaseLoad().then(data => {
   // Gerçek zamanlı dinleyici — başka kullanıcılar değişiklik yapınca otomatik güncelle
   let isFirstSnapshot = true;
   onSnapshot(DOC_REF, (snap) => {
-    if(isFirstSnapshot) { isFirstSnapshot = false; return; } // İlk yüklemede tetikleme
+    if(isFirstSnapshot) { isFirstSnapshot = false; return; }
     if(!snap.exists()) return;
     try {
       const newData = JSON.parse(snap.data().data);
       if(!newData) return;
-      // Mevcut state'i güncelle
-      if(window.S && window.loadState && window.save) {
-        window._firebaseData = newData;
+      if(window.S) {
         window.S = newData;
-        // Aktif sayfayı yenile
         if(window.currentPage && window.navigateTo) {
           window.navigateTo(window.currentPage);
         }
@@ -1504,22 +1501,11 @@ function refreshApp() {
   const btn = document.getElementById('refresh-btn');
   if(btn) btn.style.animation='spin 0.6s linear';
   setTimeout(()=>{ if(btn) btn.style.animation=''; }, 700);
-  // Sadece Firebase'den oku, localStorage'a bakma
-  if(window.firebaseRef) {
-    window.firebaseRef.get().then(doc=>{
-      if(doc.exists) {
-        S = doc.data();
-        if(!S.paketFiyatlari) S.paketFiyatlari = defaultState().paketFiyatlari;
-        if(!S.giderler) S.giderler = [];
-        if(!S.sabitGiderler) S.sabitGiderler = [];
-        navigateTo(currentPage);
-        toast('Veriler güncellendi ✓','success');
-      }
-    }).catch(()=>toast('Bağlantı hatası','error'));
-  } else {
+  loadState();
+  setTimeout(()=>{
     navigateTo(currentPage);
     toast('Veriler güncellendi ✓','success');
-  }
+  }, 1500);
 }
 
 function toggleReveal(id) {
