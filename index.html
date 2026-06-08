@@ -1504,11 +1504,22 @@ function refreshApp() {
   const btn = document.getElementById('refresh-btn');
   if(btn) btn.style.animation='spin 0.6s linear';
   setTimeout(()=>{ if(btn) btn.style.animation=''; }, 700);
-  loadState();
-  setTimeout(()=>{
+  // Sadece Firebase'den oku, localStorage'a bakma
+  if(window.firebaseRef) {
+    window.firebaseRef.get().then(doc=>{
+      if(doc.exists) {
+        S = doc.data();
+        if(!S.paketFiyatlari) S.paketFiyatlari = defaultState().paketFiyatlari;
+        if(!S.giderler) S.giderler = [];
+        if(!S.sabitGiderler) S.sabitGiderler = [];
+        navigateTo(currentPage);
+        toast('Veriler güncellendi ✓','success');
+      }
+    }).catch(()=>toast('Bağlantı hatası','error'));
+  } else {
     navigateTo(currentPage);
     toast('Veriler güncellendi ✓','success');
-  }, 1000);
+  }
 }
 
 function toggleReveal(id) {
@@ -1996,7 +2007,6 @@ function renderDashboard() {
 // CALENDAR
 // ══════════════════════════════════════
 function renderCalendar() {
-  startNowLineTimer();
   const isTrainer = currentUser.role === 'trainer';
   const topbarActions = document.getElementById('topbar-actions');
   topbarActions.innerHTML = `
