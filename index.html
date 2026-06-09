@@ -2794,8 +2794,18 @@ function filterMembersTable(){
 
   let list = [...S.members];
 
-  // Arama filtresi
-  if(q) list = list.filter(m=>(m.name+' '+m.surname+(m.phone||'')).toLowerCase().includes(q));
+  // Arama filtresi — Türkçe karakter desteği
+  if(q) {
+    const normalize = s => s.toLowerCase()
+      .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
+      .replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c');
+    const nq = normalize(q);
+    list = list.filter(m=>{
+      const fullName = normalize(m.name+' '+m.surname);
+      const phone = (m.phone||'').replace(/\s/g,'');
+      return fullName.includes(nq) || phone.includes(nq);
+    });
+  }
 
   // Kategori filtresi
   if(f==='aktif') list = list.filter(m=>m.status==='Aktif');
@@ -5000,8 +5010,17 @@ function saveAllAttendance() {
     const todayStr = localDate();
     const todayCompleted = S.events.filter(e=>e.trainerId===currentUser.trainerId&&e.date===todayStr&&e.completed).length;
     const trainer = S.trainers.find(t=>t.id===currentUser.trainerId);
+    const trainerName = trainer ? trainer.name.split(' ')[0] : '';
     if(todayCompleted === 8) {
-      showMotivationMessage('🎉 Harika iş çıkardın ' + (trainer?trainer.name.split(' ')[0]:'') + '! Bugün 8 ders tamamladın! Muhteşemsin! 💪');
+      showMotivationMessage('🎉 Harika iş çıkardın ' + trainerName + '! Bugün 8 ders tamamladın! Muhteşemsin! 💪');
+    } else if(todayCompleted === 9) {
+      showMotivationMessage('🔥 Dur dur dur... ' + trainerName + ', 9 ders mi?! Sen bir makinasın! Durdurulamıyorsun! 🤖');
+    } else if(todayCompleted === 10) {
+      showMotivationMessage('💪 10 DERS! ' + trainerName + ' bugün efsane yazdı! Salonun en güçlüsü sensin! 🏆');
+    } else if(todayCompleted === 11) {
+      showMotivationMessage('🚀 11 ders... ' + trainerName + ' artık durdurulamaz! Roket gibi! Seni kimse tutamaz! 😤');
+    } else if(todayCompleted >= 12) {
+      showMotivationMessage('👑 TAMAM ' + trainerName + ' SEN ARTIK EFSANESIN! Bugün ' + todayCompleted + ' ders! Eve git biraz dinlen lütfen 😂❤️');
     }
   }
 }
