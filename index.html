@@ -2730,8 +2730,11 @@ function saveEvent() {
     S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,guestName,members:tempEventMembers,specialCount,singleDropCount,completed:false});
   }
   save();closeModal('event-modal');
-  if(currentPage==='calendar')renderCalendar();
-  if(currentPage==='dashboard')renderDashboard();
+  // Takvim scroll pozisyonunu koru
+  const calScroll = document.getElementById('week-grid-scroll');
+  const scrollPos = calScroll ? calScroll.scrollTop : 0;
+  if(currentPage==='calendar') { renderCalendar(); setTimeout(()=>{ const cs=document.getElementById('week-grid-scroll'); if(cs) cs.scrollTop=scrollPos; },50); }
+  if(currentPage==='dashboard') renderDashboard();
   toast('Randevu kaydedildi.','success');
 }
 
