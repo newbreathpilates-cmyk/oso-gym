@@ -1906,8 +1906,14 @@ function renderDashboard() {
         <div class="card">
           <div class="card-title">Paket Durumu</div>
           ${(()=>{
-            // Paketi bitenler
-            const expired = S.members.filter(m=>m.status==='Süresi Doldu'||m.status==='Dersleri Bitti');
+            // Paketi bitenler — bitiş tarihine göre sırala (en yakın biten en üstte)
+            const expired = S.members.filter(m=>m.status==='Süresi Doldu'||m.status==='Dersleri Bitti')
+              .map(m=>({...m, _endDate: getEnd(m)}))
+              .sort((a,b)=>{
+                const da = a._endDate==='—'||a._endDate==='Sınırsız' ? '0000' : a._endDate;
+                const db = b._endDate==='—'||b._endDate==='Sınırsız' ? '0000' : b._endDate;
+                return db > da ? 1 : db < da ? -1 : 0;
+              });
             // Yakında bitecekler (aktif, 15 gün içinde veya son 5 ders)
             const soon = S.members.filter(m=>{
               if(m.status!=='Aktif') return false;
