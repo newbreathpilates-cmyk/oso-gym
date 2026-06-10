@@ -2329,9 +2329,14 @@ function renderCalSearchResults(query) {
     el.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">En az 2 karakter yazın</div>';
     return;
   }
-  const q = query.toLowerCase();
+  const normalize = s => s
+    .replace(/İ/g,'i').replace(/I/g,'i')
+    .replace(/Ğ/g,'g').replace(/Ü/g,'u').replace(/Ş/g,'s').replace(/Ö/g,'o').replace(/Ç/g,'c')
+    .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c')
+    .toLowerCase();
+  const q = normalize(query);
   // Üye bul
-  const matchedMembers = S.members.filter(m=>(m.name+' '+m.surname).toLowerCase().includes(q));
+  const matchedMembers = S.members.filter(m=>normalize((m.name||'')+' '+(m.surname||'')).includes(q));
   if(!matchedMembers.length) {
     el.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">Üye bulunamadı</div>';
     return;
