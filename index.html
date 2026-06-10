@@ -2796,12 +2796,14 @@ function filterMembersTable(){
 
   // Arama filtresi — Türkçe karakter desteği
   if(q) {
-    const normalize = s => s.toLowerCase()
-      .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
-      .replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c');
+    const normalize = s => s
+      .replace(/İ/g,'i').replace(/I/g,'i')
+      .replace(/Ğ/g,'g').replace(/Ü/g,'u').replace(/Ş/g,'s').replace(/Ö/g,'o').replace(/Ç/g,'c')
+      .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c')
+      .toLowerCase();
     const nq = normalize(q);
     list = list.filter(m=>{
-      const fullName = normalize(m.name+' '+m.surname);
+      const fullName = normalize((m.name||'')+' '+(m.surname||''));
       const phone = (m.phone||'').replace(/\s/g,'');
       return fullName.includes(nq) || phone.includes(nq);
     });
