@@ -4726,6 +4726,7 @@ function filterArsivList() {
 function markPaymentPaid(id) {
   const p = S.payments.find(x=>x.id===id);
   if(!p) return;
+  if(!confirm(p.member + ' adlı üyenin ' + p.package + ' ödemesini ödendi olarak işaretlemek istiyor musunuz?')) return;
   p.status = 'odendi';
   p.paidDate = localDate();
   save();
