@@ -2807,11 +2807,20 @@ function filterMembersTable(){
 
   // Arama filtresi — Türkçe karakter desteği
   if(q) {
-    const normalize = s => s
-      .replace(/İ/g,'i').replace(/I/g,'i')
-      .replace(/Ğ/g,'g').replace(/Ü/g,'u').replace(/Ş/g,'s').replace(/Ö/g,'o').replace(/Ç/g,'c')
-      .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c')
-      .toLowerCase();
+    const normalize = s => {
+      let r = '';
+      for(let i=0;i<s.length;i++){
+        const c = s[i];
+        if(c==='İ'||c==='I'||c==='ı'||c==='i') r+='i';
+        else if(c==='Ğ'||c==='ğ') r+='g';
+        else if(c==='Ü'||c==='ü') r+='u';
+        else if(c==='Ş'||c==='ş') r+='s';
+        else if(c==='Ö'||c==='ö') r+='o';
+        else if(c==='Ç'||c==='ç') r+='c';
+        else r+=c.toLowerCase();
+      }
+      return r;
+    };
     const nq = normalize(q);
     list = list.filter(m=>{
       const fullName = normalize((m.name||'')+' '+(m.surname||''));
@@ -5117,6 +5126,16 @@ function getMonthOptions() {
   return months;
 }
 
+function toggleHakedisDetail(id) {
+  const el = document.getElementById(id);
+  const trainerId = id.replace('hakedis-detail-','');
+  const btn = document.getElementById('hakedis-btn-'+trainerId);
+  if(!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? 'block' : 'none';
+  if(btn) btn.innerHTML = '<i class="ti ti-list" style="font-size:14px"></i> ' + (isHidden ? 'Detayı Gizle ▲' : 'Detayı Göster ▼');
+}
+
 function renderHakedis() {
   const months = getMonthOptions();
   const selMonth = (window._hakedisMonth) || months[0];
@@ -5214,6 +5233,10 @@ function renderHakedis() {
         </div>
 
         ${detail.length ? `
+        <button onclick="toggleHakedisDetail('hakedis-detail-${t.id}')" id="hakedis-btn-${t.id}" style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px">
+          <i class="ti ti-list" style="font-size:14px"></i> Detayı Göster ▼
+        </button>
+        <div id="hakedis-detail-${t.id}" style="display:none">
         <!-- Masaüstü tablo -->
         <table class="member-table hakedis-detail-table" style="font-size:11px">
           <thead><tr><th>Tarih</th><th>Saat</th><th>Ders</th><th>Üye</th><th>Ders Fiyatı</th><th>Oran</th><th>Hakediş</th></tr></thead>
@@ -5250,6 +5273,7 @@ function renderHakedis() {
             <span style="font-weight:700;font-size:12px">Toplam Hakediş</span>
             <span style="font-weight:700;color:var(--green)">₺${Math.round(total).toLocaleString('tr-TR')}</span>
           </div>
+        </div>
         </div>` : `<div style="font-size:12px;color:var(--text3);text-align:center;padding:14px 0">Bu ay ders yok</div>`}
 
         ${!t.pct?`<div style="margin-top:10px;padding:8px 12px;background:#fef3c7;border-radius:var(--radius-sm);font-size:11px;color:#92400e"><i class="ti ti-alert-triangle" style="vertical-align:-2px"></i> Yüzde oranı tanımlanmamış. <button class="btn btn-sm" style="margin-left:6px;font-size:10px" onclick="openTrainerModal(${t.id})">Düzenle</button></div>`:''}
