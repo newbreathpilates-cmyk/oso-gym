@@ -1809,7 +1809,7 @@ function renderDashboard() {
     const fiyat = pay ? pay.amount : getPaketFiyati(m.package);
     const perLesson = fiyat / total;
     const tutar = remaining * perLesson;
-    const isPaid = pay ? pay.status==='odendi' : false;
+    const isPaid = pay ? (pay.status==='odendi' || pay.status===undefined) : false;
     if(isPaid) {
       devredenDeger += tutar;
       devredenDersSayisi += remaining;
