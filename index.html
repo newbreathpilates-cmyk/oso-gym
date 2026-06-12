@@ -1792,8 +1792,11 @@ function renderDashboard() {
     if(!total || total>=999) return; // sınırsız hariç
     const remaining = Math.max(0, total - (m.used||0));
     if(remaining<=0) return;
-    const fiyat = getPaketFiyati(m.package);
-    const perLesson = fiyat / total; // ders başı fiyat
+    // Üyenin bu paket için gerçekte ödediği tutarı bul
+    const pay = (S.payments||[]).filter(p=>p.memberId===m.id && p.package===m.package && p.date===m.start).sort((a,b)=>b.date>a.date?1:-1)[0]
+              || (S.payments||[]).filter(p=>p.memberId===m.id && p.package===m.package).sort((a,b)=>b.date>a.date?1:-1)[0];
+    const fiyat = pay ? pay.amount : getPaketFiyati(m.package);
+    const perLesson = fiyat / total; // gerçek ders başı fiyat
     const tutar = remaining * perLesson;
     devredenDeger += tutar;
     devredenDersSayisi += remaining;
