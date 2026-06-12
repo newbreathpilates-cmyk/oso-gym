@@ -1783,7 +1783,8 @@ function renderDashboard() {
     const remaining = Math.max(0, total - (m.used||0));
     if(remaining<=0) return;
     const fiyat = getPaketFiyati(m.package);
-    devredenDeger += remaining * fiyat;
+    const perLesson = fiyat / total; // ders başı fiyat
+    devredenDeger += remaining * perLesson;
     devredenDersSayisi += remaining;
     devredenUyeSayisi++;
   });
