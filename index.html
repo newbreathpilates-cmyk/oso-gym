@@ -1505,6 +1505,15 @@ function refreshApp() {
   }, 1500);
 }
 
+function toggleDevredenDetail() {
+  const list = document.getElementById('devreden-detail-list');
+  const btn = document.getElementById('devreden-detail-btn');
+  if(!list) return;
+  const isHidden = list.style.display === 'none';
+  list.style.display = isHidden ? 'block' : 'none';
+  if(btn) btn.innerHTML = '<i class="ti ti-list" style="font-size:14px"></i> ' + (isHidden ? 'Detayı Gizle ▲' : 'Detayı Göster ▼');
+}
+
 function toggleReveal(id) {
   if(!window._dashReveal || !window._dashReveal[id]) return;
   const r = window._dashReveal[id];
@@ -1776,6 +1785,7 @@ function renderDashboard() {
 
   // Devreden Ders Değeri — aktif üyelerin kalan ders × ders fiyatı toplamı
   let devredenDeger = 0, devredenDersSayisi = 0, devredenUyeSayisi = 0;
+  const devredenDetay = [];
   S.members.forEach(m=>{
     if(m.status!=='Aktif') return;
     const total = pkgSessions(m.package);
@@ -1784,10 +1794,13 @@ function renderDashboard() {
     if(remaining<=0) return;
     const fiyat = getPaketFiyati(m.package);
     const perLesson = fiyat / total; // ders başı fiyat
-    devredenDeger += remaining * perLesson;
+    const tutar = remaining * perLesson;
+    devredenDeger += tutar;
     devredenDersSayisi += remaining;
     devredenUyeSayisi++;
+    devredenDetay.push({name: m.name+' '+m.surname, remaining, tutar});
   });
+  devredenDetay.sort((a,b)=>b.tutar-a.tutar);
   const todayCompletedCount = S.events.filter(e=>e.date===todayStr&&e.completed).length;
   const todayCompletedRev = S.events.filter(e=>e.date===todayStr&&e.completed).reduce((total, ev) => {
     return total + (ev.members||[]).reduce((sum, mid) => {
@@ -1860,6 +1873,24 @@ function renderDashboard() {
       <div style="font-size:28px;font-weight:900;color:#1e3a8a" id="devreden-rev">••••••</div>
       <div style="font-size:12px;color:#3730a3;margin-top:4px">${devredenUyeSayisi} aktif üyede toplam ${devredenDersSayisi} ders kaldı</div>
       <div style="font-size:11px;color:#6366f1;margin-top:6px;line-height:1.5">Bu tutar henüz verilmemiş ders hizmetlerinin karşılığıdır — kasada bu kadar "ertelenmiş gelir" bulunmalıdır.</div>
+      ${devredenDetay.length?`
+      <button onclick="toggleDevredenDetail()" id="devreden-detail-btn" style="width:100%;padding:8px;margin-top:10px;background:white;border:1px solid #bfdbfe;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;color:#1e3a8a;display:flex;align-items:center;justify-content:center;gap:6px">
+        <i class="ti ti-list" style="font-size:14px"></i> Detayı Göster ▼
+      </button>
+      <div id="devreden-detail-list" style="display:none;margin-top:8px">
+        ${devredenDetay.map(d=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #dbeafe">
+          <div style="font-size:13px;font-weight:500;color:#1e3a8a">${d.name}</div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:#6366f1">${d.remaining} ders</div>
+            <div style="font-size:13px;font-weight:700;color:#1e3a8a">₺${Math.round(d.tutar).toLocaleString('tr-TR')}</div>
+          </div>
+        </div>`).join('')}
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;color:#1e3a8a">
+          <span>Toplam</span>
+          <span>${devredenDersSayisi} ders · ₺${Math.round(devredenDeger).toLocaleString('tr-TR')}</span>
+        </div>
+      </div>`:''}
     </div>`;
 
   // Gerçek değerleri sakla
