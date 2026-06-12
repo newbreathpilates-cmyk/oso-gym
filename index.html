@@ -1773,6 +1773,20 @@ function renderDashboard() {
     },0);
 
   const monthLessonCount = S.events.filter(e=>e.date&&e.date.startsWith(tm)&&e.completed).length;
+
+  // Devreden Ders Değeri — aktif üyelerin kalan ders × ders fiyatı toplamı
+  let devredenDeger = 0, devredenDersSayisi = 0, devredenUyeSayisi = 0;
+  S.members.forEach(m=>{
+    if(m.status!=='Aktif') return;
+    const total = pkgSessions(m.package);
+    if(!total || total>=999) return; // sınırsız hariç
+    const remaining = Math.max(0, total - (m.used||0));
+    if(remaining<=0) return;
+    const fiyat = getPaketFiyati(m.package);
+    devredenDeger += remaining * fiyat;
+    devredenDersSayisi += remaining;
+    devredenUyeSayisi++;
+  });
   const todayCompletedCount = S.events.filter(e=>e.date===todayStr&&e.completed).length;
   const todayCompletedRev = S.events.filter(e=>e.date===todayStr&&e.completed).reduce((total, ev) => {
     return total + (ev.members||[]).reduce((sum, mid) => {
@@ -1834,6 +1848,17 @@ function renderDashboard() {
         <div class="stat-value" style="color:#0a5c41" id="today-rev">••••••</div>
         <div class="stat-sub" style="color:#1D9E75" id="today-count">${todayCompletedCount} ders tamamlandı</div>
       </div>
+    </div>
+
+    <!-- DEVREDEN DERS DEĞERİ -->
+    <div class="card" style="margin-top:14px;border-color:#bfdbfe;background:#eff6ff">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700;font-size:14px;color:#1e3a8a">📦 Devreden Ders Değeri</div>
+        <button onclick="toggleReveal('devreden-rev')" style="border:none;background:none;cursor:pointer;color:#1e3a8a;font-size:13px;padding:0">👁</button>
+      </div>
+      <div style="font-size:28px;font-weight:900;color:#1e3a8a" id="devreden-rev">••••••</div>
+      <div style="font-size:12px;color:#3730a3;margin-top:4px">${devredenUyeSayisi} aktif üyede toplam ${devredenDersSayisi} ders kaldı</div>
+      <div style="font-size:11px;color:#6366f1;margin-top:6px;line-height:1.5">Bu tutar henüz verilmemiş ders hizmetlerinin karşılığıdır — kasada bu kadar "ertelenmiş gelir" bulunmalıdır.</div>
     </div>`;
 
   // Gerçek değerleri sakla
@@ -1842,7 +1867,8 @@ function renderDashboard() {
 
   window._dashReveal = {
     'month-rev': { value: '₺'+Math.round(monthLessonRev).toLocaleString('tr-TR'), shown: false },
-    'today-rev': { value: '₺'+Math.round(todayCompletedRev).toLocaleString('tr-TR'), shown: false }
+    'today-rev': { value: '₺'+Math.round(todayCompletedRev).toLocaleString('tr-TR'), shown: false },
+    'devreden-rev': { value: '₺'+Math.round(devredenDeger).toLocaleString('tr-TR'), shown: false }
   };
 
   document.getElementById('page-content').innerHTML += `
