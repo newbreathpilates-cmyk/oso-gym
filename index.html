@@ -1514,6 +1514,15 @@ function toggleDevredenDetail() {
   if(btn) btn.innerHTML = '<i class="ti ti-list" style="font-size:14px"></i> ' + (isHidden ? 'Detayı Gizle ▲' : 'Detayı Göster ▼');
 }
 
+function toggleBekleyenDetail() {
+  const list = document.getElementById('bekleyen-detail-list');
+  const btn = document.getElementById('bekleyen-detail-btn');
+  if(!list) return;
+  const isHidden = list.style.display === 'none';
+  list.style.display = isHidden ? 'block' : 'none';
+  if(btn) btn.innerHTML = '<i class="ti ti-list" style="font-size:14px"></i> ' + (isHidden ? 'Detayı Gizle ▲' : 'Detayı Göster ▼');
+}
+
 function toggleReveal(id) {
   if(!window._dashReveal || !window._dashReveal[id]) return;
   const r = window._dashReveal[id];
@@ -1783,27 +1792,38 @@ function renderDashboard() {
 
   const monthLessonCount = S.events.filter(e=>e.date&&e.date.startsWith(tm)&&e.completed).length;
 
-  // Devreden Ders Değeri — aktif üyelerin kalan ders × ders fiyatı toplamı
+  // Devreden Ders Değeri — sadece ödemesi ALINMIŞ aktif üyelerin kalan ders değeri
   let devredenDeger = 0, devredenDersSayisi = 0, devredenUyeSayisi = 0;
   const devredenDetay = [];
+  // Ödeme Bekleyen Paketler — ödemesi alınmamış aktif üyelerin paket değeri
+  let bekleyenDeger = 0, bekleyenDersSayisi = 0, bekleyenUyeSayisi = 0;
+  const bekleyenDetay = [];
   S.members.forEach(m=>{
     if(m.status!=='Aktif') return;
     const total = pkgSessions(m.package);
     if(!total || total>=999) return; // sınırsız hariç
     const remaining = Math.max(0, total - (m.used||0));
     if(remaining<=0) return;
-    // Üyenin bu paket için gerçekte ödediği tutarı bul
     const pay = (S.payments||[]).filter(p=>p.memberId===m.id && p.package===m.package && p.date===m.start).sort((a,b)=>b.date>a.date?1:-1)[0]
               || (S.payments||[]).filter(p=>p.memberId===m.id && p.package===m.package).sort((a,b)=>b.date>a.date?1:-1)[0];
     const fiyat = pay ? pay.amount : getPaketFiyati(m.package);
-    const perLesson = fiyat / total; // gerçek ders başı fiyat
+    const perLesson = fiyat / total;
     const tutar = remaining * perLesson;
-    devredenDeger += tutar;
-    devredenDersSayisi += remaining;
-    devredenUyeSayisi++;
-    devredenDetay.push({name: m.name+' '+m.surname, remaining, tutar});
+    const isPaid = pay ? pay.status==='odendi' : false;
+    if(isPaid) {
+      devredenDeger += tutar;
+      devredenDersSayisi += remaining;
+      devredenUyeSayisi++;
+      devredenDetay.push({name: m.name+' '+m.surname, remaining, tutar});
+    } else {
+      bekleyenDeger += tutar;
+      bekleyenDersSayisi += remaining;
+      bekleyenUyeSayisi++;
+      bekleyenDetay.push({name: m.name+' '+m.surname, remaining, tutar});
+    }
   });
   devredenDetay.sort((a,b)=>b.tutar-a.tutar);
+  bekleyenDetay.sort((a,b)=>b.tutar-a.tutar);
   const todayCompletedCount = S.events.filter(e=>e.date===todayStr&&e.completed).length;
   const todayCompletedRev = S.events.filter(e=>e.date===todayStr&&e.completed).reduce((total, ev) => {
     return total + (ev.members||[]).reduce((sum, mid) => {
@@ -1894,6 +1914,35 @@ function renderDashboard() {
           <span>${devredenDersSayisi} ders · ₺${Math.round(devredenDeger).toLocaleString('tr-TR')}</span>
         </div>
       </div>`:''}
+    </div>
+
+    <!-- ÖDEME BEKLEYEN PAKETLER -->
+    <div class="card" style="margin-top:14px;border-color:#fde68a;background:#fffbeb">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700;font-size:14px;color:#92400e">⏳ Ödeme Bekleyen Paketler</div>
+        <button onclick="toggleReveal('bekleyen-rev')" style="border:none;background:none;cursor:pointer;color:#92400e;font-size:13px;padding:0">👁</button>
+      </div>
+      <div style="font-size:28px;font-weight:900;color:#92400e" id="bekleyen-rev">••••••</div>
+      <div style="font-size:12px;color:#b45309;margin-top:4px">${bekleyenUyeSayisi} üyenin toplam ${bekleyenDersSayisi} dersi henüz tahsil edilmedi</div>
+      <div style="font-size:11px;color:#d97706;margin-top:6px;line-height:1.5">Bu tutar "Devreden Ders Değeri"ne dahil değildir — ödeme alındığında otomatik olarak o kartta görünecektir.</div>
+      ${bekleyenDetay.length?`
+      <button onclick="toggleBekleyenDetail()" id="bekleyen-detail-btn" style="width:100%;padding:8px;margin-top:10px;background:white;border:1px solid #fde68a;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;color:#92400e;display:flex;align-items:center;justify-content:center;gap:6px">
+        <i class="ti ti-list" style="font-size:14px"></i> Detayı Göster ▼
+      </button>
+      <div id="bekleyen-detail-list" style="display:none;margin-top:8px">
+        ${bekleyenDetay.map(d=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #fef3c7">
+          <div style="font-size:13px;font-weight:500;color:#92400e">${d.name}</div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:#d97706">${d.remaining} ders</div>
+            <div style="font-size:13px;font-weight:700;color:#92400e">₺${Math.round(d.tutar).toLocaleString('tr-TR')}</div>
+          </div>
+        </div>`).join('')}
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;color:#92400e">
+          <span>Toplam</span>
+          <span>${bekleyenDersSayisi} ders · ₺${Math.round(bekleyenDeger).toLocaleString('tr-TR')}</span>
+        </div>
+      </div>`:''}
     </div>`;
 
   // Gerçek değerleri sakla
@@ -1903,7 +1952,8 @@ function renderDashboard() {
   window._dashReveal = {
     'month-rev': { value: '₺'+Math.round(monthLessonRev).toLocaleString('tr-TR'), shown: false },
     'today-rev': { value: '₺'+Math.round(todayCompletedRev).toLocaleString('tr-TR'), shown: false },
-    'devreden-rev': { value: '₺'+Math.round(devredenDeger).toLocaleString('tr-TR'), shown: false }
+    'devreden-rev': { value: '₺'+Math.round(devredenDeger).toLocaleString('tr-TR'), shown: false },
+    'bekleyen-rev': { value: '₺'+Math.round(bekleyenDeger).toLocaleString('tr-TR'), shown: false }
   };
 
   document.getElementById('page-content').innerHTML += `
