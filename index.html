@@ -1266,6 +1266,35 @@ function updateMemberStatuses(data) {
   if(!data.members) return {data, changed: false};
   const today = localDate();
   let changed = false;
+
+  // Beklemedeki ödemeleri kontrol et — başlangıç tarihi geldiyse aktif yap
+  data.members.forEach(m => {
+    const pendingPays = (data.payments||[]).filter(p=>p.memberId===m.id && p.date<=today && p.package!==m.package)
+      .sort((a,b)=>a.date>b.date?1:-1);
+    if(pendingPays.length > 0) {
+      const nextPay = pendingPays[pendingPays.length-1];
+      // Bu ödeme tarihi >= üyenin mevcut paket tarihi mi?
+      if(!m.start || nextPay.date >= m.start) {
+        // Mevcut paketi geçmişe al
+        if(m.package && m.start) {
+          if(!m.paketGecmisi) m.paketGecmisi = [];
+          const alreadyInHistory = m.paketGecmisi.some(p=>p.package===m.package && p.start===m.start);
+          if(!alreadyInHistory) {
+            m.paketGecmisi.push({
+              package: m.package, start: m.start, date: m.start,
+              end: today, used: m.used||0, total: pkgSessions(m.package), amount: 0
+            });
+          }
+        }
+        m.package = nextPay.package;
+        m.start = nextPay.date;
+        m.used = 0;
+        m.status = 'Aktif';
+        changed = true;
+      }
+    }
+  });
+
   data.members.forEach(m => {
     if(!m.package || !m.start) return;
     const total = pkgSessions(m.package);
@@ -4882,25 +4911,34 @@ function savePayment(){
   } else {
     d.id=S.nextId++;S.payments.push(d);
     if(m){
-      // Mevcut aktif paketi geçmişe kaydet
-      if(m.package && m.start) {
-        if(!m.paketGecmisi) m.paketGecmisi = [];
-        m.paketGecmisi.push({
-          package: m.package,
-          start: m.start,
-          date: m.start, // ödeme başlangıç tarihi — matching için
-          end: localDate(),
-          used: m.used||0,
-          total: pkgSessions(m.package),
-          amount: (S.payments.filter(p=>p.memberId===mid&&p.package===m.package).slice(-1)[0]||{}).amount||0
-        });
+      // Yeni paketin başlangıç tarihi bugün veya geçmişte mi?
+      const today = localDate();
+      if(date <= today) {
+        // Mevcut aktif paketi geçmişe kaydet
+        if(m.package && m.start) {
+          if(!m.paketGecmisi) m.paketGecmisi = [];
+          m.paketGecmisi.push({
+            package: m.package,
+            start: m.start,
+            date: m.start,
+            end: today,
+            used: m.used||0,
+            total: pkgSessions(m.package),
+            amount: (S.payments.filter(p=>p.memberId===mid&&p.package===m.package).slice(-1)[0]||{}).amount||0
+          });
+        }
+        // Yeni paketi hemen aktif yap
+        m.package=pkg;
+        m.start=date;
+        m.used=0;
+        m.status='Aktif';
+        if(ozelDers>0) m.ozelDers=ozelDers;
+      } else {
+        // İleri tarihli paket — mevcut paketi değiştirme, sadece ödemeyi kaydet
+        // Sistem başlangıç tarihi gelince otomatik aktif yapacak
+        if(ozelDers>0) m.ozelDers=ozelDers;
+        toast('Ödeme kaydedildi — paket '+date+' tarihinde aktif olacak.','success');
       }
-      // Yeni paketi ata
-      m.package=pkg;
-      m.start=date;
-      m.used=0;
-      m.status='Aktif';
-      if(ozelDers>0) m.ozelDers=ozelDers;
     }
   }
   save();closeModal('payment-modal');renderPayments();toast(eid?'Ödeme güncellendi.':'Ödeme kaydedildi — paket tanımlandı.','success');
