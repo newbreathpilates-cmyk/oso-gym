@@ -4818,6 +4818,7 @@ function savePayment(){
         m.paketGecmisi.push({
           package: m.package,
           start: m.start,
+          date: m.start, // ödeme başlangıç tarihi — matching için
           end: localDate(),
           used: m.used||0,
           total: pkgSessions(m.package),
@@ -5111,11 +5112,46 @@ function saveAllAttendance() {
   const ev = S.events.find(x=>x.id===yoklamaEventId);
   if(!ev) return;
   ev.completed = true;
-  // Paketten ders düş ve paket bitti mi kontrol et
   const finishedMembers = [];
   (ev.members||[]).forEach(mid=>{
     const m=S.members.find(x=>x.id===mid);
-    if(m) {
+    if(!m) return;
+
+    // Randevu tarihine göre doğru paketi bul
+    // Tüm ödemeleri tarihe göre sırala
+    const allPays = (S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>a.date>b.date?1:-1);
+    
+    // Bu randevunun tarihine göre hangi paket geçerli?
+    // En son başlangıç tarihi <= randevu tarihi olan paketi bul
+    let targetPay = null;
+    for(let i=0; i<allPays.length; i++){
+      if(allPays[i].date <= ev.date) targetPay = allPays[i];
+    }
+
+    if(targetPay && targetPay.package === m.package) {
+      // Aktif paketten düş (normal durum)
+      m.used=(m.used||0)+1;
+      const total = pkgSessions(m.package);
+      if(total>0 && total<999 && m.used>=total) {
+        m.status = 'Dersleri Bitti';
+        finishedMembers.push(m);
+      }
+    } else if(targetPay && m.paketGecmisi) {
+      // Eski paketten düş — paketGecmisi'nde bul
+      const pg = m.paketGecmisi.find(p=>p.package===targetPay.package && p.date===targetPay.date);
+      if(pg) {
+        pg.used = (pg.used||0)+1;
+        const total = pkgSessions(pg.package);
+        if(total>0 && total<999 && pg.used>=total) {
+          pg.status = 'Tamamlandı';
+          finishedMembers.push({...m, package: pg.package});
+        }
+      } else {
+        // Paket geçmişinde bulunamadı, aktif paketten düş
+        m.used=(m.used||0)+1;
+      }
+    } else {
+      // Fallback: aktif paketten düş
       m.used=(m.used||0)+1;
       const total = pkgSessions(m.package);
       if(total>0 && total<999 && m.used>=total) {
