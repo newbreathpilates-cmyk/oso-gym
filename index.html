@@ -568,7 +568,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       </div>
       <div class="form-group">
         <label class="form-label">Tarih</label>
-        <input type="date" class="form-input" id="ev-date" style="width:100%" onchange="populateEventMembers()">
+        <input type="date" class="form-input" id="ev-date" style="width:100%">
       </div>
       <div class="form-group">
         <label class="form-label">Başlangıç Saati</label>
@@ -1266,35 +1266,6 @@ function updateMemberStatuses(data) {
   if(!data.members) return {data, changed: false};
   const today = localDate();
   let changed = false;
-
-  // Beklemedeki ödemeleri kontrol et — başlangıç tarihi geldiyse aktif yap
-  data.members.forEach(m => {
-    const pendingPays = (data.payments||[]).filter(p=>p.memberId===m.id && p.date<=today && p.package!==m.package)
-      .sort((a,b)=>a.date>b.date?1:-1);
-    if(pendingPays.length > 0) {
-      const nextPay = pendingPays[pendingPays.length-1];
-      // Bu ödeme tarihi >= üyenin mevcut paket tarihi mi?
-      if(!m.start || nextPay.date >= m.start) {
-        // Mevcut paketi geçmişe al
-        if(m.package && m.start) {
-          if(!m.paketGecmisi) m.paketGecmisi = [];
-          const alreadyInHistory = m.paketGecmisi.some(p=>p.package===m.package && p.start===m.start);
-          if(!alreadyInHistory) {
-            m.paketGecmisi.push({
-              package: m.package, start: m.start, date: m.start,
-              end: today, used: m.used||0, total: pkgSessions(m.package), amount: 0
-            });
-          }
-        }
-        m.package = nextPay.package;
-        m.start = nextPay.date;
-        m.used = 0;
-        m.status = 'Aktif';
-        changed = true;
-      }
-    }
-  });
-
   data.members.forEach(m => {
     if(!m.package || !m.start) return;
     const total = pkgSessions(m.package);
@@ -2612,34 +2583,21 @@ function populateEventTrainers() {
 }
 function populateEventMembers() {
   const sel=document.getElementById('ev-member-add');
-  const evDate = document.getElementById('ev-date')?.value || localDate();
   const options = [...S.members]
     .sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr'))
     .map(m=>{
-
-    // Randevu tarihine göre hangi paketi kullanacak?
-    const allPays = (S.payments||[]).filter(p=>p.memberId===m.id).sort((a,b)=>a.date>b.date?1:-1);
-    let activePay = null;
-    for(let i=0; i<allPays.length; i++){
-      if(allPays[i].date <= evDate) activePay = allPays[i];
-    }
-
-    const pkg = activePay ? activePay.package : m.package;
-    const total = pkgSessions(pkg);
-    const isPendingPkg = activePay && activePay.package !== m.package; // beklemedeki paket
-
-    // Kullanılan ders sayısı — beklemedeki paket için 0
-    const used = isPendingPkg ? 0 : (m.used||0);
-    const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(m.id) && e.date>=evDate).length;
+    const total = pkgSessions(m.package);
+    const used = m.used||0;
+    const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(m.id)).length;
     const remaining = total===999 ? 999 : Math.max(0, total - used - planned);
-    const noPackage = !pkg || total===0;
-    const isFinished = !isPendingPkg && (m.status==='Süresi Doldu' || m.status==='Dersleri Bitti' || m.status==='Donduruldu' || m.status==='Paket Yok' || m.status==='Ara Verdi/Ayrıldı');
+    const noPackage = !m.package || total===0;
+    const isFinished = m.status==='Süresi Doldu' || m.status==='Dersleri Bitti' || m.status==='Donduruldu' || m.status==='Paket Yok' || m.status==='Ara Verdi/Ayrıldı';
     const disabled = noPackage || m.status==='Ara Verdi/Ayrıldı' || (remaining <= 0 && !tempEventMembers.includes(m.id));
     let label;
     if(noPackage) label = m.name+' '+m.surname+' — Paket yok';
-    else if(total===999) label = m.name+' '+m.surname+' · '+pkg;
-    else label = m.name+' '+m.surname+' · '+pkg+' · '+remaining+' ders kaldı'+(isPendingPkg?' 📅 '+activePay.date+' itibaren':isFinished?' ⚠️ '+m.status:'');
-    return '<option value="'+m.id+'"'+(disabled?' disabled style="color:#b91c1c"':isPendingPkg?' style="color:#2563eb"':isFinished?' style="color:#d97706"':'')+'>'+label+(disabled&&noPackage?' ❌':'')+(disabled&&!noPackage?' — DOLU':'')+'</option>';
+    else if(total===999) label = m.name+' '+m.surname+' · '+m.package;
+    else label = m.name+' '+m.surname+' · '+m.package+' · '+remaining+' ders kaldı'+(isFinished?' ⚠️ '+m.status:'');
+    return '<option value="'+m.id+'"'+(disabled?' disabled style="color:#b91c1c"':isFinished?' style="color:#d97706"':'')+'>'+label+(disabled&&noPackage?' ❌':'')+(disabled&&!noPackage?' — DOLU':'')+'</option>';
   }).join('');
   sel.innerHTML='<option value="">— Üye seçin —</option>'+options;
 }
@@ -4924,34 +4882,25 @@ function savePayment(){
   } else {
     d.id=S.nextId++;S.payments.push(d);
     if(m){
-      // Yeni paketin başlangıç tarihi bugün veya geçmişte mi?
-      const today = localDate();
-      if(date <= today) {
-        // Mevcut aktif paketi geçmişe kaydet
-        if(m.package && m.start) {
-          if(!m.paketGecmisi) m.paketGecmisi = [];
-          m.paketGecmisi.push({
-            package: m.package,
-            start: m.start,
-            date: m.start,
-            end: today,
-            used: m.used||0,
-            total: pkgSessions(m.package),
-            amount: (S.payments.filter(p=>p.memberId===mid&&p.package===m.package).slice(-1)[0]||{}).amount||0
-          });
-        }
-        // Yeni paketi hemen aktif yap
-        m.package=pkg;
-        m.start=date;
-        m.used=0;
-        m.status='Aktif';
-        if(ozelDers>0) m.ozelDers=ozelDers;
-      } else {
-        // İleri tarihli paket — mevcut paketi değiştirme, sadece ödemeyi kaydet
-        // Sistem başlangıç tarihi gelince otomatik aktif yapacak
-        if(ozelDers>0) m.ozelDers=ozelDers;
-        toast('Ödeme kaydedildi — paket '+date+' tarihinde aktif olacak.','success');
+      // Mevcut aktif paketi geçmişe kaydet
+      if(m.package && m.start) {
+        if(!m.paketGecmisi) m.paketGecmisi = [];
+        m.paketGecmisi.push({
+          package: m.package,
+          start: m.start,
+          date: m.start,
+          end: localDate(),
+          used: m.used||0,
+          total: pkgSessions(m.package),
+          amount: (S.payments.filter(p=>p.memberId===mid&&p.package===m.package).slice(-1)[0]||{}).amount||0
+        });
       }
+      // Yeni paketi hemen aktif yap
+      m.package=pkg;
+      m.start=date;
+      m.used=0;
+      m.status='Aktif';
+      if(ozelDers>0) m.ozelDers=ozelDers;
     }
   }
   save();closeModal('payment-modal');renderPayments();toast(eid?'Ödeme güncellendi.':'Ödeme kaydedildi — paket tanımlandı.','success');
@@ -5236,43 +5185,7 @@ function saveAllAttendance() {
   const finishedMembers = [];
   (ev.members||[]).forEach(mid=>{
     const m=S.members.find(x=>x.id===mid);
-    if(!m) return;
-
-    // Randevu tarihine göre doğru paketi bul
-    // Tüm ödemeleri tarihe göre sırala
-    const allPays = (S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>a.date>b.date?1:-1);
-    
-    // Bu randevunun tarihine göre hangi paket geçerli?
-    // En son başlangıç tarihi <= randevu tarihi olan paketi bul
-    let targetPay = null;
-    for(let i=0; i<allPays.length; i++){
-      if(allPays[i].date <= ev.date) targetPay = allPays[i];
-    }
-
-    if(targetPay && targetPay.package === m.package) {
-      // Aktif paketten düş (normal durum)
-      m.used=(m.used||0)+1;
-      const total = pkgSessions(m.package);
-      if(total>0 && total<999 && m.used>=total) {
-        m.status = 'Dersleri Bitti';
-        finishedMembers.push(m);
-      }
-    } else if(targetPay && m.paketGecmisi) {
-      // Eski paketten düş — paketGecmisi'nde bul
-      const pg = m.paketGecmisi.find(p=>p.package===targetPay.package && p.date===targetPay.date);
-      if(pg) {
-        pg.used = (pg.used||0)+1;
-        const total = pkgSessions(pg.package);
-        if(total>0 && total<999 && pg.used>=total) {
-          pg.status = 'Tamamlandı';
-          finishedMembers.push({...m, package: pg.package});
-        }
-      } else {
-        // Paket geçmişinde bulunamadı, aktif paketten düş
-        m.used=(m.used||0)+1;
-      }
-    } else {
-      // Fallback: aktif paketten düş
+    if(m) {
       m.used=(m.used||0)+1;
       const total = pkgSessions(m.package);
       if(total>0 && total<999 && m.used>=total) {
