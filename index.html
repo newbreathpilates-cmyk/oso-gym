@@ -3348,23 +3348,82 @@ function renderPaketGecmisi(gecmis, m) {
   if(!tumListe.length) { sec.style.display='none'; return; }
   sec.style.display='';
 
-  el.innerHTML = tumListe.sort((a,b)=>b.start>a.start?1:-1).map(function(p){
+  el.innerHTML = tumListe.sort((a,b)=>b.start>a.start?1:-1).map(function(p, idx){
     const total = p.total===999?'∞':p.total||'—';
     const durum = p.aktif
       ? '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">Aktif</span>'
       : '<span style="background:#e5e7eb;color:#6b7280;padding:2px 8px;border-radius:10px;font-size:10px">Tamamlandı</span>';
     const bitis = p.end || (m&&m.package===p.package&&m.start===p.start ? getEnd(m) : '—');
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #dbeafe;font-size:12px">'+
-      '<div>'+
+      '<div style="flex:1">'+
         '<div style="font-weight:600;color:#1e3a8a">'+p.package+'</div>'+
         '<div style="font-size:10px;color:#6b7280;margin-top:2px">'+p.start+' → '+(p.aktif?bitis:p.end)+'</div>'+
       '</div>'+
-      '<div style="text-align:right">'+
-        '<div style="font-weight:700">'+p.used+'/'+total+' ders</div>'+
-        '<div style="margin-top:3px">'+durum+'</div>'+
+      '<div style="text-align:right;display:flex;align-items:center;gap:8px">'+
+        '<div>'+
+          '<div style="font-weight:700">'+p.used+'/'+total+' ders</div>'+
+          '<div style="margin-top:3px">'+durum+'</div>'+
+        '</div>'+
+        '<button type="button" onclick="editPaketGecmisi('+idx+','+JSON.stringify(p.aktif?true:false)+')" style="border:1px solid #bfdbfe;background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#1e3a8a">✏️</button>'+
+        (!p.aktif ? '<button type="button" onclick="deletePaketGecmisi('+idx+')" style="border:1px solid #fecaca;background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#b91c1c">🗑️</button>' : '')+
       '</div>'+
     '</div>';
   }).join('');
+}
+
+function deletePaketGecmisi(idx) {
+  const memberId = document.getElementById('m-id').value;
+  const m = S.members.find(x=>x.id==memberId);
+  if(!m || !m.paketGecmisi) return;
+  const gecmis = [...m.paketGecmisi].sort((a,b)=>b.start>a.start?1:-1);
+  const p = gecmis[idx];
+  if(!p) return;
+  if(!confirm(p.package + ' (' + p.start + ') paketini geçmişten silmek istediğinizden emin misiniz?')) return;
+  // Orijinal diziden sil
+  m.paketGecmisi = m.paketGecmisi.filter(x=>!(x.package===p.package && x.start===p.start));
+  save();
+  renderPaketGecmisi(m.paketGecmisi||[], m);
+  toast('Paket geçmişten silindi ✓', 'success');
+}
+
+function editPaketGecmisi(idx, isAktif) {
+  const memberId = document.getElementById('m-id').value;
+  const m = S.members.find(x=>x.id==memberId);
+  if(!m) return;
+
+  let pkg, currentUsed, start;
+  if(isAktif) {
+    pkg = m.package;
+    currentUsed = m.used||0;
+    start = m.start;
+  } else {
+    const gecmis = [...(m.paketGecmisi||[])].sort((a,b)=>b.start>a.start?1:-1);
+    const p = gecmis[idx];
+    if(!p) return;
+    pkg = p.package;
+    currentUsed = p.used||0;
+    start = p.start;
+  }
+
+  const total = pkgSessions(pkg);
+  const yeniUsed = prompt(pkg + '\nBaşlangıç: ' + start + '\n\nKaç ders tamamlandı? (şu an: ' + currentUsed + ')', currentUsed);
+  if(yeniUsed === null) return;
+  const parsedUsed = parseInt(yeniUsed);
+  if(isNaN(parsedUsed) || parsedUsed < 0) { toast('Geçersiz değer.', 'error'); return; }
+
+  if(isAktif) {
+    m.used = parsedUsed;
+    if(total>0 && total<999 && parsedUsed>=total) m.status='Dersleri Bitti';
+    else if(m.status==='Dersleri Bitti') m.status='Aktif';
+  } else {
+    const gecmis = [...(m.paketGecmisi||[])].sort((a,b)=>b.start>a.start?1:-1);
+    const p = gecmis[idx];
+    if(p) p.used = parsedUsed;
+  }
+
+  save();
+  renderPaketGecmisi(m.paketGecmisi||[], m);
+  toast('Paket güncellendi ✓', 'success');
 }
 
 // ── ÖLÇÜM GEÇMİŞİ ──
