@@ -3365,10 +3365,21 @@ function renderPaketGecmisi(gecmis, m) {
           '<div style="margin-top:3px">'+durum+'</div>'+
         '</div>'+
         '<button type="button" onclick="editPaketGecmisi('+idx+','+JSON.stringify(p.aktif?true:false)+')" style="border:1px solid #bfdbfe;background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#1e3a8a">✏️</button>'+
-        (!p.aktif ? '<button type="button" onclick="deletePaketGecmisi('+idx+')" style="border:1px solid #fecaca;background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#b91c1c">🗑️</button>' : '')+
+        (!p.aktif ? '<button type="button" onclick="deletePaketGecmisiByKey(\''+p.package.replace(/'/g,"\\'")+"','"+p.start+'\')" style="border:1px solid #fecaca;background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#b91c1c">🗑️</button>' : '')+
       '</div>'+
     '</div>';
   }).join('');
+}
+
+function deletePaketGecmisiByKey(pkg, start) {
+  const memberId = document.getElementById('m-id').value;
+  const m = S.members.find(x=>x.id==memberId);
+  if(!m || !m.paketGecmisi) return;
+  if(!confirm(pkg + ' (' + start + ') paketini geçmişten silmek istediğinizden emin misiniz?')) return;
+  m.paketGecmisi = m.paketGecmisi.filter(x=>!(x.package===pkg && x.start===start));
+  save();
+  renderPaketGecmisi(m.paketGecmisi||[], m);
+  toast('Paket geçmişten silindi ✓', 'success');
 }
 
 function deletePaketGecmisi(idx) {
