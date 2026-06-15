@@ -1523,6 +1523,24 @@ function toggleBekleyenDetail() {
   if(btn) btn.innerHTML = '<i class="ti ti-list" style="font-size:14px"></i> ' + (isHidden ? 'Detayı Gizle ▲' : 'Detayı Göster ▼');
 }
 
+function showPaketBitiAlert(members) {
+  const old = document.getElementById('paket-biti-alert');
+  if(old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'paket-biti-alert';
+  el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  el.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
+    '<div style="font-size:28px;text-align:center;margin-bottom:12px">🎯</div>' +
+    '<div style="font-weight:700;font-size:16px;text-align:center;margin-bottom:8px;color:#1a1a18">Bugün Paketi Tamamlanan Üyeler</div>' +
+    '<div style="background:#f0fdf4;border-radius:10px;padding:12px;margin-bottom:16px">' +
+    members.map(m=>'<div style="padding:6px 0;border-bottom:1px solid #d1fae5;font-size:14px;font-weight:500;color:#065f46">✅ '+m.name+' '+m.surname+'</div>').join('') +
+    '</div>' +
+    '<div style="font-size:12px;color:#6b7280;text-align:center;margin-bottom:16px">Bu üyelere yeni paket için ödeme ekleyebilirsiniz.</div>' +
+    '<button onclick="document.getElementById(\'paket-biti-alert\').remove()" style="width:100%;padding:12px;background:var(--green);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Tamam</button>' +
+    '</div>';
+  document.body.appendChild(el);
+}
+
 function toggleReveal(id) {
   if(!window._dashReveal || !window._dashReveal[id]) return;
   const r = window._dashReveal[id];
@@ -1713,6 +1731,26 @@ function navigateTo(page) {
 // DASHBOARD
 // ══════════════════════════════════════
 function renderDashboard() {
+  // İşletme sahibine bugün paketi biten üyeler için uyarı (günde bir kez)
+  if(currentUser && currentUser.role === 'owner') {
+    const today = localDate();
+    const lastAlertDay = localStorage.getItem('nbp_paket_alert_day');
+    if(lastAlertDay !== today) {
+      const bitenler = S.members.filter(m=>m.status==='Dersleri Bitti' || m.status==='Süresi Doldu');
+      // Bugün biten üyeler — son tamamlanan dersin tarihi bugün olanlar
+      const bugunBitenler = bitenler.filter(m=>{
+        const sonDers = S.events.filter(e=>e.completed && (e.members||[]).includes(m.id)).sort((a,b)=>b.date>a.date?1:-1)[0];
+        return sonDers && sonDers.date === today;
+      });
+      if(bugunBitenler.length > 0) {
+        localStorage.setItem('nbp_alert_shown_'+today, '1');
+        setTimeout(()=>{
+          showPaketBitiAlert(bugunBitenler);
+        }, 800);
+      }
+      localStorage.setItem('nbp_paket_alert_day', today);
+    }
+  }
   const activeM = S.members.filter(m=>m.status==='Aktif').length;
   const expiredM = S.members.filter(m=>m.status==='Süresi Doldu').length;
   const tm = new Date().toISOString().slice(0,7);
