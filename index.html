@@ -5406,7 +5406,7 @@ function renderHakedis() {
     const {total, ciro, detail, lessonCount} = calcTrainerHakedis(t.id, selMonth);
     const paid = (S.hakedisPayments||[]).find(p=>p.trainerId===t.id&&p.month===selMonth);
     const c = tc(t.color);
-    return {t, total, detail, lessonCount, paid, c};
+    return {t, total, ciro, detail, lessonCount, paid, c};
   });
 
   const toplamHakedis = rows.reduce((a,r)=>a+r.total,0);
