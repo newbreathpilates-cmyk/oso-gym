@@ -596,6 +596,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <label class="form-label">Not</label>
         <textarea class="form-textarea" id="ev-note" rows="2" placeholder="Opsiyonel not..."></textarea>
       </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="ev-olcum" style="width:18px;height:18px;cursor:pointer">
+        <label for="ev-olcum" style="font-size:13px;cursor:pointer;margin:0">📏 Bu derste ölçüm alınacak</label>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger btn-sm" id="ev-delete-btn" style="display:none;margin-right:auto" onclick="deleteEvent()"><i class="ti ti-trash"></i> Sil</button>
@@ -1523,6 +1527,26 @@ function toggleBekleyenDetail() {
   if(btn) btn.innerHTML = '<i class="ti ti-list" style="font-size:14px"></i> ' + (isHidden ? 'Detayı Gizle ▲' : 'Detayı Göster ▼');
 }
 
+function showOlcumAlert(events) {
+  const old = document.getElementById('olcum-alert');
+  if(old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'olcum-alert';
+  el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  el.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
+    '<div style="font-size:28px;text-align:center;margin-bottom:12px">📏</div>' +
+    '<div style="font-weight:700;font-size:16px;text-align:center;margin-bottom:8px;color:#1a1a18">Bugün Ölçüm Alınacak</div>' +
+    '<div style="background:#eff6ff;border-radius:10px;padding:12px;margin-bottom:16px">' +
+    events.map(ev=>{
+      const names=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name+' '+m.surname:'';}).filter(Boolean).join(', ');
+      return '<div style="padding:6px 0;border-bottom:1px solid #dbeafe;font-size:14px;font-weight:500;color:#1e3a8a">📏 '+(names||'Üye yok')+' — '+ev.startTime+' '+ev.type+'</div>';
+    }).join('') +
+    '</div>' +
+    '<button onclick="document.getElementById(\'olcum-alert\').remove()" style="width:100%;padding:12px;background:var(--green);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Tamam</button>' +
+    '</div>';
+  document.body.appendChild(el);
+}
+
 function showPaketBitiAlert(members) {
   const old = document.getElementById('paket-biti-alert');
   if(old) old.remove();
@@ -1731,6 +1755,20 @@ function navigateTo(page) {
 // DASHBOARD
 // ══════════════════════════════════════
 function renderDashboard() {
+  // İşletme sahibine bugün ölçüm alınacak üyeler için uyarı (günde bir kez)
+  if(currentUser && currentUser.role === 'owner') {
+    const today = localDate();
+    const lastOlcumAlertDay = localStorage.getItem('nbp_olcum_alert_day');
+    if(lastOlcumAlertDay !== today) {
+      const olcumEvents = S.events.filter(e=>e.date===today && e.olcumAlinacak);
+      if(olcumEvents.length > 0) {
+        setTimeout(()=>{
+          showOlcumAlert(olcumEvents);
+        }, 600);
+      }
+      localStorage.setItem('nbp_olcum_alert_day', today);
+    }
+  }
   // İşletme sahibine bugün paketi biten üyeler için uyarı (günde bir kez)
   if(currentUser && currentUser.role === 'owner') {
     const today = localDate();
@@ -2706,6 +2744,7 @@ function openNewEvent(date='', time='09:00') {
   document.getElementById('ev-date').value=date||localDate();
   document.getElementById('ev-start').value=time;
   document.getElementById('ev-note').value='';
+  document.getElementById('ev-olcum').checked=false;
   document.getElementById('ev-capacity').value='1';
   document.getElementById('ev-type').value='';
   populateEventTrainers();
@@ -2767,6 +2806,7 @@ function openEditEvent(id, e) {
   document.getElementById('ev-capacity').value=ev.capacity||1;
   document.getElementById('ev-note').value=ev.note||'';
   document.getElementById('ev-guest-name').value=ev.guestName||'';
+  document.getElementById('ev-olcum').checked=ev.olcumAlinacak||false;
   toggleGuestField();
   populateEventTrainers();
   document.getElementById('ev-trainer').value=ev.trainerId;
@@ -2879,15 +2919,16 @@ function saveEvent() {
   const capacity=parseInt(document.getElementById('ev-capacity').value);
   const note=document.getElementById('ev-note').value;
   const guestName=document.getElementById('ev-guest-name')?.value||'';
+  const olcumAlinacak=document.getElementById('ev-olcum')?.checked||false;
   const specialCount=0;
   const singleDropCount=0;
   if(!date||!startTime){toast('Tarih ve saat zorunludur.','error');return;}
 
   if(editingEventId) {
     const i=S.events.findIndex(e=>e.id===editingEventId);
-    if(i>-1) S.events[i]={...S.events[i],type,trainerId,date,startTime,duration,capacity,note,guestName,members:tempEventMembers,specialCount,singleDropCount};
+    if(i>-1) S.events[i]={...S.events[i],type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,members:tempEventMembers,specialCount,singleDropCount};
   } else {
-    S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,guestName,members:tempEventMembers,specialCount,singleDropCount,completed:false});
+    S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,members:tempEventMembers,specialCount,singleDropCount,completed:false});
   }
   save();closeModal('event-modal');
   // Takvim scroll pozisyonunu koru
