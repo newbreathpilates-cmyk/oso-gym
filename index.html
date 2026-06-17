@@ -613,6 +613,44 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   </div>
 </div>
 
+<!-- Unavailable block modal -->
+<div class="modal-overlay" id="unavailable-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="unavailable-modal-title">Müsait Değil İşaretle</h3>
+      <button class="modal-close" onclick="closeModal('unavailable-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Eğitmen</label>
+        <select class="form-select" id="un-trainer"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tarih</label>
+        <input type="date" class="form-input" id="un-date">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Başlangıç</label>
+          <input type="time" class="form-input" id="un-start" value="09:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bitiş</label>
+          <input type="time" class="form-input" id="un-end" value="10:00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Not (opsiyonel)</label>
+        <input type="text" class="form-input" id="un-note" placeholder="örn. Doktor randevusu">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('unavailable-modal')">İptal</button>
+      <button class="btn btn-primary" onclick="saveUnavailableBlock()"><i class="ti ti-check"></i> Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <!-- Member modal -->
 <div class="modal-overlay" id="member-modal">
   <div class="modal">
@@ -1539,9 +1577,10 @@ function showHatirlatmaAlert(olcumEvents, teyitEvents) {
   el.id = 'hatirlatma-alert';
   el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
 
-  const renderList = (events, icon, color, bg) => events.map(ev=>{
+  const renderList = (events, icon, color, bg, showDate) => events.map(ev=>{
     const names=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name+' '+m.surname:'';}).filter(Boolean).join(', ');
-    return '<div style="padding:6px 0;border-bottom:1px solid '+bg+';font-size:14px;font-weight:500;color:'+color+'">'+icon+' '+(names||ev.guestName||'Üye yok')+' — '+ev.startTime+' '+ev.type+'</div>';
+    const dateLabel = showDate ? (ev.date===localDate()?'Bugün ':'Yarın ') : '';
+    return '<div style="padding:6px 0;border-bottom:1px solid '+bg+';font-size:14px;font-weight:500;color:'+color+'">'+icon+' '+(names||ev.guestName||'Üye yok')+' — '+dateLabel+ev.startTime+' '+ev.type+'</div>';
   }).join('');
 
   let html = '<div style="background:white;border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">';
@@ -1554,7 +1593,7 @@ function showHatirlatmaAlert(olcumEvents, teyitEvents) {
   }
   if(teyitEvents.length > 0) {
     html += '<div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:4px">⏰ TEYİT EDİLMELİ</div>';
-    html += '<div style="background:#fffbeb;border-radius:10px;padding:10px;margin-bottom:14px">'+renderList(teyitEvents,'⏰','#92400e','#fde68a')+'</div>';
+    html += '<div style="background:#fffbeb;border-radius:10px;padding:10px;margin-bottom:14px">'+renderList(teyitEvents,'⏰','#92400e','#fde68a',true)+'</div>';
   }
 
   html += '<button onclick="document.getElementById(\'hatirlatma-alert\').remove()" style="width:100%;padding:12px;background:var(--green);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Tamam</button>';
@@ -1775,14 +1814,22 @@ function checkHatirlatmalar() {
   const today = localDate();
   const now = new Date();
   const nowHHMM = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowStr = tomorrow.getFullYear()+'-'+String(tomorrow.getMonth()+1).padStart(2,'0')+'-'+String(tomorrow.getDate()).padStart(2,'0');
 
-  let todayEvents = S.events.filter(e=>e.date===today && !e.completed && e.startTime > nowHHMM);
+  // Ölçüm hatırlatması — sadece bugünkü randevular, randevu saatine kadar
+  let olcumEvents = S.events.filter(e=>e.date===today && !e.completed && e.startTime > nowHHMM && e.olcumAlinacak);
+
+  // Teyit hatırlatması — bugünkü (saate kadar) + yarınki (24 saat kala, yani şu anki saatten itibaren)
+  let teyitToday = S.events.filter(e=>e.date===today && !e.completed && e.startTime > nowHHMM && e.teyitGerekli);
+  let teyitTomorrow = S.events.filter(e=>e.date===tomorrowStr && !e.completed && e.startTime <= nowHHMM && e.teyitGerekli);
+  let teyitEvents = [...teyitToday, ...teyitTomorrow];
+
+  // Eğitmen sadece kendi randevularını görür, işletme sahibi hepsini görür
   if(currentUser.role === 'trainer') {
-    todayEvents = todayEvents.filter(e=>e.trainerId===currentUser.trainerId);
+    olcumEvents = olcumEvents.filter(e=>e.trainerId===currentUser.trainerId);
+    teyitEvents = teyitEvents.filter(e=>e.trainerId===currentUser.trainerId);
   }
-
-  const olcumEvents = todayEvents.filter(e=>e.olcumAlinacak);
-  const teyitEvents = todayEvents.filter(e=>e.teyitGerekli);
 
   if(olcumEvents.length > 0 || teyitEvents.length > 0) {
     setTimeout(()=>{
@@ -2213,6 +2260,7 @@ function renderCalendar() {
     <div class="flex gap-8 items-center">
       <button class="btn btn-primary" onclick="openNewEvent()"><i class="ti ti-plus"></i> Randevu Ekle</button>
       <button class="btn" onclick="openCalendarSearch()"><i class="ti ti-search"></i> Ara</button>
+      <button class="btn" onclick="openUnavailableModal()"><i class="ti ti-ban"></i> Müsait Değil</button>
     </div>
   `;
 
@@ -2358,8 +2406,21 @@ function renderMultiDayView(numDays) {
               return slots;
             }
             const slots=getEventSlots(dayEvs);
+            const dayUnav=(S.unavailableBlocks||[]).filter(b=>b.date===ds && visibleTrainers.has(b.trainerId));
+            const unavHtml = dayUnav.map(b=>{
+              const [sh,sm]=b.startTime.split(':').map(Number);
+              const [eh,em]=b.endTime.split(':').map(Number);
+              const bstart=(sh-6)*60+sm;
+              const bheight=Math.max((eh-6)*60+em-bstart,20);
+              const trn=S.trainers.find(t=>t.id===b.trainerId);
+              return `<div style="top:${bstart}px;height:${bheight}px;left:0;width:100%;position:absolute;background:repeating-linear-gradient(45deg,rgba(107,114,128,0.12),rgba(107,114,128,0.12) 6px,rgba(107,114,128,0.2) 6px,rgba(107,114,128,0.2) 12px);border-left:3px solid #9ca3af;z-index:1;cursor:pointer;padding:3px 5px;overflow:hidden" onclick="event.stopPropagation();deleteUnavailableBlock(${b.id})" title="Silmek için tıkla">
+                <div style="font-size:10px;font-weight:700;color:#4b5563">🚫 Müsait Değil${trn?' · '+trn.name.split(' ')[0]:''}</div>
+                ${b.note?`<div style="font-size:9px;color:#6b7280">${b.note}</div>`:''}
+              </div>`;
+            }).join('');
             return `<div class="week-col" style="position:relative;border-left:1px solid var(--border)" onclick="openNewEventAtTime('${ds}',event)" data-date="${ds}">
               ${hours.map(h=>`<div style="height:60px;border-bottom:1px solid var(--border);position:relative"><div style="position:absolute;top:30px;left:0;right:0;height:1px;background:rgba(0,0,0,0.04)"></div></div>`).join('')}
+              ${unavHtml}
               ${slots.map(({ev,start,col,total})=>{
                 const tr=S.trainers.find(t=>t.id===ev.trainerId);
                 const c=tr?tc(tr.color):TC[1];
@@ -2464,8 +2525,21 @@ function renderWeekView() {
               return slots;
             }
             const slots=getEventSlots(dayEvs);
+            const dayUnav=(S.unavailableBlocks||[]).filter(b=>b.date===ds && visibleTrainers.has(b.trainerId));
+            const unavHtml = dayUnav.map(b=>{
+              const [sh,sm]=b.startTime.split(':').map(Number);
+              const [eh,em]=b.endTime.split(':').map(Number);
+              const bstart=(sh-6)*60+sm;
+              const bheight=Math.max((eh-6)*60+em-bstart,20);
+              const trn=S.trainers.find(t=>t.id===b.trainerId);
+              return `<div style="top:${bstart}px;height:${bheight}px;left:0;width:100%;position:absolute;background:repeating-linear-gradient(45deg,rgba(107,114,128,0.12),rgba(107,114,128,0.12) 6px,rgba(107,114,128,0.2) 6px,rgba(107,114,128,0.2) 12px);border-left:3px solid #9ca3af;z-index:1;cursor:pointer;padding:3px 5px;overflow:hidden" onclick="event.stopPropagation();deleteUnavailableBlock(${b.id})" title="Silmek için tıkla">
+                <div style="font-size:10px;font-weight:700;color:#4b5563">🚫 Müsait Değil${trn?' · '+trn.name.split(' ')[0]:''}</div>
+                ${b.note?`<div style="font-size:9px;color:#6b7280">${b.note}</div>`:''}
+              </div>`;
+            }).join('');
             return `<div class="week-col" style="position:relative;border-left:1px solid var(--border)" onclick="openNewEventAtTime('${ds}',event)" data-date="${ds}">
               ${hours.map(h=>`<div style="height:60px;border-bottom:1px solid var(--border);position:relative"><div style="position:absolute;top:30px;left:0;right:0;height:1px;background:rgba(0,0,0,0.04)"></div></div>`).join('')}
+              ${unavHtml}
               ${slots.map(({ev,start,col,total})=>{
                 const tr=S.trainers.find(t=>t.id===ev.trainerId);
                 const c=tr?tc(tr.color):TC[1];
@@ -2760,6 +2834,47 @@ function toggleGuestField() {
   if(group) group.style.display = type==='Deneme / Tanışma' ? '' : 'none';
 }
 
+function openUnavailableModal() {
+  const sel = document.getElementById('un-trainer');
+  if(currentUser.role === 'trainer') {
+    const t = S.trainers.find(x=>x.id===currentUser.trainerId);
+    sel.innerHTML = t ? `<option value="${t.id}">${t.name}</option>` : '';
+    sel.disabled = true;
+  } else {
+    sel.disabled = false;
+    sel.innerHTML = S.trainers.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  }
+  document.getElementById('un-date').value = localDate();
+  document.getElementById('un-start').value = '09:00';
+  document.getElementById('un-end').value = '10:00';
+  document.getElementById('un-note').value = '';
+  openModal('unavailable-modal');
+}
+
+function saveUnavailableBlock() {
+  const trainerId = parseInt(document.getElementById('un-trainer').value);
+  const date = document.getElementById('un-date').value;
+  const startTime = document.getElementById('un-start').value;
+  const endTime = document.getElementById('un-end').value;
+  const note = document.getElementById('un-note').value;
+  if(!trainerId || !date || !startTime || !endTime) { toast('Tüm alanları doldurun.','error'); return; }
+  if(endTime <= startTime) { toast('Bitiş saati başlangıçtan sonra olmalı.','error'); return; }
+  if(!S.unavailableBlocks) S.unavailableBlocks = [];
+  S.unavailableBlocks.push({id: S.nextId++, trainerId, date, startTime, endTime, note});
+  save();
+  closeModal('unavailable-modal');
+  renderCalendar();
+  toast('Müsait olmayan saat eklendi ✓','success');
+}
+
+function deleteUnavailableBlock(id) {
+  if(!confirm('Bu müsait olmama bloğunu silmek istediğinizden emin misiniz?')) return;
+  S.unavailableBlocks = (S.unavailableBlocks||[]).filter(b=>b.id!==id);
+  save();
+  renderCalendar();
+  toast('Silindi ✓','success');
+}
+
 function openNewEvent(date='', time='09:00') {
   editingEventId=null;tempEventMembers=[];
   document.getElementById('event-modal-title').textContent='Randevu Ekle';
@@ -2949,6 +3064,22 @@ function saveEvent() {
   const specialCount=0;
   const singleDropCount=0;
   if(!date||!startTime){toast('Tarih ve saat zorunludur.','error');return;}
+
+  // Müsait olmama bloğu kontrolü
+  const evStart = (parseInt(startTime.split(':')[0])-6)*60 + parseInt(startTime.split(':')[1]);
+  const evEnd = evStart + duration;
+  const conflict = (S.unavailableBlocks||[]).find(b=>{
+    if(b.trainerId !== trainerId || b.date !== date) return false;
+    const [bsh,bsm]=b.startTime.split(':').map(Number);
+    const [beh,bem]=b.endTime.split(':').map(Number);
+    const bStart=(bsh-6)*60+bsm, bEnd=(beh-6)*60+bem;
+    return evStart < bEnd && bStart < evEnd;
+  });
+  if(conflict) {
+    const trn = S.trainers.find(t=>t.id===trainerId);
+    toast((trn?trn.name:'Eğitmen')+' '+conflict.startTime+'-'+conflict.endTime+' arası müsait değil.','error');
+    return;
+  }
 
   if(editingEventId) {
     const i=S.events.findIndex(e=>e.id===editingEventId);
