@@ -2414,8 +2414,8 @@ function renderMultiDayView(numDays) {
               const bheight=Math.max((eh-6)*60+em-bstart,20);
               const trn=S.trainers.find(t=>t.id===b.trainerId);
               return `<div style="top:${bstart}px;height:${bheight}px;left:0;width:100%;position:absolute;background:repeating-linear-gradient(45deg,rgba(107,114,128,0.12),rgba(107,114,128,0.12) 6px,rgba(107,114,128,0.2) 6px,rgba(107,114,128,0.2) 12px);border-left:3px solid #9ca3af;z-index:1;cursor:pointer;padding:3px 5px;overflow:hidden" onclick="event.stopPropagation();deleteUnavailableBlock(${b.id})" title="Silmek için tıkla">
-                <div style="font-size:10px;font-weight:700;color:#4b5563">🚫 Müsait Değil${trn?' · '+trn.name.split(' ')[0]:''}</div>
-                ${b.note?`<div style="font-size:9px;color:#6b7280">${b.note}</div>`:''}
+                <div style="font-size:12px;font-weight:800;color:#374151;line-height:1.3">🚫 Müsait Değil${trn?' · '+trn.name.split(' ')[0]:''}</div>
+                ${b.note?`<div style="font-size:10px;color:#6b7280;margin-top:2px">${b.note}</div>`:''}
               </div>`;
             }).join('');
             return `<div class="week-col" style="position:relative;border-left:1px solid var(--border)" onclick="openNewEventAtTime('${ds}',event)" data-date="${ds}">
@@ -2533,8 +2533,8 @@ function renderWeekView() {
               const bheight=Math.max((eh-6)*60+em-bstart,20);
               const trn=S.trainers.find(t=>t.id===b.trainerId);
               return `<div style="top:${bstart}px;height:${bheight}px;left:0;width:100%;position:absolute;background:repeating-linear-gradient(45deg,rgba(107,114,128,0.12),rgba(107,114,128,0.12) 6px,rgba(107,114,128,0.2) 6px,rgba(107,114,128,0.2) 12px);border-left:3px solid #9ca3af;z-index:1;cursor:pointer;padding:3px 5px;overflow:hidden" onclick="event.stopPropagation();deleteUnavailableBlock(${b.id})" title="Silmek için tıkla">
-                <div style="font-size:10px;font-weight:700;color:#4b5563">🚫 Müsait Değil${trn?' · '+trn.name.split(' ')[0]:''}</div>
-                ${b.note?`<div style="font-size:9px;color:#6b7280">${b.note}</div>`:''}
+                <div style="font-size:12px;font-weight:800;color:#374151;line-height:1.3">🚫 Müsait Değil${trn?' · '+trn.name.split(' ')[0]:''}</div>
+                ${b.note?`<div style="font-size:10px;color:#6b7280;margin-top:2px">${b.note}</div>`:''}
               </div>`;
             }).join('');
             return `<div class="week-col" style="position:relative;border-left:1px solid var(--border)" onclick="openNewEventAtTime('${ds}',event)" data-date="${ds}">
