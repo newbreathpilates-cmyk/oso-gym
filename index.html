@@ -600,6 +600,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <input type="checkbox" id="ev-olcum" style="width:18px;height:18px;cursor:pointer">
         <label for="ev-olcum" style="font-size:13px;cursor:pointer;margin:0">📏 Bu derste ölçüm alınacak</label>
       </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="ev-teyit" style="width:18px;height:18px;cursor:pointer">
+        <label for="ev-teyit" style="font-size:13px;cursor:pointer;margin:0">⏰ Bu randevu teyit edilmeli</label>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger btn-sm" id="ev-delete-btn" style="display:none;margin-right:auto" onclick="deleteEvent()"><i class="ti ti-trash"></i> Sil</button>
@@ -1439,6 +1443,7 @@ function enterApp() {
   }
   if(currentUser.role === 'owner') navigateTo('dashboard');
   else navigateTo('trainer-portal');
+  checkHatirlatmalar();
 }
 
 // Sayfa yenilenince oturumu geri yükle
@@ -1527,23 +1532,34 @@ function toggleBekleyenDetail() {
   if(btn) btn.innerHTML = '<i class="ti ti-list" style="font-size:14px"></i> ' + (isHidden ? 'Detayı Gizle ▲' : 'Detayı Göster ▼');
 }
 
-function showOlcumAlert(events) {
-  const old = document.getElementById('olcum-alert');
+function showHatirlatmaAlert(olcumEvents, teyitEvents) {
+  const old = document.getElementById('hatirlatma-alert');
   if(old) old.remove();
   const el = document.createElement('div');
-  el.id = 'olcum-alert';
+  el.id = 'hatirlatma-alert';
   el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-  el.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
-    '<div style="font-size:28px;text-align:center;margin-bottom:12px">📏</div>' +
-    '<div style="font-weight:700;font-size:16px;text-align:center;margin-bottom:8px;color:#1a1a18">Bugün Ölçüm Alınacak</div>' +
-    '<div style="background:#eff6ff;border-radius:10px;padding:12px;margin-bottom:16px">' +
-    events.map(ev=>{
-      const names=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name+' '+m.surname:'';}).filter(Boolean).join(', ');
-      return '<div style="padding:6px 0;border-bottom:1px solid #dbeafe;font-size:14px;font-weight:500;color:#1e3a8a">📏 '+(names||'Üye yok')+' — '+ev.startTime+' '+ev.type+'</div>';
-    }).join('') +
-    '</div>' +
-    '<button onclick="document.getElementById(\'olcum-alert\').remove()" style="width:100%;padding:12px;background:var(--green);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Tamam</button>' +
-    '</div>';
+
+  const renderList = (events, icon, color, bg) => events.map(ev=>{
+    const names=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name+' '+m.surname:'';}).filter(Boolean).join(', ');
+    return '<div style="padding:6px 0;border-bottom:1px solid '+bg+';font-size:14px;font-weight:500;color:'+color+'">'+icon+' '+(names||ev.guestName||'Üye yok')+' — '+ev.startTime+' '+ev.type+'</div>';
+  }).join('');
+
+  let html = '<div style="background:white;border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">';
+  html += '<div style="font-size:28px;text-align:center;margin-bottom:12px">🔔</div>';
+  html += '<div style="font-weight:700;font-size:16px;text-align:center;margin-bottom:14px;color:#1a1a18">Bugünün Hatırlatmaları</div>';
+
+  if(olcumEvents.length > 0) {
+    html += '<div style="font-size:12px;font-weight:700;color:#1e3a8a;margin-bottom:4px">📏 ÖLÇÜM ALINACAK</div>';
+    html += '<div style="background:#eff6ff;border-radius:10px;padding:10px;margin-bottom:14px">'+renderList(olcumEvents,'📏','#1e3a8a','#dbeafe')+'</div>';
+  }
+  if(teyitEvents.length > 0) {
+    html += '<div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:4px">⏰ TEYİT EDİLMELİ</div>';
+    html += '<div style="background:#fffbeb;border-radius:10px;padding:10px;margin-bottom:14px">'+renderList(teyitEvents,'⏰','#92400e','#fde68a')+'</div>';
+  }
+
+  html += '<button onclick="document.getElementById(\'hatirlatma-alert\').remove()" style="width:100%;padding:12px;background:var(--green);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Tamam</button>';
+  html += '</div>';
+  el.innerHTML = html;
   document.body.appendChild(el);
 }
 
@@ -1754,21 +1770,28 @@ function navigateTo(page) {
 // ══════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════
-function renderDashboard() {
-  // İşletme sahibine bugün ölçüm alınacak üyeler için uyarı (günde bir kez)
-  if(currentUser && currentUser.role === 'owner') {
-    const today = localDate();
-    const lastOlcumAlertDay = localStorage.getItem('nbp_olcum_alert_day');
-    if(lastOlcumAlertDay !== today) {
-      const olcumEvents = S.events.filter(e=>e.date===today && e.olcumAlinacak);
-      if(olcumEvents.length > 0) {
-        setTimeout(()=>{
-          showOlcumAlert(olcumEvents);
-        }, 600);
-      }
-      localStorage.setItem('nbp_olcum_alert_day', today);
-    }
+function checkHatirlatmalar() {
+  if(!currentUser) return;
+  const today = localDate();
+  const now = new Date();
+  const nowHHMM = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+
+  let todayEvents = S.events.filter(e=>e.date===today && !e.completed && e.startTime > nowHHMM);
+  if(currentUser.role === 'trainer') {
+    todayEvents = todayEvents.filter(e=>e.trainerId===currentUser.trainerId);
   }
+
+  const olcumEvents = todayEvents.filter(e=>e.olcumAlinacak);
+  const teyitEvents = todayEvents.filter(e=>e.teyitGerekli);
+
+  if(olcumEvents.length > 0 || teyitEvents.length > 0) {
+    setTimeout(()=>{
+      showHatirlatmaAlert(olcumEvents, teyitEvents);
+    }, 600);
+  }
+}
+
+function renderDashboard() {
   // İşletme sahibine bugün paketi biten üyeler için uyarı (günde bir kez)
   if(currentUser && currentUser.role === 'owner') {
     const today = localDate();
@@ -2745,6 +2768,7 @@ function openNewEvent(date='', time='09:00') {
   document.getElementById('ev-start').value=time;
   document.getElementById('ev-note').value='';
   document.getElementById('ev-olcum').checked=false;
+  document.getElementById('ev-teyit').checked=false;
   document.getElementById('ev-capacity').value='1';
   document.getElementById('ev-type').value='';
   populateEventTrainers();
@@ -2807,6 +2831,7 @@ function openEditEvent(id, e) {
   document.getElementById('ev-note').value=ev.note||'';
   document.getElementById('ev-guest-name').value=ev.guestName||'';
   document.getElementById('ev-olcum').checked=ev.olcumAlinacak||false;
+  document.getElementById('ev-teyit').checked=ev.teyitGerekli||false;
   toggleGuestField();
   populateEventTrainers();
   document.getElementById('ev-trainer').value=ev.trainerId;
@@ -2920,15 +2945,16 @@ function saveEvent() {
   const note=document.getElementById('ev-note').value;
   const guestName=document.getElementById('ev-guest-name')?.value||'';
   const olcumAlinacak=document.getElementById('ev-olcum')?.checked||false;
+  const teyitGerekli=document.getElementById('ev-teyit')?.checked||false;
   const specialCount=0;
   const singleDropCount=0;
   if(!date||!startTime){toast('Tarih ve saat zorunludur.','error');return;}
 
   if(editingEventId) {
     const i=S.events.findIndex(e=>e.id===editingEventId);
-    if(i>-1) S.events[i]={...S.events[i],type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,members:tempEventMembers,specialCount,singleDropCount};
+    if(i>-1) S.events[i]={...S.events[i],type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,teyitGerekli,members:tempEventMembers,specialCount,singleDropCount};
   } else {
-    S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,members:tempEventMembers,specialCount,singleDropCount,completed:false});
+    S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,teyitGerekli,members:tempEventMembers,specialCount,singleDropCount,completed:false});
   }
   save();closeModal('event-modal');
   // Takvim scroll pozisyonunu koru
