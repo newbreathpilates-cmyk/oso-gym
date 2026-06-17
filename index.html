@@ -1131,6 +1131,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <option>Reklam / Pazarlama</option>
           <option>Sigorta</option>
           <option>Vergi</option>
+          <option>Kredi Kartı</option>
           <option>Diğer</option>
         </select>
       </div>
@@ -5855,7 +5856,7 @@ function getPaketFiyati(pkg) {
 // GİDERLER
 // ══════════════════════════════════════
 const GIDER_KATEGORILER = ['Kira','Elektrik','Su','Doğalgaz','İnternet','Malzeme / Ekipman','Temizlik','Muhasebe','Reklam / Pazarlama','Sigorta','Vergi','Diğer'];
-const GIDER_RENK = {'Kira':'#7C3AED','Aidat':'#0F766E','Elektrik':'#D97706','Su':'#0891B2','Doğalgaz':'#EA580C','İnternet':'#2563EB','Malzeme / Ekipman':'#059669','Temizlik':'#0D9488','Muhasebe':'#6366F1','Reklam / Pazarlama':'#DB2777','Sigorta':'#64748B','Vergi':'#B91C1C','Eğitmen Hakedişi':'#7C3AED','Diğer':'#6B7280'};
+const GIDER_RENK = {'Kira':'#7C3AED','Aidat':'#0F766E','Elektrik':'#D97706','Su':'#0891B2','Doğalgaz':'#EA580C','İnternet':'#2563EB','Malzeme / Ekipman':'#059669','Temizlik':'#0D9488','Muhasebe':'#6366F1','Reklam / Pazarlama':'#DB2777','Sigorta':'#64748B','Vergi':'#B91C1C','Kredi Kartı':'#9333EA','Eğitmen Hakedişi':'#7C3AED','Diğer':'#6B7280'};
 
 function renderFinansal() {
   const tm = localDate().slice(0,7);
