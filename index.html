@@ -5983,10 +5983,10 @@ function renderGiderler() {
       </button>
     </div>
     <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)" id="gider-cards">
-      <div class="stat-card"><div class="stat-label">Genel Toplam Gider</div><div class="stat-value gider-val" style="color:#b91c1c">••••••</div><div class="gider-real" style="display:none">₺${Math.round(toplam).toLocaleString('tr-TR')}</div></div>
-      <div class="stat-card"><div class="stat-label">Eğitmen Toplam Hakediş</div><div class="stat-value gider-val" style="color:#b91c1c">••••••</div><div class="stat-sub">toplam hakediş</div><div class="gider-real" style="display:none">₺${Math.round(ayHakedis).toLocaleString('tr-TR')}</div></div>
       <div class="stat-card" style="background:#f0fdf8;border-color:rgba(29,158,117,0.25)"><div class="stat-label" style="color:#0a5c41">Toplam Ders Cirosu</div><div class="stat-value gider-val" style="color:var(--green)">••••••</div><div class="stat-sub" style="color:#1D9E75">${ayDersCount} tamamlanan ders</div><div class="gider-real" style="display:none">₺${Math.round(ayGelir).toLocaleString('tr-TR')}</div></div>
-      <div class="stat-card" style="background:${netKar>=0?'#f0fdf8':'#fef2f2'}"><div class="stat-label">Kalan Net Kar</div><div class="stat-value gider-val" style="color:${netKar>=0?'#065f46':'#b91c1c'}">••••••</div><div class="stat-sub" style="color:${netKar>=0?'#059669':'#b91c1c'}">gelir − gider − hakediş</div><div class="gider-real" style="display:none">₺${Math.round(netKar).toLocaleString('tr-TR')}</div></div>
+      <div class="stat-card"><div class="stat-label">Eğitmen Toplam Hakediş</div><div class="stat-value gider-val" style="color:#b91c1c">••••••</div><div class="gider-real" style="display:none">₺${Math.round(ayHakedis).toLocaleString('tr-TR')}</div></div>
+      <div class="stat-card"><div class="stat-label">Genel Toplam Gider</div><div class="stat-value gider-val" style="color:#b91c1c">••••••</div><div class="gider-real" style="display:none">₺${Math.round(toplam).toLocaleString('tr-TR')}</div></div>
+      <div class="stat-card" style="background:${netKar>=0?'#f0fdf8':'#fef2f2'}"><div class="stat-label">Kalan Net Kar</div><div class="stat-value gider-val" style="color:${netKar>=0?'#065f46':'#b91c1c'}">••••••</div><div class="gider-real" style="display:none">₺${Math.round(netKar).toLocaleString('tr-TR')}</div></div>
     </div>
     <div class="two-col">
       <div class="card">
