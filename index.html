@@ -2602,7 +2602,14 @@ function openCalendarSearch() {
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Üye Adı</label>
-          <input type="text" class="form-input" id="cal-search-input" placeholder="Üye adı yazın..." oninput="renderCalSearchResults(this.value)" autocomplete="off">
+          <input type="text" class="form-input" id="cal-search-input" placeholder="Üye adı yazın..." oninput="renderCalSearchResults()" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ay (opsiyonel)</label>
+          <select class="form-select" id="cal-search-month" onchange="renderCalSearchResults()">
+            <option value="">Tüm Aylar</option>
+            ${getCalSearchMonthOptions()}
+          </select>
         </div>
         <div id="cal-search-results" style="margin-top:8px"></div>
       </div>
@@ -2612,7 +2619,20 @@ function openCalendarSearch() {
   setTimeout(()=>document.getElementById('cal-search-input')?.focus(), 100);
 }
 
-function renderCalSearchResults(query) {
+function getCalSearchMonthOptions() {
+  const monthsSet = new Set(S.events.map(e=>e.date ? e.date.slice(0,7) : null).filter(Boolean));
+  const months = [...monthsSet].sort((a,b)=>b>a?1:-1);
+  const adlar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  return months.map(m=>{
+    const [y,mo] = m.split('-');
+    const label = adlar[parseInt(mo)-1] + ' ' + y;
+    return `<option value="${m}">${label}</option>`;
+  }).join('');
+}
+
+function renderCalSearchResults() {
+  const query = document.getElementById('cal-search-input')?.value || '';
+  const selectedMonth = document.getElementById('cal-search-month')?.value || '';
   const el = document.getElementById('cal-search-results');
   if(!el) return;
   if(!query || query.trim().length < 2) {
@@ -2633,14 +2653,16 @@ function renderCalSearchResults(query) {
   }
   const memberIds = new Set(matchedMembers.map(m=>m.id));
   // Randevuları bul
-  const events = S.events.filter(e=>(e.members||[]).some(mid=>memberIds.has(mid)))
-    .sort((a,b)=>b.date>a.date?1:-1);
+  let events = S.events.filter(e=>(e.members||[]).some(mid=>memberIds.has(mid)));
+  if(selectedMonth) events = events.filter(e=>e.date && e.date.startsWith(selectedMonth));
+  events = events.sort((a,b)=>b.date>a.date?1:-1);
   if(!events.length) {
     el.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">Randevu bulunamadı</div>';
     return;
   }
+  const completedCount = events.filter(e=>e.completed).length;
   el.innerHTML = `
-    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">${events.length} randevu bulundu</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">${events.length} randevu bulundu${selectedMonth?' · ✅ '+completedCount+' tamamlandı':''}</div>
     ${events.map(ev=>{
       const tr = S.trainers.find(t=>t.id===ev.trainerId);
       const members = (ev.members||[]).filter(mid=>memberIds.has(mid)).map(mid=>{
