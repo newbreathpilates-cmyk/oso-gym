@@ -1929,11 +1929,11 @@ function renderDashboard() {
     .reduce((total, ev)=>{
       return total + (ev.members||[]).reduce((sum, mid)=>{
         const m=S.members.find(x=>x.id===mid);if(!m)return sum;
-        const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-        if(!pays.length)return sum;
-        const lessons=pkgMap[pays[0].package]||1;
+        const p=getPaymentForEventDate(mid, ev.date);
+        if(!p)return sum;
+        const lessons=pkgMap[p.package]||1;
         if(!lessons||lessons>=999)return sum;
-        return sum+(pays[0].amount/lessons);
+        return sum+(p.amount/lessons);
       },0);
     },0);
 
@@ -1977,9 +1977,8 @@ function renderDashboard() {
     return total + (ev.members||[]).reduce((sum, mid) => {
       const m = S.members.find(x=>x.id===mid);
       if(!m) return sum;
-      const payments = (S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-      if(!payments.length) return sum;
-      const p = payments[0];
+      const p = getPaymentForEventDate(mid, ev.date);
+      if(!p) return sum;
       const lessons = pkgMap[p.package] || 1;
       if(!lessons || lessons >= 999) return sum;
       return sum + (p.amount / lessons);
@@ -5497,13 +5496,11 @@ function getPkgType(pkg) {
   return 'bireysel';
 }
 
-function getPerLessonPrice(memberId) {
+function getPerLessonPrice(memberId, eventDate) {
   const m = S.members.find(x=>x.id===memberId);
   if(!m) return 0;
-  // Find latest payment for this member
-  const payments = (S.payments||[]).filter(p=>p.memberId===memberId).sort((a,b)=>b.date>a.date?1:-1);
-  if(!payments.length) return 0;
-  const p = payments[0];
+  const p = eventDate ? getPaymentForEventDate(memberId, eventDate) : (S.payments||[]).filter(x=>x.memberId===memberId).sort((a,b)=>b.date>a.date?1:-1)[0];
+  if(!p) return 0;
   const lessons = pkgSessions(p.package);
   if(!lessons || lessons >= 999) return 0;
   return p.amount / lessons;
@@ -5521,7 +5518,7 @@ function calcTrainerHakedis(trainerId, monthStr) {
       const m = S.members.find(x=>x.id===mid);
       if(!m) return;
       const type = getPkgType(m.package);
-      const perLesson = getPerLessonPrice(mid);
+      const perLesson = getPerLessonPrice(mid, ev.date);
       const earned = Math.round(perLesson * pct * 100) / 100;
       total += earned;
       detail.push({date:ev.date, time:ev.startTime, lessonType:ev.type, member:m.name+' '+m.surname, pkgType:type, pct:trainer?.pct||0, perLesson:Math.round(perLesson*100)/100, earned});
@@ -5863,11 +5860,11 @@ function renderFinansal() {
   const monthLessonRev = S.events.filter(e=>e.date&&e.date.startsWith(tm)&&e.completed).reduce((total,ev)=>{
     return total+(ev.members||[]).reduce((sum,mid)=>{
       const m=S.members.find(x=>x.id===mid);if(!m)return sum;
-      const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-      if(!pays.length)return sum;
-      const lessons=pkgMap[pays[0].package]||1;
+      const p=getPaymentForEventDate(mid, ev.date);
+      if(!p)return sum;
+      const lessons=pkgMap[p.package]||1;
       if(!lessons||lessons>=999)return sum;
-      return sum+(pays[0].amount/lessons);
+      return sum+(p.amount/lessons);
     },0);
   },0);
   const monthGider = (S.giderler||[]).filter(g=>g.date&&g.date.startsWith(tm)).reduce((a,g)=>a+g.amount,0);
@@ -6271,6 +6268,21 @@ function importJSON(input){
 // ══════════════════════════════════════
 const pkgMap={'8 Ders Bireysel':8,'10 Ders Bireysel':10,'15 Ders Bireysel':15,'8 Ders 3 Kişilik Grup':8,'8 Ders 2 Kişilik Düet':8,'10 Ders 2 Kişilik Düet':10,'10 Ders 3 Kişilik Grup':10,'Özel Paket':0};
 const pkgDays={'8 Ders Bireysel':30,'10 Ders Bireysel':60,'15 Ders Bireysel':60,'8 Ders 3 Kişilik Grup':30,'8 Ders 2 Kişilik Düet':30,'10 Ders 2 Kişilik Düet':60,'10 Ders 3 Kişilik Grup':60,'Özel Paket':30};
+// Bir randevunun tarihine göre üyenin o tarihte geçerli olan ödeme kaydını bulur.
+// "En son ödeme" değil, randevu tarihinden ÖNCE veya O GÜN yapılmış en son ödemeyi bulur.
+// Bu sayede sonradan eklenen yeni bir paket, geçmişteki tamamlanmış derslerin fiyatını değiştirmez.
+function getPaymentForEventDate(memberId, eventDate) {
+  const pays = (S.payments||[]).filter(p=>p.memberId===memberId).sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:(a.id||0)-(b.id||0));
+  if(!pays.length) return null;
+  let result = null;
+  for(let i=0;i<pays.length;i++){
+    if(pays[i].date <= eventDate) result = pays[i];
+    else break;
+  }
+  // Eğer randevu tarihinden önce hiç ödeme yoksa (örn. randevu ödeme tarihinden önceyse), en eski ödemeyi kullan
+  return result || pays[0];
+}
+
 function pkgSessions(p){
   if(!p) return 0;
   // Özel Paket (Sınırsız) formatı
