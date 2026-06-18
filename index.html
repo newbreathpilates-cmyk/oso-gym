@@ -1505,11 +1505,11 @@ function updateDashDay() {
   const rev = S.events.filter(e=>e.date===selDay&&e.completed).reduce((total,ev)=>{
     return total+(ev.members||[]).reduce((sum,mid)=>{
       const m=S.members.find(x=>x.id===mid);if(!m)return sum;
-      const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-      if(!pays.length)return sum;
-      const lessons=pkgMap[pays[0].package]||1;
+      const p=getPaymentForEventDate(mid, ev.date);
+      if(!p)return sum;
+      const lessons=pkgMap[p.package]||1;
       if(!lessons||lessons>=999)return sum;
-      return sum+(pays[0].amount/lessons);
+      return sum+(p.amount/lessons);
     },0);
   },0);
   const count = S.events.filter(e=>e.date===selDay&&e.completed).length;
@@ -1527,11 +1527,11 @@ function updateDashMonth() {
   const rev = S.events.filter(e=>e.date&&e.date.startsWith(selMonth)&&e.completed).reduce((total,ev)=>{
     return total+(ev.members||[]).reduce((sum,mid)=>{
       const m=S.members.find(x=>x.id===mid);if(!m)return sum;
-      const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-      if(!pays.length)return sum;
-      const lessons=pkgMap[pays[0].package]||1;
+      const p=getPaymentForEventDate(mid, ev.date);
+      if(!p)return sum;
+      const lessons=pkgMap[p.package]||1;
       if(!lessons||lessons>=999)return sum;
-      return sum+(pays[0].amount/lessons);
+      return sum+(p.amount/lessons);
     },0);
   },0);
   const count = S.events.filter(e=>e.date&&e.date.startsWith(selMonth)&&e.completed).length;
@@ -1886,9 +1886,8 @@ function renderDashboard() {
       return total + (ev.members||[]).reduce((sum, mid) => {
         const m = S.members.find(x=>x.id===mid);
         if(!m) return sum;
-        const payments = (S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-        if(!payments.length) return sum;
-        const pay = payments[0];
+        const pay = getPaymentForEventDate(mid, ev.date);
+        if(!pay) return sum;
         const lessons = pkgMap[pay.package] || 1;
         if(!lessons || lessons >= 999) return sum;
         const perLesson = pay.amount / lessons;
@@ -1906,11 +1905,11 @@ function renderDashboard() {
     evs.forEach(ev=>{
       (ev.members||[]).forEach(mid=>{
         const m=S.members.find(x=>x.id===mid);if(!m)return;
-        const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-        if(!pays.length)return;
-        const lessons=pkgMap[pays[0].package]||1;
+        const p=getPaymentForEventDate(mid, ev.date);
+        if(!p)return;
+        const lessons=pkgMap[p.package]||1;
         if(!lessons||lessons>=999)return;
-        total+=Math.round((pays[0].amount/lessons)*pct*100)/100;
+        total+=Math.round((p.amount/lessons)*pct*100)/100;
       });
     });
     const paid=(S.hakedisPayments||[]).find(p=>p.trainerId===t.id&&p.month===tm);
@@ -4806,11 +4805,11 @@ function renderTrainers() {
             return evs.reduce((total,ev)=>{
               return total+(ev.members||[]).reduce((sum,mid)=>{
                 const m=S.members.find(x=>x.id===mid);if(!m)return sum;
-                const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-                if(!pays.length)return sum;
-                const lessons=pkgMap[pays[0].package]||1;
+                const p=getPaymentForEventDate(mid, ev.date);
+                if(!p)return sum;
+                const lessons=pkgMap[p.package]||1;
                 if(!lessons||lessons>=999)return sum;
-                return sum+(pays[0].amount/lessons)*pct;
+                return sum+(p.amount/lessons)*pct;
               },0);
             },0);
           })()).toLocaleString('tr-TR')}</div>
@@ -5589,11 +5588,11 @@ function renderHakedis() {
     .reduce((total,ev)=>{
       return total+(ev.members||[]).reduce((sum,mid)=>{
         const m=S.members.find(x=>x.id===mid);if(!m)return sum;
-        const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-        if(!pays.length)return sum;
-        const lessons=pkgMap[pays[0].package]||1;
+        const p=getPaymentForEventDate(mid, ev.date);
+        if(!p)return sum;
+        const lessons=pkgMap[p.package]||1;
         if(!lessons||lessons>=999)return sum;
-        return sum+(pays[0].amount/lessons);
+        return sum+(p.amount/lessons);
       },0);
     },0);
   const ayDersCount = S.events.filter(e=>e.date&&e.date.startsWith(selMonth)&&e.completed).length;
@@ -5945,11 +5944,11 @@ function renderGiderler() {
     .reduce((total,ev)=>{
       return total+(ev.members||[]).reduce((sum,mid)=>{
         const m=S.members.find(x=>x.id===mid);if(!m)return sum;
-        const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-        if(!pays.length)return sum;
-        const lessons=pkgMap[pays[0].package]||1;
+        const p=getPaymentForEventDate(mid, ev.date);
+        if(!p)return sum;
+        const lessons=pkgMap[p.package]||1;
         if(!lessons||lessons>=999)return sum;
-        return sum+(pays[0].amount/lessons);
+        return sum+(p.amount/lessons);
       },0);
     },0);
   const ayHakedis = S.trainers.reduce((total,t)=>{
@@ -5958,11 +5957,11 @@ function renderGiderler() {
     return total+evs.reduce((sum,ev)=>{
       return sum+(ev.members||[]).reduce((msum,mid)=>{
         const m=S.members.find(x=>x.id===mid);if(!m)return msum;
-        const pays=(S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
-        if(!pays.length)return msum;
-        const lessons=pkgMap[pays[0].package]||1;
+        const p=getPaymentForEventDate(mid, ev.date);
+        if(!p)return msum;
+        const lessons=pkgMap[p.package]||1;
         if(!lessons||lessons>=999)return msum;
-        return msum+(pays[0].amount/lessons)*pct;
+        return msum+(p.amount/lessons)*pct;
       },0);
     },0);
   },0);
