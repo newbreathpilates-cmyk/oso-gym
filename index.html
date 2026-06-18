@@ -5982,27 +5982,28 @@ function renderGiderler() {
         👁 <span id="gider-toggle-label">Tutarları Göster</span>
       </button>
     </div>
-    <div class="card" id="gider-cards" style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px 16px">
-        <div style="font-size:10px;color:#1D9E75;font-weight:700">${ayDersCount} TAMAMLANAN DERS</div>
+    <div class="card" id="gider-cards" style="margin-bottom:14px;padding:0;overflow:hidden">
+      <div style="background:linear-gradient(135deg,#0f766e,#1D9E75);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px;color:white;font-weight:700">📊 Aylık Finansal Özet</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.85);font-weight:600">${ayDersCount} ders</div>
       </div>
-      <div style="padding:0 16px 4px 16px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:13px;color:var(--text2)">Toplam Ders Cirosu</span>
+      <div style="padding:14px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;color:var(--text2)">💰 Toplam Ders Cirosu</span>
         <span class="gider-val" style="font-size:16px;font-weight:700;color:var(--green)">••••••</span>
         <span class="gider-real" style="display:none">₺${Math.round(ayGelir).toLocaleString('tr-TR')}</span>
       </div>
-      <div style="padding:8px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)">
-        <span style="font-size:13px;color:var(--text2)">− Eğitmen Toplam Hakediş</span>
+      <div style="padding:10px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);margin-top:6px">
+        <span style="font-size:13px;color:var(--text2)">👤 − Eğitmen Toplam Hakediş</span>
         <span class="gider-val" style="font-size:15px;font-weight:600;color:#b91c1c">••••••</span>
         <span class="gider-real" style="display:none">₺${Math.round(ayHakedis).toLocaleString('tr-TR')}</span>
       </div>
-      <div style="padding:8px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)">
-        <span style="font-size:13px;color:var(--text2)">− Genel Toplam Gider</span>
+      <div style="padding:10px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)">
+        <span style="font-size:13px;color:var(--text2)">🧾 − Genel Toplam Gider</span>
         <span class="gider-val" style="font-size:15px;font-weight:600;color:#b91c1c">••••••</span>
         <span class="gider-real" style="display:none">₺${Math.round(toplam).toLocaleString('tr-TR')}</span>
       </div>
-      <div style="padding:10px 16px 14px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1.5px solid var(--border);margin-top:2px;background:${netKar>=0?'#f0fdf8':'#fef2f2'}">
-        <span style="font-size:14px;font-weight:700;color:${netKar>=0?'#065f46':'#b91c1c'}">Kalan Net Kar</span>
+      <div style="padding:12px 16px 16px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1.5px solid var(--border);margin-top:2px;background:${netKar>=0?'#f0fdf8':'#fef2f2'}">
+        <span style="font-size:14px;font-weight:700;color:${netKar>=0?'#065f46':'#b91c1c'}">${netKar>=0?'📈':'📉'} Kalan Net Kar</span>
         <span class="gider-val" style="font-size:19px;font-weight:800;color:${netKar>=0?'#065f46':'#b91c1c'}">••••••</span>
         <span class="gider-real" style="display:none">₺${Math.round(netKar).toLocaleString('tr-TR')}</span>
       </div>
