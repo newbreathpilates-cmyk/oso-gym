@@ -1080,9 +1080,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <button class="btn btn-icon" onclick="closeModal('yoklama-modal')"><i class="ti ti-x"></i></button>
     </div>
     <div class="modal-body" id="yoklama-modal-body"></div>
-    <div class="modal-footer">
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
       <button class="btn" onclick="closeModal('yoklama-modal')">İptal</button>
-      <button class="btn btn-primary" onclick="saveAllAttendance()"><i class="ti ti-circle-check"></i> Dersi Tamamlandı Olarak İşaretle</button>
+      <button class="btn" style="background:#fff7ed;border:1.5px solid #fed7aa;color:#c2410c" onclick="saveAllAttendance(true)"><i class="ti ti-clock-x"></i> Geç İptal</button>
+      <button class="btn btn-primary" onclick="saveAllAttendance(false)"><i class="ti ti-circle-check"></i> Dersi Tamamlandı Olarak İşaretle</button>
     </div>
   </div>
 </div>
@@ -2428,8 +2429,9 @@ function renderMultiDayView(numDays) {
                 const memberNames=isDeneme&&ev.guestName?ev.guestName:(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name:null;}).filter(Boolean).join(', ');
                 const height=Math.max(dur,45);
                 const isCompleted=ev.completed===true;
-                const evBg=isCompleted?'#059669':isDeneme?'#fff7ed':c.bg;
-                const evBorder=isCompleted?'#047857':isDeneme?'#f97316':c.border;
+                const isGecIptal=isCompleted&&ev.gecIptal===true;
+                const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isDeneme?'#fff7ed':c.bg;
+                const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isDeneme?'#f97316':c.border;
                 const evColor=isCompleted?'#ffffff':isDeneme?'#9a3412':c.text;
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
@@ -2437,7 +2439,7 @@ function renderMultiDayView(numDays) {
                 return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:3px 5px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}cursor:pointer" onclick="openEditEvent(${ev.id},event)"> 
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;height:100%;overflow:hidden">
                     <div style="flex:1;min-width:0;overflow:hidden">
-                      <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.type}${isCompleted?' ✓':''}</div>
+                      <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.type}${isGecIptal?' ⏰':isCompleted?' ✓':''}</div>
                       <div style="font-size:10px;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.startTime}${tr?' · '+tr.name.split(' ')[0]:''}</div>
                       <div style="font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${memberNames}</div>
                     </div>
@@ -2547,8 +2549,9 @@ function renderWeekView() {
                 const memberNames=isDeneme&&ev.guestName?ev.guestName:(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name:null;}).filter(Boolean).join(', ');
                 const height=Math.max(dur,45);
                 const isCompleted=ev.completed===true;
-                const evBg=isCompleted?'#059669':isDeneme?'#fff7ed':c.bg;
-                const evBorder=isCompleted?'#047857':isDeneme?'#f97316':c.border;
+                const isGecIptal=isCompleted&&ev.gecIptal===true;
+                const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isDeneme?'#fff7ed':c.bg;
+                const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isDeneme?'#f97316':c.border;
                 const evColor=isCompleted?'#ffffff':isDeneme?'#9a3412':c.text;
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
@@ -2556,7 +2559,7 @@ function renderWeekView() {
                 return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:2px 3px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}cursor:pointer" onclick="openEditEvent(${ev.id},event)">
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;height:100%;overflow:hidden">
                     <div style="flex:1;min-width:0;overflow:hidden">
-                      <div style="font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${ev.type}${isCompleted?' ✓':''}</div>
+                      <div style="font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${ev.type}${isGecIptal?' ⏰':isCompleted?' ✓':''}</div>
                       <div style="font-size:8px;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${ev.startTime}</div>
                       <div style="font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${memberNames}</div>
                     </div>
@@ -2669,16 +2672,16 @@ function renderCalSearchResults() {
         const m = S.members.find(x=>x.id===mid);
         return m ? m.name+' '+m.surname : '';
       }).filter(Boolean).join(', ');
-      return `<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:${ev.completed?'#f0fdf8':'white'}">
+      return `<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:${ev.gecIptal?'#fff7ed':ev.completed?'#f0fdf8':'white'}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
-            <div style="font-weight:700;font-size:13px">${ev.type} ${ev.completed?'✅':''}</div>
+            <div style="font-weight:700;font-size:13px">${ev.type} ${ev.gecIptal?'⏰':ev.completed?'✅':''}</div>
             <div style="font-size:12px;color:var(--text2);margin-top:2px">👤 ${members}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:2px">📅 ${ev.date} · ⏰ ${ev.startTime}</div>
             ${tr?`<div style="font-size:11px;color:var(--text3)">🏋️ ${tr.name}</div>`:''}
           </div>
-          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${ev.completed?'#d1fae5':'#f3f4f6'};color:${ev.completed?'#065f46':'#6b7280'};font-weight:600;flex-shrink:0">
-            ${ev.completed?'Tamamlandı':'Planlandı'}
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${ev.gecIptal?'#fed7aa':ev.completed?'#d1fae5':'#f3f4f6'};color:${ev.gecIptal?'#c2410c':ev.completed?'#065f46':'#6b7280'};font-weight:600;flex-shrink:0">
+            ${ev.gecIptal?'Geç İptal':ev.completed?'Tamamlandı':'Planlandı'}
           </span>
         </div>
       </div>`;
@@ -5343,7 +5346,7 @@ function renderTrainerMonthlyLessons() {
       html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0">'+
         '<div><div style="font-size:13px;font-weight:500">'+ev.startTime+' · '+ev.type+'</div>'+
         '<div style="font-size:11px;color:var(--text3)">'+(members||'Üye yok')+'</div></div>'+
-        '<span style="font-size:16px">'+(ev.completed?'✅':'⬜')+'</span></div>';
+        '<span style="font-size:16px">'+(ev.gecIptal?'⏰':ev.completed?'✅':'⬜')+'</span></div>';
     });
     html += '</div>';
   });
@@ -5384,6 +5387,7 @@ function openYoklamaModal(evId, e) {
     if(currentUser.role!=='owner') { toast('Tamamlandı işaretini yalnızca işletme sahibi kaldırabilir.','error'); return; }
     if(!confirm('Bu dersi "Tamamlandı" durumundan çıkarmak istiyor musunuz? Üyelerin paketlerine ders iade edilecek.')) return;
     ev.completed = false;
+    ev.gecIptal = false;
     (ev.members||[]).forEach(mid=>{
       const m=S.members.find(x=>x.id===mid);
       if(m) m.used=Math.max(0,(m.used||0)-1);
@@ -5435,10 +5439,11 @@ function renderYoklamaBody(ev) {
     </div>`;
 }
 
-function saveAllAttendance() {
+function saveAllAttendance(gecIptal) {
   const ev = S.events.find(x=>x.id===yoklamaEventId);
   if(!ev) return;
   ev.completed = true;
+  ev.gecIptal = !!gecIptal;
   const finishedMembers = [];
   (ev.members||[]).forEach(mid=>{
     const m=S.members.find(x=>x.id===mid);
@@ -5455,7 +5460,7 @@ function saveAllAttendance() {
   closeModal('yoklama-modal');
   if(currentPage==='calendar') renderCalendar();
   if(currentPage==='dashboard') renderDashboard();
-  toast('Ders tamamlandı — paketlerden düşüldü. ✓','success');
+  toast(gecIptal ? 'Geç iptal olarak işaretlendi — paketten düşüldü. ✓' : 'Ders tamamlandı — paketlerden düşüldü. ✓','success');
 
   // Paketi biten üye uyarısı
   if(finishedMembers.length > 0) {
