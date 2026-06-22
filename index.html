@@ -6061,39 +6061,49 @@ function renderGiderler() {
       <div style="padding:14px 16px;font-weight:600;font-size:13px;border-bottom:1px solid var(--border)">Gider Listesi</div>
       ${filtered.length ? `
       <table class="member-table hakedis-detail-table">
-        <thead><tr><th>Tarih</th><th>Kategori</th><th>Tutar</th><th>Not</th><th></th></tr></thead>
+        <thead><tr><th>Tarih</th><th>Kategori</th><th>Tutar</th><th>Not</th><th>Durum</th><th></th></tr></thead>
         <tbody>${[...filtered].sort((a,b)=>b.date>a.date?1:-1).map(g=>{
           const renk=GIDER_RENK[g.category]||'#6B7280';
-          return `<tr>
+          const odendi = g.odendi===true;
+          return `<tr style="${odendi?'opacity:0.7':''}">
             <td style="font-size:12px">${g.date}</td>
             <td><div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:${renk};flex-shrink:0"></div><span style="font-size:12px">${g.category}</span></div></td>
-            <td style="font-weight:600;color:#b91c1c">₺${g.amount.toLocaleString('tr-TR')}</td>
+            <td style="font-weight:600;color:${odendi?'#059669':'#b91c1c'}">₺${g.amount.toLocaleString('tr-TR')}</td>
             <td style="font-size:11px;color:var(--text3)">${g.note||'—'}</td>
+            <td>${odendi?`<span style="font-size:10px;color:#059669;font-weight:600">✅ ${g.odendiTarih||''}</span>`:`<span style="font-size:10px;color:#b91c1c">Ödenmedi</span>`}</td>
             <td><div class="flex gap-8">
               <button class="btn btn-sm btn-icon" onclick="openGiderModal(${g.id})"><i class="ti ti-edit"></i></button>
               <button class="btn btn-sm btn-icon btn-danger" onclick="deleteGider(${g.id})"><i class="ti ti-trash"></i></button>
+              <button class="btn btn-sm" style="${odendi?'background:#fef2f2;color:#b91c1c':'background:#f0fdf4;color:#059669'};border:none;font-size:11px;padding:4px 8px" onclick="toggleGiderOdendi(${g.id})">${odendi?'↩ Geri Al':'✅ Ödendi'}</button>
             </div></td>
           </tr>`;
         }).join('')}</tbody>
-        <tfoot><tr style="background:var(--bg)"><td colspan="2" style="font-weight:700;font-size:13px">Toplam</td><td style="font-weight:700;font-size:13px;color:#b91c1c">₺${Math.round(filtered.reduce((a,g)=>a+g.amount,0)).toLocaleString('tr-TR')}</td><td colspan="2"></td></tr></tfoot>
+        <tfoot><tr style="background:var(--bg)"><td colspan="2" style="font-weight:700;font-size:13px">Toplam</td><td style="font-weight:700;font-size:13px;color:#b91c1c">₺${Math.round(filtered.reduce((a,g)=>a+g.amount,0)).toLocaleString('tr-TR')}</td><td colspan="3"></td></tr></tfoot>
       </table>
       <!-- Mobil kart görünümü -->
       <div class="hakedis-mobile-list">
         ${[...filtered].sort((a,b)=>b.date>a.date?1:-1).map(g=>{
           const renk=GIDER_RENK[g.category]||'#6B7280';
-          return `<div style="padding:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:#b91c1c">₺${g.amount.toLocaleString('tr-TR')}</div>
-              <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
-                <div style="width:8px;height:8px;border-radius:50%;background:${renk}"></div>
-                <span style="font-size:12px;color:var(--text2)">${g.category}</span>
-                <span style="font-size:11px;color:var(--text3)">· ${g.date}</span>
+          const odendi = g.odendi===true;
+          return `<div style="padding:12px;border-bottom:1px solid var(--border);${odendi?'opacity:0.7':''}">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:${odendi?'#059669':'#b91c1c'}">₺${g.amount.toLocaleString('tr-TR')}</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                  <div style="width:8px;height:8px;border-radius:50%;background:${renk}"></div>
+                  <span style="font-size:12px;color:var(--text2)">${g.category}</span>
+                  <span style="font-size:11px;color:var(--text3)">· ${g.date}</span>
+                </div>
+                ${g.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${g.note}</div>`:''}
+                ${odendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:3px">✅ Ödendi · ${g.odendiTarih||''}</div>`:''}
               </div>
-              ${g.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${g.note}</div>`:''}
-            </div>
-            <div style="display:flex;gap:6px">
-              <button class="btn btn-sm btn-icon" onclick="openGiderModal(${g.id})"><i class="ti ti-edit"></i></button>
-              <button class="btn btn-sm btn-icon btn-danger" onclick="deleteGider(${g.id})"><i class="ti ti-trash"></i></button>
+              <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-sm btn-icon" onclick="openGiderModal(${g.id})"><i class="ti ti-edit"></i></button>
+                  <button class="btn btn-sm btn-icon btn-danger" onclick="deleteGider(${g.id})"><i class="ti ti-trash"></i></button>
+                </div>
+                <button style="${odendi?'background:#fef2f2;color:#b91c1c':'background:#f0fdf4;color:#059669'};border:1px solid ${odendi?'#fecaca':'#bbf7d0'};border-radius:6px;font-size:11px;padding:4px 10px;cursor:pointer" onclick="toggleGiderOdendi(${g.id})">${odendi?'↩ Geri Al':'✅ Ödendi'}</button>
+              </div>
             </div>
           </div>`;
         }).join('')}
@@ -6237,6 +6247,23 @@ function openGiderModal(id) {
     document.getElementById('g-date').value=today();
   }
   openModal('gider-modal');
+}
+
+function toggleGiderOdendi(id) {
+  const g = (S.giderler||[]).find(x=>x.id===id);
+  if(!g) return;
+  if(g.odendi) {
+    if(!confirm('Bu giderin "Ödendi" işaretini geri almak istediğinizden emin misiniz?')) return;
+    g.odendi = false;
+    g.odendiTarih = '';
+  } else {
+    if(!confirm('Bu gideri "Ödendi" olarak işaretlemek istediğinizden emin misiniz?')) return;
+    g.odendi = true;
+    g.odendiTarih = localDate();
+  }
+  save();
+  renderGiderler();
+  toast(g.odendi ? 'Ödendi olarak işaretlendi ✓' : 'Ödendi işareti kaldırıldı ✓', 'success');
 }
 
 function saveGider() {
