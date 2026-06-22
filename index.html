@@ -2430,16 +2430,17 @@ function renderMultiDayView(numDays) {
                 const height=Math.max(dur,45);
                 const isCompleted=ev.completed===true;
                 const isGecIptal=isCompleted&&ev.gecIptal===true;
-                const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isDeneme?'#fff7ed':c.bg;
-                const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isDeneme?'#f97316':c.border;
-                const evColor=isCompleted?'#ffffff':isDeneme?'#9a3412':c.text;
+                const isTeyit=!isCompleted&&ev.teyitGerekli===true;
+                const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isTeyit?'#374151':isDeneme?'#fff7ed':c.bg;
+                const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isTeyit?'#1f2937':isDeneme?'#f97316':c.border;
+                const evColor=isCompleted||isTeyit?'#ffffff':isDeneme?'#9a3412':c.text;
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
                 const isOwnEvent = currentUser.role !== 'trainer' || ev.trainerId === currentUser.trainerId;
                 return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:3px 5px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}cursor:pointer" onclick="openEditEvent(${ev.id},event)"> 
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;height:100%;overflow:hidden">
                     <div style="flex:1;min-width:0;overflow:hidden">
-                      <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.type}${isGecIptal?' ⏰':isCompleted?' ✓':''}</div>
+                      <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.type}${isGecIptal?' ⏰':isCompleted?' ✓':isTeyit?' ❓':''}</div>
                       <div style="font-size:10px;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.startTime}${tr?' · '+tr.name.split(' ')[0]:''}</div>
                       <div style="font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${memberNames}</div>
                     </div>
@@ -2550,16 +2551,17 @@ function renderWeekView() {
                 const height=Math.max(dur,45);
                 const isCompleted=ev.completed===true;
                 const isGecIptal=isCompleted&&ev.gecIptal===true;
-                const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isDeneme?'#fff7ed':c.bg;
-                const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isDeneme?'#f97316':c.border;
-                const evColor=isCompleted?'#ffffff':isDeneme?'#9a3412':c.text;
+                const isTeyit=!isCompleted&&ev.teyitGerekli===true;
+                const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isTeyit?'#374151':isDeneme?'#fff7ed':c.bg;
+                const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isTeyit?'#1f2937':isDeneme?'#f97316':c.border;
+                const evColor=isCompleted||isTeyit?'#ffffff':isDeneme?'#9a3412':c.text;
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
                 const isOwnEvent = currentUser.role !== 'trainer' || ev.trainerId === currentUser.trainerId;
                 return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:2px 3px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}cursor:pointer" onclick="openEditEvent(${ev.id},event)">
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;height:100%;overflow:hidden">
                     <div style="flex:1;min-width:0;overflow:hidden">
-                      <div style="font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${ev.type}${isGecIptal?' ⏰':isCompleted?' ✓':''}</div>
+                      <div style="font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${ev.type}${isGecIptal?' ⏰':isCompleted?' ✓':isTeyit?' ❓':''}</div>
                       <div style="font-size:8px;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${ev.startTime}</div>
                       <div style="font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${memberNames}</div>
                     </div>
