@@ -2431,8 +2431,8 @@ function renderMultiDayView(numDays) {
                 const isCompleted=ev.completed===true;
                 const isGecIptal=isCompleted&&ev.gecIptal===true;
                 const isTeyit=!isCompleted&&ev.teyitGerekli===true;
-                const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isTeyit?'#374151':isDeneme?'#fff7ed':c.bg;
-                const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isTeyit?'#1f2937':isDeneme?'#f97316':c.border;
+                const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isTeyit?'#ca8a04':isDeneme?'#fff7ed':c.bg;
+                const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isTeyit?'#a16207':isDeneme?'#f97316':c.border;
                 const evColor=isCompleted||isTeyit?'#ffffff':isDeneme?'#9a3412':c.text;
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
@@ -2552,8 +2552,8 @@ function renderWeekView() {
                 const isCompleted=ev.completed===true;
                 const isGecIptal=isCompleted&&ev.gecIptal===true;
                 const isTeyit=!isCompleted&&ev.teyitGerekli===true;
-                const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isTeyit?'#374151':isDeneme?'#fff7ed':c.bg;
-                const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isTeyit?'#1f2937':isDeneme?'#f97316':c.border;
+                const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isTeyit?'#ca8a04':isDeneme?'#fff7ed':c.bg;
+                const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isTeyit?'#a16207':isDeneme?'#f97316':c.border;
                 const evColor=isCompleted||isTeyit?'#ffffff':isDeneme?'#9a3412':c.text;
                 const widthPct=total>1?(100/total-1):94;
                 const leftPct=total>1?(col*(100/total)+0.5):3;
