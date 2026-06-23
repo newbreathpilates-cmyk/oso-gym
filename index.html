@@ -1508,7 +1508,7 @@ function updateDashDay() {
       const m=S.members.find(x=>x.id===mid);if(!m)return sum;
       const p=getPaymentForEventDate(mid, ev.date);
       if(!p)return sum;
-      const lessons=pkgMap[p.package]||1;
+      const lessons=getLessonsFromPayment(p)||1;
       if(!lessons||lessons>=999)return sum;
       return sum+(p.amount/lessons);
     },0);
@@ -1530,7 +1530,7 @@ function updateDashMonth() {
       const m=S.members.find(x=>x.id===mid);if(!m)return sum;
       const p=getPaymentForEventDate(mid, ev.date);
       if(!p)return sum;
-      const lessons=pkgMap[p.package]||1;
+      const lessons=getLessonsFromPayment(p)||1;
       if(!lessons||lessons>=999)return sum;
       return sum+(p.amount/lessons);
     },0);
@@ -1908,7 +1908,7 @@ function renderDashboard() {
         const m=S.members.find(x=>x.id===mid);if(!m)return;
         const p=getPaymentForEventDate(mid, ev.date);
         if(!p)return;
-        const lessons=pkgMap[p.package]||1;
+        const lessons=getLessonsFromPayment(p)||1;
         if(!lessons||lessons>=999)return;
         total+=Math.round((p.amount/lessons)*pct*100)/100;
       });
@@ -1931,7 +1931,7 @@ function renderDashboard() {
         const m=S.members.find(x=>x.id===mid);if(!m)return sum;
         const p=getPaymentForEventDate(mid, ev.date);
         if(!p)return sum;
-        const lessons=pkgMap[p.package]||1;
+        const lessons=getLessonsFromPayment(p)||1;
         if(!lessons||lessons>=999)return sum;
         return sum+(p.amount/lessons);
       },0);
@@ -4834,7 +4834,7 @@ function renderTrainers() {
                 const m=S.members.find(x=>x.id===mid);if(!m)return sum;
                 const p=getPaymentForEventDate(mid, ev.date);
                 if(!p)return sum;
-                const lessons=pkgMap[p.package]||1;
+                const lessons=getLessonsFromPayment(p)||1;
                 if(!lessons||lessons>=999)return sum;
                 return sum+(p.amount/lessons)*pct;
               },0);
@@ -5529,7 +5529,7 @@ function getPerLessonPrice(memberId, eventDate) {
   if(!m) return 0;
   const p = eventDate ? getPaymentForEventDate(memberId, eventDate) : (S.payments||[]).filter(x=>x.memberId===memberId).sort((a,b)=>b.date>a.date?1:-1)[0];
   if(!p) return 0;
-  const lessons = pkgSessions(p.package);
+  const lessons = getLessonsFromPayment(p);
   if(!lessons || lessons >= 999) return 0;
   return p.amount / lessons;
 }
@@ -5619,7 +5619,7 @@ function renderHakedis() {
         const m=S.members.find(x=>x.id===mid);if(!m)return sum;
         const p=getPaymentForEventDate(mid, ev.date);
         if(!p)return sum;
-        const lessons=pkgMap[p.package]||1;
+        const lessons=getLessonsFromPayment(p)||1;
         if(!lessons||lessons>=999)return sum;
         return sum+(p.amount/lessons);
       },0);
@@ -5890,7 +5890,7 @@ function renderFinansal() {
       const m=S.members.find(x=>x.id===mid);if(!m)return sum;
       const p=getPaymentForEventDate(mid, ev.date);
       if(!p)return sum;
-      const lessons=pkgMap[p.package]||1;
+      const lessons=getLessonsFromPayment(p)||1;
       if(!lessons||lessons>=999)return sum;
       return sum+(p.amount/lessons);
     },0);
@@ -5975,7 +5975,7 @@ function renderGiderler() {
         const m=S.members.find(x=>x.id===mid);if(!m)return sum;
         const p=getPaymentForEventDate(mid, ev.date);
         if(!p)return sum;
-        const lessons=pkgMap[p.package]||1;
+        const lessons=getLessonsFromPayment(p)||1;
         if(!lessons||lessons>=999)return sum;
         return sum+(p.amount/lessons);
       },0);
@@ -5988,7 +5988,7 @@ function renderGiderler() {
         const m=S.members.find(x=>x.id===mid);if(!m)return msum;
         const p=getPaymentForEventDate(mid, ev.date);
         if(!p)return msum;
-        const lessons=pkgMap[p.package]||1;
+        const lessons=getLessonsFromPayment(p)||1;
         if(!lessons||lessons>=999)return msum;
         return msum+(p.amount/lessons)*pct;
       },0);
@@ -6344,8 +6344,6 @@ function importJSON(input){
 const pkgMap={'8 Ders Bireysel':8,'10 Ders Bireysel':10,'15 Ders Bireysel':15,'8 Ders 3 Kişilik Grup':8,'8 Ders 2 Kişilik Düet':8,'10 Ders 2 Kişilik Düet':10,'10 Ders 3 Kişilik Grup':10,'Özel Paket':0};
 const pkgDays={'8 Ders Bireysel':30,'10 Ders Bireysel':60,'15 Ders Bireysel':60,'8 Ders 3 Kişilik Grup':30,'8 Ders 2 Kişilik Düet':30,'10 Ders 2 Kişilik Düet':60,'10 Ders 3 Kişilik Grup':60,'Özel Paket':30};
 // Bir randevunun tarihine göre üyenin o tarihte geçerli olan ödeme kaydını bulur.
-// "En son ödeme" değil, randevu tarihinden ÖNCE veya O GÜN yapılmış en son ödemeyi bulur.
-// Bu sayede sonradan eklenen yeni bir paket, geçmişteki tamamlanmış derslerin fiyatını değiştirmez.
 function getPaymentForEventDate(memberId, eventDate) {
   const pays = (S.payments||[]).filter(p=>p.memberId===memberId).sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:(a.id||0)-(b.id||0));
   if(!pays.length) return null;
@@ -6354,8 +6352,17 @@ function getPaymentForEventDate(memberId, eventDate) {
     if(pays[i].date <= eventDate) result = pays[i];
     else break;
   }
-  // Eğer randevu tarihinden önce hiç ödeme yoksa (örn. randevu ödeme tarihinden önceyse), en eski ödemeyi kullan
   return result || pays[0];
+}
+
+// Bir ödeme kaydından ders sayısını hesaplar (paket boşsa ozelDers alanına bakar)
+function getLessonsFromPayment(pay) {
+  if(!pay) return 0;
+  // Önce paket adından pkgSessions ile bul
+  let lessons = pkgSessions(pay.package);
+  // Paket boşsa veya bulunamazsa (sınırsız değilse) ozelDers alanına bak
+  if((!lessons || lessons === 0) && pay.ozelDers) lessons = pay.ozelDers;
+  return lessons;
 }
 
 function pkgSessions(p){
