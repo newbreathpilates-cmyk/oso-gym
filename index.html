@@ -5111,7 +5111,19 @@ function editPayment(id){
   const sel=document.getElementById('p-member');
   sel.innerHTML=[...S.members].sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr')).map(m=>`<option value="${m.id}">${m.name} ${m.surname}</option>`).join('');
   sel.value=p.memberId;
-  document.getElementById('p-package').value=p.package;
+  const ozelMatch = p.package ? p.package.match(/Özel Paket \((\d+) Ders\)/) : null;
+  const ozelSinirsiz = p.package && p.package.includes('Özel Paket (Sınırsız)');
+  if(ozelMatch || ozelSinirsiz) {
+    document.getElementById('p-package').value='Özel Paket';
+    toggleOzelPaket();
+    const count = ozelMatch ? parseInt(ozelMatch[1]) : 0;
+    document.getElementById('ozel-ders-count').value = count;
+    const display = document.getElementById('ozel-ders-display');
+    if(display) display.textContent = count || '∞';
+  } else {
+    document.getElementById('p-package').value=p.package||'';
+    toggleOzelPaket();
+  }
   document.getElementById('p-amount').value=p.amount;
   document.getElementById('p-date').value=p.date;
   document.getElementById('p-method').value=p.method;
