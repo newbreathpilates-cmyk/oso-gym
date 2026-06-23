@@ -5132,7 +5132,7 @@ function savePayment(){
     pkg = ozelDers === 0 ? 'Özel Paket (Sınırsız)' : `Özel Paket (${ozelDers} Ders)`;
   }
   const payStatus = document.getElementById('p-status').value;
-  const d={memberId:mid,member:m?m.name+' '+m.surname:'',package:pkg,amount:parseFloat(document.getElementById('p-amount').value)||0,date:date,method:document.getElementById('p-method').value,status:payStatus,paidDate:payStatus==='odendi'?localDate():null};
+  const d={memberId:mid,member:m?m.name+' '+m.surname:'',package:pkg,amount:parseFloat(document.getElementById('p-amount').value)||0,date:date,method:document.getElementById('p-method').value,status:payStatus,paidDate:payStatus==='odendi'?localDate():null,ozelDers:ozelDers||0};
   if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
   if(eid){
     const i=S.payments.findIndex(p=>p.id==eid);
