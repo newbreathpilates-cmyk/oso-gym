@@ -1875,7 +1875,7 @@ function renderDashboard() {
       const payments = (S.payments||[]).filter(p=>p.memberId===mid).sort((a,b)=>b.date>a.date?1:-1);
       if(!payments.length) return sum;
       const p = payments[0];
-      const lessons = pkgMap[p.package] || 1;
+      const lessons = getLessonsFromPayment(p) || 1;
       if(!lessons || lessons >= 999) return sum;
       return sum + (p.amount / lessons);
     }, 0);
@@ -1889,7 +1889,7 @@ function renderDashboard() {
         if(!m) return sum;
         const pay = getPaymentForEventDate(mid, ev.date);
         if(!pay) return sum;
-        const lessons = pkgMap[pay.package] || 1;
+        const lessons = getLessonsFromPayment(pay) || 1;
         if(!lessons || lessons >= 999) return sum;
         const perLesson = pay.amount / lessons;
         return sum + (perLesson * (t.pct||0) / 100);
@@ -1979,7 +1979,7 @@ function renderDashboard() {
       if(!m) return sum;
       const p = getPaymentForEventDate(mid, ev.date);
       if(!p) return sum;
-      const lessons = pkgMap[p.package] || 1;
+      const lessons = getLessonsFromPayment(p) || 1;
       if(!lessons || lessons >= 999) return sum;
       return sum + (p.amount / lessons);
     }, 0);
@@ -4988,7 +4988,7 @@ function renderPayments(tab) {
       <table class="member-table hakedis-detail-table">
         <thead><tr><th>Tarih</th><th>Üye</th><th>Paket</th><th>Tutar</th><th>Ders Başı</th><th>Yöntem</th><th>Durum</th><th></th></tr></thead>
         <tbody>${payments.map(p=>{
-          const lessonCount = pkgMap[p.package]||0;
+          const lessonCount = getLessonsFromPayment(p)||0;
           const perLesson = lessonCount>0 && lessonCount<999 ? Math.round(p.amount/lessonCount) : null;
           return `<tr>
             <td style="font-size:12px">${p.date}</td>
@@ -5012,7 +5012,7 @@ function renderPayments(tab) {
       <!-- Mobil kart listesi -->
       <div class="hakedis-mobile-list">
         ${payments.map(p=>{
-          const lessonCount = pkgMap[p.package]||0;
+          const lessonCount = getLessonsFromPayment(p)||0;
           const perLesson = lessonCount>0 && lessonCount<999 ? Math.round(p.amount/lessonCount) : null;
           // Geçmiş paket kontrolü - üyenin aktif paketi bu ödeme değilse geçmiş
           const member = S.members.find(m=>m.id===p.memberId);
@@ -5113,13 +5113,14 @@ function editPayment(id){
   sel.value=p.memberId;
   const ozelMatch = p.package ? p.package.match(/Özel Paket \((\d+) Ders\)/) : null;
   const ozelSinirsiz = p.package && p.package.includes('Özel Paket (Sınırsız)');
-  if(ozelMatch || ozelSinirsiz) {
+  const isOzel = ozelMatch || ozelSinirsiz || (p.ozelDers && p.ozelDers > 0);
+  if(isOzel) {
     document.getElementById('p-package').value='Özel Paket';
     toggleOzelPaket();
-    const count = ozelMatch ? parseInt(ozelMatch[1]) : 0;
+    const count = ozelMatch ? parseInt(ozelMatch[1]) : (p.ozelDers || 1);
     document.getElementById('ozel-ders-count').value = count;
-    const display = document.getElementById('ozel-ders-display');
-    if(display) display.textContent = count || '∞';
+    const display = document.getElementById('ozel-ders-sayi');
+    if(display) display.textContent = count;
   } else {
     document.getElementById('p-package').value=p.package||'';
     toggleOzelPaket();
