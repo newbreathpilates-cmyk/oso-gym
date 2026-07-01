@@ -1380,16 +1380,11 @@ function loadState() {
   return defaultState();
 }
 
-async function save() {
-  // localStorage'a hemen yedekle (anında)
+function save() {
+  // Firebase'e kaydet (birincil)
+  if(window.firebaseSave) window.firebaseSave(S);
+  // localStorage'a yedekle
   try { localStorage.setItem('pilates_v3', JSON.stringify(S)); } catch(e){}
-  // Firebase'e arka planda kaydet
-  if(window.firebaseSave) {
-    window.firebaseSave(S).catch(e => {
-      console.error('Firebase kayıt hatası:', e);
-      toast('⚠️ Firebase kayıt hatası! Veriler yerel olarak saklandı.', 'error');
-    });
-  }
 }
 
 // ══════════════════════════════════════
@@ -3121,7 +3116,7 @@ function renderEventMembersList() {
   }).join('');
 }
 
-async function saveEvent() {
+function saveEvent() {
   const type=document.getElementById('ev-type').value;
   const trainerId=parseInt(document.getElementById('ev-trainer').value);
   const date=document.getElementById('ev-date').value;
@@ -4157,7 +4152,7 @@ function toggleGroupMembers() {
   if(sec) sec.style.display = 'none';
 }
 
-async function saveMember(){
+function saveMember(){
   const id=document.getElementById('m-id').value;
   // Yeni ölçüm var mı kontrol et
   const yeniOlcum = getNewOlcum();
@@ -5177,7 +5172,7 @@ function editPayment(id){
   openModal('payment-modal');
 }
 
-async function savePayment(){
+function savePayment(){
   const eid=document.getElementById('p-id').value;
   const mid=parseInt(document.getElementById('p-member').value);
   const m=S.members.find(x=>x.id===mid);
@@ -5499,7 +5494,7 @@ function renderYoklamaBody(ev) {
     </div>`;
 }
 
-async function saveAllAttendance(gecIptal) {
+function saveAllAttendance(gecIptal) {
   const ev = S.events.find(x=>x.id===yoklamaEventId);
   if(!ev) return;
   ev.completed = true;
@@ -6324,7 +6319,7 @@ function toggleGiderOdendi(id) {
   toast(g.odendi ? 'Ödendi olarak işaretlendi ✓' : 'Ödendi işareti kaldırıldı ✓', 'success');
 }
 
-async function saveGider() {
+function saveGider() {
   const eid=document.getElementById('g-id').value;
   const d={category:document.getElementById('g-category').value,amount:parseFloat(document.getElementById('g-amount').value)||0,date:document.getElementById('g-date').value,note:document.getElementById('g-note').value.trim()};
   if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
