@@ -1380,11 +1380,18 @@ function loadState() {
   return defaultState();
 }
 
-function save() {
-  // Firebase'e kaydet (birincil)
-  if(window.firebaseSave) window.firebaseSave(S);
-  // localStorage'a yedekle
+async function save() {
+  // localStorage'a hemen yedekle
   try { localStorage.setItem('pilates_v3', JSON.stringify(S)); } catch(e){}
+  // Firebase'e kaydet ve onay bekle
+  if(window.firebaseSave) {
+    try {
+      await window.firebaseSave(S);
+    } catch(e) {
+      console.error('Firebase kayıt hatası:', e);
+      toast('⚠️ Kayıt hatası! Tekrar deneyin.', 'error');
+    }
+  }
 }
 
 // ══════════════════════════════════════
@@ -3116,7 +3123,7 @@ function renderEventMembersList() {
   }).join('');
 }
 
-function saveEvent() {
+async function saveEvent() {
   const type=document.getElementById('ev-type').value;
   const trainerId=parseInt(document.getElementById('ev-trainer').value);
   const date=document.getElementById('ev-date').value;
@@ -3153,7 +3160,7 @@ function saveEvent() {
   } else {
     S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,teyitGerekli,members:tempEventMembers,specialCount,singleDropCount,completed:false});
   }
-  save();closeModal('event-modal');
+  await save();closeModal('event-modal');
   // Takvim scroll pozisyonunu koru
   const calScroll = document.getElementById('week-grid-scroll');
   const scrollPos = calScroll ? calScroll.scrollTop : 0;
@@ -4152,7 +4159,7 @@ function toggleGroupMembers() {
   if(sec) sec.style.display = 'none';
 }
 
-function saveMember(){
+async function saveMember(){
   const id=document.getElementById('m-id').value;
   // Yeni ölçüm var mı kontrol et
   const yeniOlcum = getNewOlcum();
@@ -4187,7 +4194,7 @@ function saveMember(){
     d.olcumGecmis = yeniOlcum ? [yeniOlcum] : [];
     S.members.push(d);
   }
-  save();closeModal('member-modal');renderMembers();
+  await save();closeModal('member-modal');renderMembers();
   toast(yeniOlcum?'Üye kaydedildi — ölçüm eklendi. ✓':'Üye kaydedildi.','success');
 }
 function toggleShareMenu(id, btn) {
@@ -5172,7 +5179,7 @@ function editPayment(id){
   openModal('payment-modal');
 }
 
-function savePayment(){
+async function savePayment(){
   const eid=document.getElementById('p-id').value;
   const mid=parseInt(document.getElementById('p-member').value);
   const m=S.members.find(x=>x.id===mid);
@@ -5218,7 +5225,7 @@ function savePayment(){
       if(ozelDers>0) m.ozelDers=ozelDers;
     }
   }
-  save();closeModal('payment-modal');renderPayments();toast(eid?'Ödeme güncellendi.':'Ödeme kaydedildi — paket tanımlandı.','success');
+  await save();closeModal('payment-modal');renderPayments();toast(eid?'Ödeme güncellendi.':'Ödeme kaydedildi — paket tanımlandı.','success');
 }
 
 function filterArsivList() {
@@ -5494,7 +5501,7 @@ function renderYoklamaBody(ev) {
     </div>`;
 }
 
-function saveAllAttendance(gecIptal) {
+async function saveAllAttendance(gecIptal) {
   const ev = S.events.find(x=>x.id===yoklamaEventId);
   if(!ev) return;
   ev.completed = true;
@@ -5511,7 +5518,7 @@ function saveAllAttendance(gecIptal) {
       }
     }
   });
-  save();
+  await save();
   closeModal('yoklama-modal');
   if(currentPage==='calendar') renderCalendar();
   if(currentPage==='dashboard') renderDashboard();
@@ -6319,13 +6326,13 @@ function toggleGiderOdendi(id) {
   toast(g.odendi ? 'Ödendi olarak işaretlendi ✓' : 'Ödendi işareti kaldırıldı ✓', 'success');
 }
 
-function saveGider() {
+async function saveGider() {
   const eid=document.getElementById('g-id').value;
   const d={category:document.getElementById('g-category').value,amount:parseFloat(document.getElementById('g-amount').value)||0,date:document.getElementById('g-date').value,note:document.getElementById('g-note').value.trim()};
   if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
   if(eid){const i=S.giderler.findIndex(g=>g.id===parseInt(eid));if(i>-1)S.giderler[i]={...S.giderler[i],...d};}
   else{d.id=S.nextId++;S.giderler.push(d);}
-  save();closeModal('gider-modal');renderGiderler();
+  await save();closeModal('gider-modal');renderGiderler();
   toast(eid?'Gider güncellendi.':'Gider eklendi.','success');
 }
 
