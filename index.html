@@ -1381,16 +1381,14 @@ function loadState() {
 }
 
 async function save() {
-  // localStorage'a hemen yedekle
+  // localStorage'a hemen yedekle (anında)
   try { localStorage.setItem('pilates_v3', JSON.stringify(S)); } catch(e){}
-  // Firebase'e kaydet ve onay bekle
+  // Firebase'e arka planda kaydet
   if(window.firebaseSave) {
-    try {
-      await window.firebaseSave(S);
-    } catch(e) {
+    window.firebaseSave(S).catch(e => {
       console.error('Firebase kayıt hatası:', e);
-      toast('⚠️ Kayıt hatası! Tekrar deneyin.', 'error');
-    }
+      toast('⚠️ Firebase kayıt hatası! Veriler yerel olarak saklandı.', 'error');
+    });
   }
 }
 
