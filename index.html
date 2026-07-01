@@ -3158,7 +3158,7 @@ async function saveEvent() {
   } else {
     S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,teyitGerekli,members:tempEventMembers,specialCount,singleDropCount,completed:false});
   }
-  await save();closeModal('event-modal');
+  save();closeModal('event-modal');
   // Takvim scroll pozisyonunu koru
   const calScroll = document.getElementById('week-grid-scroll');
   const scrollPos = calScroll ? calScroll.scrollTop : 0;
@@ -4192,7 +4192,7 @@ async function saveMember(){
     d.olcumGecmis = yeniOlcum ? [yeniOlcum] : [];
     S.members.push(d);
   }
-  await save();closeModal('member-modal');renderMembers();
+  save();closeModal('member-modal');renderMembers();
   toast(yeniOlcum?'Üye kaydedildi — ölçüm eklendi. ✓':'Üye kaydedildi.','success');
 }
 function toggleShareMenu(id, btn) {
@@ -5223,7 +5223,7 @@ async function savePayment(){
       if(ozelDers>0) m.ozelDers=ozelDers;
     }
   }
-  await save();closeModal('payment-modal');renderPayments();toast(eid?'Ödeme güncellendi.':'Ödeme kaydedildi — paket tanımlandı.','success');
+  save();closeModal('payment-modal');renderPayments();toast(eid?'Ödeme güncellendi.':'Ödeme kaydedildi — paket tanımlandı.','success');
 }
 
 function filterArsivList() {
@@ -5516,7 +5516,7 @@ async function saveAllAttendance(gecIptal) {
       }
     }
   });
-  await save();
+  save();
   closeModal('yoklama-modal');
   if(currentPage==='calendar') renderCalendar();
   if(currentPage==='dashboard') renderDashboard();
@@ -6330,7 +6330,7 @@ async function saveGider() {
   if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
   if(eid){const i=S.giderler.findIndex(g=>g.id===parseInt(eid));if(i>-1)S.giderler[i]={...S.giderler[i],...d};}
   else{d.id=S.nextId++;S.giderler.push(d);}
-  await save();closeModal('gider-modal');renderGiderler();
+  save();closeModal('gider-modal');renderGiderler();
   toast(eid?'Gider güncellendi.':'Gider eklendi.','success');
 }
 
