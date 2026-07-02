@@ -3248,6 +3248,7 @@ function renderMembers() {
         <option value="paket-yok">Paket Yok</option>
         <option value="son-10-gun">Paket Süresi Bitmek Üzere (Son 15 Gün)</option>
         <option value="son-2-ders">Son 2 Ders Kalan</option>
+        <option value="son-5-ders">Son 5 Ders Kalan</option>
       </select>
       ${!isTrainer ? `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>` : `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>`}
     </div>`;
@@ -3300,6 +3301,12 @@ function filterMembersTable(){
     if(total===0||total===999) return false;
     const remaining = Math.max(0, total - (m.used||0));
     return remaining<=2 && remaining>0 && m.status==='Aktif';
+  });
+  else if(f==='son-5-ders') list = list.filter(m=>{
+    const total = pkgSessions(m.package||'');
+    if(total===0||total===999) return false;
+    const remaining = Math.max(0, total - (m.used||0));
+    return remaining<=5 && remaining>0 && m.status==='Aktif';
   });
   else if(f==='dersleri-biten') list = list.filter(m=>{
     const total = pkgSessions(m.package||'');
