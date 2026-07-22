@@ -2341,7 +2341,7 @@ function renderDashboard() {
     </div>
   `;
   // 6 aylık şampiyon kontrolü
-  setTimeout(checkSixMonthChampions, 1500);
+  // checkSixMonthChampions kaldırıldı
 }
 
 // ══════════════════════════════════════
@@ -3552,11 +3552,15 @@ function renderAttendanceReport() {
   const stats = {};
   completedEvs.forEach(ev => {
     (ev.members||[]).forEach(mid => {
-      if(!stats[mid]) stats[mid] = { count:0, lastDate:'', trainers:new Set() };
+      if(!stats[mid]) stats[mid] = { count:0, lastDate:'', trainers:new Set(), totalPaid:0 };
       stats[mid].count++;
       if(ev.date > stats[mid].lastDate) stats[mid].lastDate = ev.date;
       if(ev.trainerId) stats[mid].trainers.add(ev.trainerId);
     });
+  });
+  // Toplam ödeme hesapla
+  (S.payments||[]).forEach(p=>{
+    if(stats[p.memberId]) stats[p.memberId].totalPaid = (stats[p.memberId].totalPaid||0) + (p.amount||0);
   });
 
   // Üye listesi
@@ -3618,6 +3622,7 @@ function renderAttendanceReport() {
             <div style="text-align:right;flex-shrink:0">
               <div style="font-size:22px;font-weight:700;color:${isTop?'#059669':isLow?'#f59e0b':'var(--text)'}">${st.count}</div>
               <div style="font-size:10px;color:var(--text3)">ders</div>
+              ${st.totalPaid>0?`<div style="font-size:11px;font-weight:600;color:#059669;margin-top:2px">₺${Math.round(st.totalPaid).toLocaleString('tr-TR')}</div>`:''}
             </div>
           </div>
         </div>`;
@@ -6431,6 +6436,7 @@ function saveGider() {
 }
 
 function deleteGider(id) {
+  if(!confirm('Bu gideri silmek istediğinizden emin misiniz?')) return;
   S.giderler=S.giderler.filter(g=>g.id!==parseInt(id));
   save();renderGiderler();toast('Gider silindi.');
 }
