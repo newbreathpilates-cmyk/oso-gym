@@ -1115,11 +1115,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div class="modal-title" id="gider-modal-title">Gider Ekle</div>
       <button class="btn btn-icon" onclick="closeModal('gider-modal')"><i class="ti ti-x"></i></button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
       <input type="hidden" id="g-id">
-      <div class="form-group">
-        <label class="form-label">Kategori</label>
-        <select class="form-select" id="g-category">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">Kategori</label>
+        <select style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:white;appearance:auto" id="g-category">
           <option>Kira</option>
           <option>Aidat</option>
           <option>Elektrik</option>
@@ -1136,19 +1136,19 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <option>Diğer</option>
         </select>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Tutar (₺)</label>
-          <input type="number" class="form-input" id="g-amount" placeholder="0" min="0">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">Tutar (₺)</label>
+          <input type="number" style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:white;box-sizing:border-box" id="g-amount" placeholder="0" min="0">
         </div>
-        <div class="form-group">
-          <label class="form-label">Tarih</label>
-          <input type="date" class="form-input" id="g-date">
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">Tarih</label>
+          <input type="date" style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:white;box-sizing:border-box" id="g-date">
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Not</label>
-        <input type="text" class="form-input" id="g-note" placeholder="Opsiyonel açıklama...">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">Not</label>
+        <input type="text" style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:white;box-sizing:border-box" id="g-note" placeholder="Opsiyonel açıklama...">
       </div>
     </div>
     <div class="modal-footer">
