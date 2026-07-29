@@ -1118,14 +1118,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     <div class="modal-body">
       <input type="hidden" id="g-id">
       <div class="form-group">
-        <label class="form-label">Gider Türü</label>
-        <select class="form-select" id="g-tur">
-          <option value="isyeri">🏢 İş Yeri</option>
-          <option value="ev">🏠 Ev</option>
-          <option value="kisisel">👤 Kişisel</option>
-        </select>
-      </div>
-      <div class="form-group">
         <label class="form-label">Kategori</label>
         <select class="form-select" id="g-category">
           <option>Kira</option>
@@ -6135,12 +6127,6 @@ function renderGiderler() {
   let filtered = selAy ? S.giderler.filter(g=>g.date&&g.date.startsWith(selAy)) : S.giderler;
   const sabitToplam = S.sabitGiderler.filter(g=>g.aktif!==false).reduce((a,g)=>a+g.amount,0);
   const toplam = filtered.reduce((a,g)=>a+g.amount,0) + sabitToplam;
-  const sabitIsyeri = S.sabitGiderler.filter(g=>g.aktif!==false&&(!g.tur||g.tur==='isyeri')).reduce((a,g)=>a+g.amount,0);
-  const sabitEv = S.sabitGiderler.filter(g=>g.aktif!==false&&g.tur==='ev').reduce((a,g)=>a+g.amount,0);
-  const sabitKisisel = S.sabitGiderler.filter(g=>g.aktif!==false&&g.tur==='kisisel').reduce((a,g)=>a+g.amount,0);
-  const toplamIsyeri = filtered.filter(g=>!g.tur||g.tur==='isyeri').reduce((a,g)=>a+g.amount,0) + sabitIsyeri;
-  const toplamEv = filtered.filter(g=>g.tur==='ev').reduce((a,g)=>a+g.amount,0) + sabitEv;
-  const toplamKisisel = filtered.filter(g=>g.tur==='kisisel').reduce((a,g)=>a+g.amount,0) + sabitKisisel;
 
   const ayGelir = S.events.filter(e=>e.date&&e.date.startsWith(selAy||tm)&&e.completed)
     .reduce((total,ev)=>{
@@ -6200,20 +6186,10 @@ function renderGiderler() {
         <span class="gider-real" style="display:none">₺${Math.round(ayHakedis).toLocaleString('tr-TR')}</span>
       </div>
       <div style="padding:10px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)">
-        <span style="font-size:13px;color:var(--text2)">🏢 − İş Yeri Giderleri</span>
+        <span style="font-size:13px;color:var(--text2)">🧾 − Genel Toplam Gider</span>
         <span class="gider-val" style="font-size:15px;font-weight:600;color:#b91c1c">••••••</span>
-        <span class="gider-real" style="display:none">₺${Math.round(toplamIsyeri).toLocaleString('tr-TR')}</span>
+        <span class="gider-real" style="display:none">₺${Math.round(toplam).toLocaleString('tr-TR')}</span>
       </div>
-      ${toplamEv>0?`<div style="padding:10px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)">
-        <span style="font-size:13px;color:var(--text2)">🏠 − Ev Giderleri</span>
-        <span class="gider-val" style="font-size:15px;font-weight:600;color:#b91c1c">••••••</span>
-        <span class="gider-real" style="display:none">₺${Math.round(toplamEv).toLocaleString('tr-TR')}</span>
-      </div>`:''}
-      ${toplamKisisel>0?`<div style="padding:10px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)">
-        <span style="font-size:13px;color:var(--text2)">👤 − Kişisel Harcamalar</span>
-        <span class="gider-val" style="font-size:15px;font-weight:600;color:#b91c1c">••••••</span>
-        <span class="gider-real" style="display:none">₺${Math.round(toplamKisisel).toLocaleString('tr-TR')}</span>
-      </div>`:''}
       <div style="padding:12px 16px 16px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1.5px solid var(--border);margin-top:2px;background:${netKar>=0?'#f0fdf8':'#fef2f2'}">
         <span style="font-size:14px;font-weight:700;color:${netKar>=0?'#065f46':'#b91c1c'}">${netKar>=0?'📈':'📉'} Kalan Net Kar</span>
         <span class="gider-val" style="font-size:19px;font-weight:800;color:${netKar>=0?'#065f46':'#b91c1c'}">••••••</span>
@@ -6248,7 +6224,7 @@ function renderGiderler() {
         ${[...filtered].sort((a,b)=>b.date>a.date?1:-1).map(g=>{
           const renk=GIDER_RENK[g.category]||'#6B7280';
           const odendi = g.odendi===true;
-          const turLabel = g.tur==='ev'?'🏠 Ev':g.tur==='kisisel'?'👤 Kişisel':'🏢 İş Yeri';
+
           return `<div style="padding:12px;border-bottom:1px solid var(--border);${odendi?'opacity:0.7':''}">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div>
@@ -6257,7 +6233,7 @@ function renderGiderler() {
                   <div style="width:8px;height:8px;border-radius:50%;background:${renk}"></div>
                   <span style="font-size:12px;color:var(--text2)">${g.category}</span>
                   <span style="font-size:10px;color:var(--text3)">· ${g.date}</span>
-                  <span style="font-size:10px;color:var(--text3)">· ${turLabel}</span>
+
                 </div>
                 ${g.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${g.note}</div>`:''}
                 ${odendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:3px">✅ Ödendi · ${g.odendiTarih||''}</div>`:''}
@@ -6342,13 +6318,6 @@ function openSabitGiderModal(id) {
         <button class="btn btn-icon" onclick="document.getElementById('sabit-gider-overlay').remove()"><i class="ti ti-x"></i></button>
       </div>
       <div class="modal-body">
-        <div class="form-group"><label class="form-label">Gider Türü</label>
-          <select class="form-select" id="sg-tur">
-            <option value="isyeri" ${existing&&existing.tur==='isyeri'?'selected':!existing?'selected':''}>🏢 İş Yeri</option>
-            <option value="ev" ${existing&&existing.tur==='ev'?'selected':''}>🏠 Ev</option>
-            <option value="kisisel" ${existing&&existing.tur==='kisisel'?'selected':''}>👤 Kişisel</option>
-          </select>
-        </div>
         <div class="form-group"><label class="form-label">Gider Adı</label>
           <input type="text" class="form-input" id="sg-name" placeholder="Örn: Kira, Aidat..." value="${existing?existing.name:''}">
         </div>
@@ -6386,15 +6355,14 @@ function openSabitGiderModal(id) {
 function saveSabitGider(id) {
   const name = document.getElementById('sg-name').value.trim();
   const category = document.getElementById('sg-category').value;
-  const tur = document.getElementById('sg-tur').value || 'isyeri';
   const amount = parseFloat(document.getElementById('sg-amount').value)||0;
   if(!name || !amount) { toast('Ad ve tutar zorunludur.','error'); return; }
   if(!S.sabitGiderler) S.sabitGiderler = [];
   if(id && id !== 'null') {
     const i = S.sabitGiderler.findIndex(g=>g.id===parseInt(id));
-    if(i>-1) S.sabitGiderler[i] = {...S.sabitGiderler[i], name, category, tur, amount};
+    if(i>-1) S.sabitGiderler[i] = {...S.sabitGiderler[i], name, category, amount};
   } else {
-    S.sabitGiderler.push({id:S.nextId++, name, category, tur, amount});
+    S.sabitGiderler.push({id:S.nextId++, name, category, amount});
   }
   save();
   document.getElementById('sabit-gider-overlay').remove();
@@ -6454,13 +6422,13 @@ function openGiderModal(id) {
   if(id){
     const g=S.giderler.find(x=>x.id===parseInt(id));if(!g)return;
     document.getElementById('g-category').value=g.category;
-    document.getElementById('g-tur').value=g.tur||'isyeri';
+
     document.getElementById('g-amount').value=g.amount;
     document.getElementById('g-date').value=g.date;
     document.getElementById('g-note').value=g.note||'';
   } else {
     document.getElementById('g-amount').value='';
-    document.getElementById('g-tur').value='isyeri';
+
     document.getElementById('g-note').value='';
     document.getElementById('g-date').value=today();
   }
@@ -6486,7 +6454,7 @@ function toggleGiderOdendi(id) {
 
 function saveGider() {
   const eid=document.getElementById('g-id').value;
-  const d={category:document.getElementById('g-category').value,tur:document.getElementById('g-tur').value||'isyeri',amount:parseFloat(document.getElementById('g-amount').value)||0,date:document.getElementById('g-date').value,note:document.getElementById('g-note').value.trim()};
+  const d={category:document.getElementById('g-category').value,amount:parseFloat(document.getElementById('g-amount').value)||0,date:document.getElementById('g-date').value,note:document.getElementById('g-note').value.trim()};
   if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
   if(eid){const i=S.giderler.findIndex(g=>g.id===parseInt(eid));if(i>-1)S.giderler[i]={...S.giderler[i],...d};}
   else{d.id=S.nextId++;S.giderler.push(d);}
