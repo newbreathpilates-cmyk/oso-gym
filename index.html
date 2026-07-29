@@ -6132,10 +6132,11 @@ function renderGiderler() {
 
   const selAy = window._giderAy !== undefined ? window._giderAy : tm;
   if(!S.sabitGiderler) S.sabitGiderler = [];
-  const sabitToplam = S.sabitGiderler.filter(g=>g.aktif!==false).reduce((a,g)=>a+g.amount,0);
+  const sabitToplam = filteredSabit.filter(g=>g.aktif!==false).reduce((a,g)=>a+g.amount,0);
   let filtered = selAy ? S.giderler.filter(g=>g.date&&g.date.startsWith(selAy)) : S.giderler;
   const turFilter = window._giderTurFilter || 'all';
   if(turFilter !== 'all') filtered = filtered.filter(g=>(g.tur||'isyeri')===turFilter);
+  const filteredSabit = turFilter === 'all' ? S.sabitGiderler : S.sabitGiderler.filter(g=>(g.tur||'isyeri')===turFilter);
   const toplam = filtered.reduce((a,g)=>a+g.amount,0) + sabitToplam;
   const toplamIsyeri = filtered.filter(g=>!g.tur||g.tur==='isyeri').reduce((a,g)=>a+g.amount,0) + sabitToplam;
   const toplamEv = filtered.filter(g=>g.tur==='ev').reduce((a,g)=>a+g.amount,0);
@@ -6320,10 +6321,10 @@ function renderGiderler() {
     </div>
 
     <!-- Sabit Giderler -->
-    ${S.sabitGiderler.length > 0 ? `
+    ${filteredSabit.length > 0 ? `
     <div class="card" style="margin-top:12px">
       <div class="card-title">🔄 Sabit Giderler (Her Ay)</div>
-      ${S.sabitGiderler.map(g=>{
+      ${filteredSabit.map(g=>{
         const isAktif = g.aktif !== false; // varsayılan aktif
         const selAy = window._giderAy || new Date().toISOString().slice(0,7);
         const odKey = 'od_' + selAy;
