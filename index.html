@@ -6124,7 +6124,7 @@ function renderGiderler() {
 
   const selAy = window._giderAy !== undefined ? window._giderAy : tm;
   if(!S.sabitGiderler) S.sabitGiderler = [];
-  const sabitToplam = S.sabitGiderler.reduce((a,g)=>a+g.amount,0);
+  const sabitToplam = S.sabitGiderler.filter(g=>g.aktif!==false).reduce((a,g)=>a+g.amount,0);
   const filtered = selAy ? S.giderler.filter(g=>g.date&&g.date.startsWith(selAy)) : S.giderler;
   const toplam = filtered.reduce((a,g)=>a+g.amount,0) + sabitToplam;
 
@@ -6277,18 +6277,29 @@ function renderGiderler() {
     ${S.sabitGiderler.length > 0 ? `
     <div class="card" style="margin-top:12px">
       <div class="card-title">🔄 Sabit Giderler (Her Ay)</div>
-      ${S.sabitGiderler.map(g=>`
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-weight:500;font-size:13px">${g.name}</div>
+      ${S.sabitGiderler.map(g=>{
+        const isAktif = g.aktif !== false; // varsayılan aktif
+        const selAy = window._giderAy || new Date().toISOString().slice(0,7);
+        const odKey = 'od_' + selAy;
+        const isOdendi = g[odKey] === true;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);${!isAktif?'opacity:0.5':''}">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="font-weight:500;font-size:13px">${g.name}</div>
+              <span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isAktif?'#d1fae5':'#f3f4f6'};color:${isAktif?'#065f46':'#6b7280'};font-weight:600">${isAktif?'Aktif':'Pasif'}</span>
+            </div>
             <div style="font-size:11px;color:var(--text3)">${g.category}</div>
+            ${isOdendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">✅ ${selAy} ödendi</div>`:`<div style="font-size:10px;color:#b91c1c;margin-top:2px">⏳ ${selAy} ödenmedi</div>`}
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="font-weight:700;color:#b91c1c">₺${g.amount.toLocaleString('tr-TR')}</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="font-weight:700;color:${isOdendi?'#059669':'#b91c1c'}">₺${g.amount.toLocaleString('tr-TR')}</div>
+            <button onclick="toggleSabitGiderOdendi(${g.id})" style="border:1px solid ${isOdendi?'#bbf7d0':'#fecaca'};background:${isOdendi?'#f0fdf4':'#fef2f2'};border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:${isOdendi?'#059669':'#b91c1c'}">${isOdendi?'↩':'✅'}</button>
+            <button onclick="toggleSabitGiderAktif(${g.id})" style="border:1px solid var(--border);background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:var(--text2)">${isAktif?'⏸':'▶'}</button>
             <button class="btn btn-sm btn-icon" onclick="editSabitGider(${g.id})"><i class="ti ti-edit"></i></button>
             <button class="btn btn-sm btn-icon btn-danger" onclick="deleteSabitGider(${g.id})"><i class="ti ti-trash"></i></button>
           </div>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
       <div style="display:flex;justify-content:space-between;padding-top:8px;font-weight:700">
         <span>Toplam Sabit Gider</span>
         <span style="color:#b91c1c">₺${sabitToplam.toLocaleString('tr-TR')}</span>
@@ -6375,6 +6386,38 @@ function saveSabitGider(id) {
   document.getElementById('sabit-gider-overlay').remove();
   renderGiderler();
   toast('Sabit gider kaydedildi ✓','success');
+}
+
+function toggleSabitGiderOdendi(id) {
+  const g = S.sabitGiderler.find(x=>x.id===id);
+  if(!g) return;
+  const selAy = window._giderAy || new Date().toISOString().slice(0,7);
+  const odKey = 'od_' + selAy;
+  if(g[odKey]) {
+    if(!confirm(selAy + ' ayı ödemesini geri almak istiyor musunuz?')) return;
+    g[odKey] = false;
+  } else {
+    if(!confirm(selAy + ' ayı ödemesini "Ödendi" olarak işaretlemek istiyor musunuz?')) return;
+    g[odKey] = true;
+  }
+  save();
+  renderGiderler();
+  toast(g[odKey] ? 'Ödendi olarak işaretlendi ✓' : 'Ödendi işareti kaldırıldı ✓', 'success');
+}
+
+function toggleSabitGiderAktif(id) {
+  const g = S.sabitGiderler.find(x=>x.id===id);
+  if(!g) return;
+  const isAktif = g.aktif !== false;
+  if(isAktif) {
+    if(!confirm(g.name + ' sabit giderini pasif yapmak istiyor musunuz? Pasif giderler yeni aylarda görünmez.')) return;
+    g.aktif = false;
+  } else {
+    g.aktif = true;
+  }
+  save();
+  renderGiderler();
+  toast(g.aktif ? 'Sabit gider aktif edildi ✓' : 'Sabit gider pasif yapıldı ✓', 'success');
 }
 
 function editSabitGider(id) {
