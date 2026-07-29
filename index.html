@@ -6271,7 +6271,7 @@ function renderGiderler() {
               <span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isAktif?'#d1fae5':'#f3f4f6'};color:${isAktif?'#065f46':'#6b7280'};font-weight:600">${isAktif?'Aktif':'Pasif'}</span>
             </div>
             <div style="font-size:11px;color:var(--text3)">${g.category}</div>
-            ${isOdendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">✅ ${selAy} ödendi</div>`:`<div style="font-size:10px;color:#b91c1c;margin-top:2px">⏳ ${selAy} ödenmedi</div>`}
+            ${isOdendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">✅ Ödendi · ${g['odTarih_'+selAy]||selAy}</div>`:`<div style="font-size:10px;color:#b91c1c;margin-top:2px">⏳ ${selAy} ödenmedi</div>`}
           </div>
           <div style="display:flex;align-items:center;gap:6px">
             <div style="font-weight:700;color:${isOdendi?'#059669':'#b91c1c'}">₺${g.amount.toLocaleString('tr-TR')}</div>
@@ -6378,9 +6378,11 @@ function toggleSabitGiderOdendi(id) {
   if(g[odKey]) {
     if(!confirm(selAy + ' ayı ödemesini geri almak istiyor musunuz?')) return;
     g[odKey] = false;
+    g['odTarih_' + selAy] = '';
   } else {
     if(!confirm(selAy + ' ayı ödemesini "Ödendi" olarak işaretlemek istiyor musunuz?')) return;
     g[odKey] = true;
+    g['odTarih_' + selAy] = localDate();
   }
   save();
   renderGiderler();
