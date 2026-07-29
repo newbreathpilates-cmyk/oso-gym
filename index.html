@@ -6132,11 +6132,11 @@ function renderGiderler() {
 
   const selAy = window._giderAy !== undefined ? window._giderAy : tm;
   if(!S.sabitGiderler) S.sabitGiderler = [];
-  const sabitToplam = filteredSabit.filter(g=>g.aktif!==false).reduce((a,g)=>a+g.amount,0);
   let filtered = selAy ? S.giderler.filter(g=>g.date&&g.date.startsWith(selAy)) : S.giderler;
   const turFilter = window._giderTurFilter || 'all';
   if(turFilter !== 'all') filtered = filtered.filter(g=>(g.tur||'isyeri')===turFilter);
   const filteredSabit = turFilter === 'all' ? S.sabitGiderler : S.sabitGiderler.filter(g=>(g.tur||'isyeri')===turFilter);
+  const sabitToplam = filteredSabit.filter(g=>g.aktif!==false).reduce((a,g)=>a+g.amount,0);
   const toplam = filtered.reduce((a,g)=>a+g.amount,0) + sabitToplam;
   const toplamIsyeri = filtered.filter(g=>!g.tur||g.tur==='isyeri').reduce((a,g)=>a+g.amount,0) + sabitToplam;
   const toplamEv = filtered.filter(g=>g.tur==='ev').reduce((a,g)=>a+g.amount,0);
