@@ -6133,7 +6133,9 @@ function renderGiderler() {
   const selAy = window._giderAy !== undefined ? window._giderAy : tm;
   if(!S.sabitGiderler) S.sabitGiderler = [];
   const sabitToplam = S.sabitGiderler.filter(g=>g.aktif!==false).reduce((a,g)=>a+g.amount,0);
-  const filtered = selAy ? S.giderler.filter(g=>g.date&&g.date.startsWith(selAy)) : S.giderler;
+  let filtered = selAy ? S.giderler.filter(g=>g.date&&g.date.startsWith(selAy)) : S.giderler;
+  const turFilter = window._giderTurFilter || 'all';
+  if(turFilter !== 'all') filtered = filtered.filter(g=>(g.tur||'isyeri')===turFilter);
   const toplam = filtered.reduce((a,g)=>a+g.amount,0) + sabitToplam;
   const toplamIsyeri = filtered.filter(g=>!g.tur||g.tur==='isyeri').reduce((a,g)=>a+g.amount,0) + sabitToplam;
   const toplamEv = filtered.filter(g=>g.tur==='ev').reduce((a,g)=>a+g.amount,0);
@@ -6238,7 +6240,16 @@ function renderGiderler() {
       <div></div>
     </div>
     <div class="card" style="padding:0;overflow:hidden">
-      <div style="padding:14px 16px;font-weight:600;font-size:13px;border-bottom:1px solid var(--border)">Gider Listesi</div>
+      <div style="padding:14px 16px;font-weight:600;font-size:13px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">Gider Listesi</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${['all','isyeri','ev','kisisel'].map(t=>{
+            const labels={all:'Tümü',isyeri:'🏢 İş Yeri',ev:'🏠 Ev',kisisel:'👤 Kişisel'};
+            const active=(window._giderTurFilter||'all')===t;
+            return `<button onclick="window._giderTurFilter='${t}';renderGiderler()" style="padding:5px 12px;border-radius:20px;border:1.5px solid ${active?'var(--green)':'var(--border)'};background:${active?'var(--green)':'white'};color:${active?'white':'var(--text)'};font-size:11px;cursor:pointer;font-weight:600">${labels[t]}</button>`;
+          }).join('')}
+        </div>
+      </div>
       ${filtered.length ? `
       <table class="member-table hakedis-detail-table">
         <thead><tr><th>Tarih</th><th>Kategori</th><th>Tutar</th><th>Not</th><th>Durum</th><th></th></tr></thead>
@@ -6371,6 +6382,13 @@ function openSabitGiderModal(id) {
         <button class="btn btn-icon" onclick="document.getElementById('sabit-gider-overlay').remove()"><i class="ti ti-x"></i></button>
       </div>
       <div class="modal-body">
+        <div class="form-group"><label class="form-label">Gider Türü</label>
+          <select class="form-select" id="sg-tur">
+            <option value="isyeri" ${existing&&existing.tur==='isyeri'?'selected':!existing?'selected':''}>🏢 İş Yeri</option>
+            <option value="ev" ${existing&&existing.tur==='ev'?'selected':''}>🏠 Ev</option>
+            <option value="kisisel" ${existing&&existing.tur==='kisisel'?'selected':''}>👤 Kişisel</option>
+          </select>
+        </div>
         <div class="form-group"><label class="form-label">Gider Adı</label>
           <input type="text" class="form-input" id="sg-name" placeholder="Örn: Kira, Aidat..." value="${existing?existing.name:''}">
         </div>
@@ -6408,14 +6426,15 @@ function openSabitGiderModal(id) {
 function saveSabitGider(id) {
   const name = document.getElementById('sg-name').value.trim();
   const category = document.getElementById('sg-category').value;
+  const tur = document.getElementById('sg-tur').value || 'isyeri';
   const amount = parseFloat(document.getElementById('sg-amount').value)||0;
   if(!name || !amount) { toast('Ad ve tutar zorunludur.','error'); return; }
   if(!S.sabitGiderler) S.sabitGiderler = [];
   if(id && id !== 'null') {
     const i = S.sabitGiderler.findIndex(g=>g.id===parseInt(id));
-    if(i>-1) S.sabitGiderler[i] = {...S.sabitGiderler[i], name, category, amount};
+    if(i>-1) S.sabitGiderler[i] = {...S.sabitGiderler[i], name, category, tur, amount};
   } else {
-    S.sabitGiderler.push({id:S.nextId++, name, category, amount});
+    S.sabitGiderler.push({id:S.nextId++, name, category, tur, amount});
   }
   save();
   document.getElementById('sabit-gider-overlay').remove();
