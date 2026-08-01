@@ -6125,7 +6125,7 @@ function renderGiderler() {
   const selAy = window._giderAy !== undefined ? window._giderAy : tm;
   if(!S.sabitGiderler) S.sabitGiderler = [];
   let filtered = selAy ? S.giderler.filter(g=>g.date&&g.date.startsWith(selAy)) : S.giderler;
-  const sabitToplam = S.sabitGiderler.filter(g=>g.aktif!==false).reduce((a,g)=>a+g.amount,0);
+  const sabitToplam = S.sabitGiderler.filter(g=>g.aktif!==false).reduce((a,g)=>a+getSabitGiderTutar(g, selAy||tm),0);
   const toplam = filtered.reduce((a,g)=>a+g.amount,0) + sabitToplam;
 
   const ayGelir = S.events.filter(e=>e.date&&e.date.startsWith(selAy||tm)&&e.completed)
@@ -6261,9 +6261,10 @@ function renderGiderler() {
       <div class="card-title">🔄 Sabit Giderler (Her Ay)</div>
       ${S.sabitGiderler.map(g=>{
         const isAktif = g.aktif !== false; // varsayılan aktif
-        const selAy = window._giderAy || new Date().toISOString().slice(0,7);
-        const odKey = 'od_' + selAy;
+        const selAyStr = window._giderAy || new Date().toISOString().slice(0,7);
+        const odKey = 'od_' + selAyStr;
         const isOdendi = g[odKey] === true;
+        const aylikTutar = getSabitGiderTutar(g, selAyStr);
         return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);${!isAktif?'opacity:0.5':''}">
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:8px">
@@ -6271,10 +6272,10 @@ function renderGiderler() {
               <span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isAktif?'#d1fae5':'#f3f4f6'};color:${isAktif?'#065f46':'#6b7280'};font-weight:600">${isAktif?'Aktif':'Pasif'}</span>
             </div>
             <div style="font-size:11px;color:var(--text3)">${g.category}</div>
-            ${isOdendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">✅ Ödendi · ${g['odTarih_'+selAy]||selAy}</div>`:`<div style="font-size:10px;color:#b91c1c;margin-top:2px">⏳ ${selAy} ödenmedi</div>`}
+            ${isOdendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">✅ Ödendi · ${g['odTarih_'+selAyStr]||selAyStr}</div>`:`<div style="font-size:10px;color:#b91c1c;margin-top:2px">⏳ ${selAyStr} ödenmedi</div>`}
           </div>
           <div style="display:flex;align-items:center;gap:6px">
-            <div style="font-weight:700;color:${isOdendi?'#059669':'#b91c1c'}">₺${g.amount.toLocaleString('tr-TR')}</div>
+            <div style="font-weight:700;color:${isOdendi?'#059669':'#b91c1c'}">₺${aylikTutar.toLocaleString('tr-TR')}</div>
             <button onclick="toggleSabitGiderOdendi(${g.id})" style="border:1px solid ${isOdendi?'#bbf7d0':'#fecaca'};background:${isOdendi?'#f0fdf4':'#fef2f2'};border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:${isOdendi?'#059669':'#b91c1c'}">${isOdendi?'↩':'✅'}</button>
             <button onclick="toggleSabitGiderAktif(${g.id})" style="border:1px solid var(--border);background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:var(--text2)">${isAktif?'⏸':'▶'}</button>
             <button class="btn btn-sm btn-icon" onclick="editSabitGider(${g.id})"><i class="ti ti-edit"></i></button>
@@ -6308,6 +6309,7 @@ function toggleGiderCards() {
 
 function openSabitGiderModal(id) {
   const existing = id ? S.sabitGiderler.find(g=>g.id===parseInt(id)) : null;
+  const today = localDate();
   const el = document.createElement('div');
   el.className = 'modal-overlay open';
   el.id = 'sabit-gider-overlay';
@@ -6327,7 +6329,11 @@ function openSabitGiderModal(id) {
           </select>
         </div>
         <div class="form-group"><label class="form-label">Aylık Tutar (₺)</label>
-          <input type="number" class="form-input" id="sg-amount" value="${existing?existing.amount:''}">
+          <input type="number" class="form-input" id="sg-amount" value="${existing?getSabitGiderTutar(existing, today):''}">
+        </div>
+        <div class="form-group"><label class="form-label">Bu tarihten itibaren geçerli</label>
+          <input type="month" class="form-input" id="sg-gecerli" value="${today.slice(0,7)}">
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">Bu tarihten önceki aylarda eski tutar kullanılır</div>
         </div>
         ${S.sabitGiderler.length > 0 && !existing ? `
         <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
@@ -6336,7 +6342,7 @@ function openSabitGiderModal(id) {
             <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
               <div><div style="font-size:13px;font-weight:500">${g.name}</div><div style="font-size:11px;color:var(--text3)">${g.category}</div></div>
               <div style="display:flex;align-items:center;gap:6px">
-                <span style="font-weight:600;color:#b91c1c">₺${g.amount.toLocaleString('tr-TR')}</span>
+                <span style="font-weight:600;color:#b91c1c">₺${getSabitGiderTutar(g, today).toLocaleString('tr-TR')}</span>
                 <button class="btn btn-sm btn-icon" onclick="editSabitGider(${g.id})"><i class="ti ti-edit"></i></button>
                 <button class="btn btn-sm btn-icon btn-danger" onclick="deleteSabitGider(${g.id})"><i class="ti ti-trash"></i></button>
               </div>
@@ -6352,17 +6358,37 @@ function openSabitGiderModal(id) {
   document.body.appendChild(el);
 }
 
+// Seçili aya göre doğru tutarı döndürür
+function getSabitGiderTutar(g, ayStr) {
+  // ayStr: 'YYYY-MM' veya 'YYYY-MM-DD' formatında
+  const ay = ayStr.slice(0,7);
+  if(!g.tarihler || !g.tarihler.length) return g.amount || 0;
+  // Seçili aydan önceki veya eşit en son tarihi bul
+  const gercerli = [...g.tarihler].sort((a,b)=>b.tarih>a.tarih?1:-1).find(t=>t.tarih<=ay);
+  return gercerli ? gercerli.tutar : (g.tarihler[g.tarihler.length-1]?.tutar || g.amount || 0);
+}
+
 function saveSabitGider(id) {
   const name = document.getElementById('sg-name').value.trim();
   const category = document.getElementById('sg-category').value;
   const amount = parseFloat(document.getElementById('sg-amount').value)||0;
+  const gecerliAy = document.getElementById('sg-gecerli').value || localDate().slice(0,7);
   if(!name || !amount) { toast('Ad ve tutar zorunludur.','error'); return; }
   if(!S.sabitGiderler) S.sabitGiderler = [];
   if(id && id !== 'null') {
     const i = S.sabitGiderler.findIndex(g=>g.id===parseInt(id));
-    if(i>-1) S.sabitGiderler[i] = {...S.sabitGiderler[i], name, category, amount};
+    if(i>-1) {
+      const g = S.sabitGiderler[i];
+      if(!g.tarihler) g.tarihler = [{tarih: gecerliAy, tutar: g.amount||0}];
+      // Aynı ay için güncelle veya yeni ekle
+      const mevcut = g.tarihler.findIndex(t=>t.tarih===gecerliAy);
+      if(mevcut>-1) g.tarihler[mevcut].tutar = amount;
+      else g.tarihler.push({tarih: gecerliAy, tutar: amount});
+      g.name = name; g.category = category; g.amount = amount;
+      S.sabitGiderler[i] = g;
+    }
   } else {
-    S.sabitGiderler.push({id:S.nextId++, name, category, amount});
+    S.sabitGiderler.push({id:S.nextId++, name, category, amount, tarihler:[{tarih: gecerliAy, tutar: amount}]});
   }
   save();
   document.getElementById('sabit-gider-overlay').remove();
