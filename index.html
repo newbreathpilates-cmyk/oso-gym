@@ -5116,6 +5116,32 @@ function renderPayments(tab) {
   window._dashReveal['pay-month-rev'] = { value: '₺'+monthRev.toLocaleString('tr-TR'), shown: false };
   window._dashReveal['pay-total-rev'] = { value: '₺'+totalRev.toLocaleString('tr-TR'), shown: false };
 
+  // Bu ay tahsilat detayı
+  const monthPayments = S.payments.filter(p=>p.date&&p.date.startsWith(tm)&&(p.status==='odendi'||p.status===undefined)).sort((a,b)=>b.date>a.date?1:-1);
+  if(monthPayments.length > 0) {
+    document.getElementById('page-content').innerHTML += `
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700;font-size:14px">💰 Bu Ay Tahsilat Detayı</div>
+        <span style="font-size:12px;color:var(--text3)">${monthPayments.length} ödeme</span>
+      </div>
+      ${monthPayments.map(p=>{
+        const m = S.members.find(x=>x.id===p.memberId);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:13px;font-weight:600">${p.member||'—'}</div>
+            <div style="font-size:11px;color:var(--text3)">${p.package||'—'} · ${p.date}</div>
+          </div>
+          <div style="font-size:14px;font-weight:700;color:var(--green)">₺${(p.amount||0).toLocaleString('tr-TR')}</div>
+        </div>`;
+      }).join('')}
+      <div style="display:flex;justify-content:space-between;padding-top:8px;font-weight:700">
+        <span>Toplam</span>
+        <span style="color:var(--green)">₺${monthRev.toLocaleString('tr-TR')}</span>
+      </div>
+    </div>`;
+  }
+
   document.getElementById('page-content').innerHTML += `
     <!-- Sekmeler -->
     <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -6332,7 +6358,19 @@ function openSabitGiderModal(id) {
           <input type="number" class="form-input" id="sg-amount" value="${existing?getSabitGiderTutar(existing, today):''}">
         </div>
         <div class="form-group"><label class="form-label">Bu tarihten itibaren geçerli</label>
-          <input type="month" class="form-input" id="sg-gecerli" value="${today.slice(0,7)}">
+          <select class="form-select" id="sg-gecerli">
+            ${(()=>{
+              const months = [];
+              const now = new Date();
+              for(let i=-12; i<=12; i++){
+                const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+                const val = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+                const label = d.toLocaleDateString('tr-TR',{month:'long',year:'numeric'});
+                months.push(`<option value="${val}" ${val===today.slice(0,7)?'selected':''}>${label}</option>`);
+              }
+              return months.join('');
+            })()}
+          </select>
           <div style="font-size:11px;color:var(--text3);margin-top:4px">Bu tarihten önceki aylarda eski tutar kullanılır</div>
         </div>
         ${S.sabitGiderler.length > 0 && !existing ? `
