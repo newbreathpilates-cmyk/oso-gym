@@ -5060,7 +5060,10 @@ function renderPayments(tab) {
   window.paymentsTab = tab;
   
   const tm = localDate().slice(0,7);
-  const monthRev = S.payments.filter(p=>p.date&&p.date.startsWith(tm)).reduce((a,p)=>a+p.amount,0);
+  const monthRev = S.payments.filter(p=>{
+    const odTarih = p.paidDate || p.date;
+    return odTarih && odTarih.startsWith(tm) && (p.status==='odendi'||p.status===undefined);
+  }).reduce((a,p)=>a+p.amount,0);
   const totalRev = S.payments.reduce((a,p)=>a+p.amount,0);
   
   // Güncel vs Arşiv ayrımı
@@ -5117,7 +5120,13 @@ function renderPayments(tab) {
   window._dashReveal['pay-total-rev'] = { value: '₺'+totalRev.toLocaleString('tr-TR'), shown: false };
 
   // Bu ay tahsilat detayı
-  const monthPayments = S.payments.filter(p=>p.date&&p.date.startsWith(tm)&&(p.status==='odendi'||p.status===undefined)).sort((a,b)=>b.date>a.date?1:-1);
+  const monthPayments = S.payments.filter(p=>{
+    const odTarih = p.paidDate || p.date;
+    return odTarih && odTarih.startsWith(tm) && (p.status==='odendi'||p.status===undefined);
+  }).sort((a,b)=>{
+    const aT = a.paidDate||a.date; const bT = b.paidDate||b.date;
+    return bT>aT?1:-1;
+  });
   if(monthPayments.length > 0) {
     document.getElementById('page-content').innerHTML += `
     <div class="card" style="margin-top:12px">
