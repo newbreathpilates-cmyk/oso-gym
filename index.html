@@ -6427,7 +6427,7 @@ function saveSabitGider(id) {
     const i = S.sabitGiderler.findIndex(g=>g.id===parseInt(id));
     if(i>-1) {
       const g = S.sabitGiderler[i];
-      if(!g.tarihler) g.tarihler = [{tarih: gecerliAy, tutar: g.amount||0}];
+      if(!g.tarihler) g.tarihler = [{tarih: '2020-01', tutar: g.amount||0}];
       // Aynı ay için güncelle veya yeni ekle
       const mevcut = g.tarihler.findIndex(t=>t.tarih===gecerliAy);
       if(mevcut>-1) g.tarihler[mevcut].tutar = amount;
