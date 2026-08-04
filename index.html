@@ -5406,6 +5406,7 @@ function deletePayment(id){
       m.package = '';
       m.start = '';
       m.used = 0;
+      m.status = 'Paket Yok';
     }
   }
   S.payments=S.payments.filter(p=>p.id!==id);
