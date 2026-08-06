@@ -5060,10 +5060,7 @@ function renderPayments(tab) {
   window.paymentsTab = tab;
   
   const tm = localDate().slice(0,7);
-  const monthRev = S.payments.filter(p=>{
-    const odTarih = p.paidDate || p.date;
-    return odTarih && odTarih.startsWith(tm) && (p.status==='odendi'||p.status===undefined);
-  }).reduce((a,p)=>a+p.amount,0);
+  const monthRev = S.payments.filter(p=>p.paidDate&&p.paidDate.startsWith(tm)&&p.status==='odendi').reduce((a,p)=>a+p.amount,0);
   const totalRev = S.payments.reduce((a,p)=>a+p.amount,0);
   
   // Güncel vs Arşiv ayrımı
@@ -5119,14 +5116,10 @@ function renderPayments(tab) {
   window._dashReveal['pay-month-rev'] = { value: '₺'+monthRev.toLocaleString('tr-TR'), shown: false };
   window._dashReveal['pay-total-rev'] = { value: '₺'+totalRev.toLocaleString('tr-TR'), shown: false };
 
-  // Bu ay tahsilat detayı
+  // Bu ay tahsilat detayı — sadece bu ayda ödendi yapılanlar (paidDate zorunlu)
   const monthPayments = S.payments.filter(p=>{
-    const odTarih = p.paidDate || p.date;
-    return odTarih && odTarih.startsWith(tm) && (p.status==='odendi'||p.status===undefined);
-  }).sort((a,b)=>{
-    const aT = a.paidDate||a.date; const bT = b.paidDate||b.date;
-    return bT>aT?1:-1;
-  });
+    return p.paidDate && p.paidDate.startsWith(tm) && p.status==='odendi';
+  }).sort((a,b)=>b.paidDate>a.paidDate?1:-1);
   if(monthPayments.length > 0) {
     document.getElementById('page-content').innerHTML += `
     <div class="card" style="margin-top:12px">
