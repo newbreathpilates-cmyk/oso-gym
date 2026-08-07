@@ -1820,6 +1820,7 @@ function buildSidebar() {
     <div class="nav-section">Üye Yönetimi</div>
     <button class="nav-item" data-page="members" onclick="navigateTo('members')"><i class="ti ti-users"></i> Üyeler</button>
     <button class="nav-item" data-page="attendance-report" onclick="navigateTo('attendance-report')"><i class="ti ti-chart-bar"></i> İstatistik</button>
+    <button class="nav-item" onclick="openPinChange()" style="color:var(--text2)"><i class="ti ti-lock"></i> PIN Değiştir</button>
   `;
   document.getElementById('sidebar-nav').innerHTML = currentUser.role==='owner' ? ownerNav : trainerNav;
 }
