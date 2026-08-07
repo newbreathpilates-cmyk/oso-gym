@@ -1472,7 +1472,6 @@ function selectTrainerCard(id, el) {
   const pinGroup = document.getElementById('trainer-pin-group');
   const pinInput = document.getElementById('trainer-pin-input');
   if(pinGroup) { pinGroup.style.display='none'; }
-  if(pinInput) { pinInput.value=''; }
 }
 
 function loginTrainer() {
@@ -1484,14 +1483,13 @@ function loginTrainer() {
   if(trainer.pin) {
     const pinGroup = document.getElementById('trainer-pin-group');
     const pinInput = document.getElementById('trainer-pin-input');
-    // PIN alanı henüz görünmüyorsa göster
-    if(pinGroup.style.display==='none' || !pinGroup.style.display) {
-      pinGroup.style.display='';
+    const pinVisible = pinGroup.style.display === 'block';
+    if(!pinVisible) {
+      pinGroup.style.display='block';
       pinInput.value='';
       setTimeout(()=>pinInput.focus(), 100);
       return;
     }
-    // PIN alanı görünüyorsa doğrula
     if(pinInput.value.trim() !== trainer.pin) {
       showLoginError('PIN hatalı. Tekrar deneyin.');
       pinInput.value='';
