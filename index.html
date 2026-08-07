@@ -486,6 +486,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <label class="form-label">Eğitmen Seçin</label>
         <div class="trainer-select-grid" id="trainer-cards-grid"></div>
       </div>
+      <div class="form-group" id="trainer-pin-group" style="display:none">
+        <label class="form-label">🔐 PIN Giriniz</label>
+        <input type="password" class="form-input" id="trainer-pin-input" maxlength="4" placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:8px" oninput="if(this.value.length===4) loginTrainer()">
+      </div>
       <button class="btn-login" onclick="loginTrainer()">Giriş Yap</button>
     </div>
     <div class="login-error" id="login-error"></div>
@@ -980,6 +984,19 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           </select>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">🔐 Giriş PIN (4 hane)</label>
+          <input class="form-input" id="tr-pin" placeholder="örn: 1234" maxlength="4" type="password" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Durum</label>
+          <select class="form-select" id="tr-status">
+            <option value="aktif">Aktif</option>
+            <option value="pasif">Pasif (Giriş Yapamaz)</option>
+          </select>
+        </div>
+      </div>
       <div style="border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:12px;background:var(--bg);margin-top:4px">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:6px"><i class="ti ti-wallet" style="font-size:12px;vertical-align:-1px"></i> Hakediş Yüzdesi (%)</div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Tüm ders türleri için geçerli. Ders başına düşen tutar (paket fiyatı ÷ ders sayısı) üzerinden hesaplanır.</div>
@@ -1451,18 +1468,39 @@ function selectTrainerCard(id, el) {
   el.classList.add('selected');
   selectedTrainerId = id;
   clearLoginError();
+  // PIN alanını sıfırla
+  const pinGroup = document.getElementById('trainer-pin-group');
+  const pinInput = document.getElementById('trainer-pin-input');
+  if(pinGroup) { pinGroup.style.display='none'; }
+  if(pinInput) { pinInput.value=''; }
 }
 
 function loginTrainer() {
   if(!selectedTrainerId) { showLoginError('Lütfen bir eğitmen seçin.'); return; }
   const trainer = S.trainers.find(t=>t.id===selectedTrainerId);
-  if(trainer) {
-    currentUser = { role:'trainer', trainerId: trainer.id, trainerName: trainer.name };
-    sessionStorage.setItem('nbp_user', JSON.stringify(currentUser));
-    enterApp();
-  } else {
-    showLoginError('Eğitmen bulunamadı.');
+  if(!trainer) { showLoginError('Eğitmen bulunamadı.'); return; }
+  // Pasif eğitmen kontrolü
+  if(trainer.status==='pasif') { showLoginError('Bu hesap devre dışı bırakılmıştır.'); return; }
+  // PIN kontrolü
+  if(trainer.pin) {
+    const pinInput = document.getElementById('trainer-pin-input');
+    const pinGroup = document.getElementById('trainer-pin-group');
+    if(!pinGroup.style.display || pinGroup.style.display==='none') {
+      pinGroup.style.display='';
+      pinInput.value='';
+      pinInput.focus();
+      return;
+    }
+    if(pinInput.value !== trainer.pin) {
+      showLoginError('PIN hatalı. Tekrar deneyin.');
+      pinInput.value='';
+      pinInput.focus();
+      return;
+    }
   }
+  currentUser = { role:'trainer', trainerId: trainer.id, trainerName: trainer.name };
+  sessionStorage.setItem('nbp_user', JSON.stringify(currentUser));
+  enterApp();
 }
 
 function showLoginError(msg) {
@@ -1717,11 +1755,19 @@ function savePinChange() {
   const newPin = document.getElementById('pin-new').value.trim();
   const confirm = document.getElementById('pin-confirm').value.trim();
 
-  if(current !== S.ownerPin) { toast('Mevcut PIN hatalı!','error'); return; }
   if(newPin.length !== 4 || !/^\d{4}$/.test(newPin)) { toast('Yeni PIN 4 haneli rakam olmalıdır!','error'); return; }
   if(newPin !== confirm) { toast('Yeni PIN\'ler eşleşmiyor!','error'); return; }
 
-  S.ownerPin = newPin;
+  if(currentUser.role === 'trainer') {
+    const t = S.trainers.find(x=>x.id===currentUser.trainerId);
+    if(!t) return;
+    if(current !== t.pin) { toast('Mevcut PIN hatalı!','error'); return; }
+    t.pin = newPin;
+  } else {
+    if(current !== S.ownerPin) { toast('Mevcut PIN hatalı!','error'); return; }
+    S.ownerPin = newPin;
+  }
+
   save();
   closeModal('pin-modal');
   toast('PIN başarıyla değiştirildi! ✓','success');
@@ -5025,18 +5071,26 @@ function openTrainerModal(id) {
     document.getElementById('tr-phone').value=t.phone||'';
     document.getElementById('tr-color').value=t.color;
     document.getElementById('tr-rate-pct').value=(t.pct)||'';
+    document.getElementById('tr-pin').value='';
+    document.getElementById('tr-status').value=t.status||'aktif';
   } else {
     ['name','spec','phone'].forEach(f=>document.getElementById('tr-'+f).value='');
     document.getElementById('tr-color').value='1';
     document.getElementById('tr-rate-pct').value='';
+    document.getElementById('tr-pin').value='';
+    document.getElementById('tr-status').value='aktif';
   }
   openModal('trainer-modal');
 }
 
 function saveTrainer(){
   const id=document.getElementById('tr-id').value;
-  const d={name:document.getElementById('tr-name').value.trim(),spec:document.getElementById('tr-spec').value.trim(),phone:document.getElementById('tr-phone').value.trim(),color:parseInt(document.getElementById('tr-color').value),pct:parseFloat(document.getElementById('tr-rate-pct').value)||0};
+  const pinVal=document.getElementById('tr-pin').value.trim();
+  const statusVal=document.getElementById('tr-status').value;
+  const d={name:document.getElementById('tr-name').value.trim(),spec:document.getElementById('tr-spec').value.trim(),phone:document.getElementById('tr-phone').value.trim(),color:parseInt(document.getElementById('tr-color').value),pct:parseFloat(document.getElementById('tr-rate-pct').value)||0,status:statusVal};
+  if(pinVal) d.pin=pinVal;
   if(!d.name){toast('İsim zorunludur.','error');return;}
+  if(pinVal && pinVal.length!==4){toast('PIN 4 haneli olmalıdır.','error');return;}
   if(id){const i=S.trainers.findIndex(t=>t.id==id);if(i>-1)S.trainers[i]={...S.trainers[i],...d};}
   else{d.id=S.nextId++;S.trainers.push(d);}
   save();closeModal('trainer-modal');renderTrainers();
