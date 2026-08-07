@@ -488,7 +488,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       </div>
       <div class="form-group" id="trainer-pin-group" style="display:none">
         <label class="form-label">🔐 PIN Giriniz</label>
-        <input type="password" class="form-input" id="trainer-pin-input" maxlength="4" placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:8px" oninput="if(this.value.length===4) loginTrainer()">
+        <input type="password" class="form-input" id="trainer-pin-input" maxlength="4" placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:8px" onkeydown="if(event.key==='Enter') loginTrainer()">
       </div>
       <button class="btn-login" onclick="loginTrainer()">Giriş Yap</button>
     </div>
@@ -1479,25 +1479,27 @@ function loginTrainer() {
   if(!selectedTrainerId) { showLoginError('Lütfen bir eğitmen seçin.'); return; }
   const trainer = S.trainers.find(t=>t.id===selectedTrainerId);
   if(!trainer) { showLoginError('Eğitmen bulunamadı.'); return; }
-  // Pasif eğitmen kontrolü
   if(trainer.status==='pasif') { showLoginError('Bu hesap devre dışı bırakılmıştır.'); return; }
-  // PIN kontrolü
+  
   if(trainer.pin) {
-    const pinInput = document.getElementById('trainer-pin-input');
     const pinGroup = document.getElementById('trainer-pin-group');
-    if(!pinGroup.style.display || pinGroup.style.display==='none') {
+    const pinInput = document.getElementById('trainer-pin-input');
+    // PIN alanı henüz görünmüyorsa göster
+    if(pinGroup.style.display==='none' || !pinGroup.style.display) {
       pinGroup.style.display='';
       pinInput.value='';
-      pinInput.focus();
+      setTimeout(()=>pinInput.focus(), 100);
       return;
     }
-    if(pinInput.value !== trainer.pin) {
+    // PIN alanı görünüyorsa doğrula
+    if(pinInput.value.trim() !== trainer.pin) {
       showLoginError('PIN hatalı. Tekrar deneyin.');
       pinInput.value='';
-      pinInput.focus();
+      setTimeout(()=>pinInput.focus(), 100);
       return;
     }
   }
+  
   currentUser = { role:'trainer', trainerId: trainer.id, trainerName: trainer.name };
   sessionStorage.setItem('nbp_user', JSON.stringify(currentUser));
   enterApp();
