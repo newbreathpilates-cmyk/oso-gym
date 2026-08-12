@@ -1136,20 +1136,39 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <input type="hidden" id="g-id">
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">Kategori</label>
-        <select style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:white;appearance:auto" id="g-category">
+        <select style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:white;appearance:auto" id="g-category" onchange="toggleGiderBanka()">
           <option>Kira</option>
           <option>Aidat</option>
-          <option>Elektrik</option>
-          <option>Su</option>
-          <option>Doğalgaz</option>
-          <option>İnternet</option>
-          <option>Malzeme / Ekipman</option>
-          <option>Temizlik</option>
+          <option>Su Faturası</option>
+          <option>Elektrik Faturası</option>
+          <option>Doğalgaz Faturası</option>
+          <option>İnternet Faturası</option>
+          <option>SGK</option>
           <option>Muhasebe</option>
-          <option>Reklam / Pazarlama</option>
-          <option>Sigorta</option>
           <option>Vergi</option>
+          <option>Temizlik</option>
           <option>Kredi Kartı</option>
+          <option>Diğer</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">Nereye Ait?</label>
+        <select style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:white;appearance:auto" id="g-yer">
+          <option value="isyeri">🏢 İş Yeri</option>
+          <option value="ev">🏠 Ev</option>
+          <option value="kisisel">👤 Kişisel</option>
+        </select>
+      </div>
+      <div id="g-banka-group" style="display:none">
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">Banka</label>
+        <select style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:white;appearance:auto" id="g-banka">
+          <option>Yapı Kredi</option>
+          <option>Garanti</option>
+          <option>İş Bankası</option>
+          <option>Akbank</option>
+          <option>Ziraat</option>
+          <option>VakıfBank</option>
+          <option>Halkbank</option>
           <option>Diğer</option>
         </select>
       </div>
@@ -6560,13 +6579,17 @@ function openGiderModal(id) {
   if(id){
     const g=S.giderler.find(x=>x.id===parseInt(id));if(!g)return;
     document.getElementById('g-category').value=g.category;
-
+    document.getElementById('g-yer').value=g.yer||'isyeri';
+    if(g.banka) document.getElementById('g-banka').value=g.banka;
+    toggleGiderBanka();
     document.getElementById('g-amount').value=g.amount;
     document.getElementById('g-date').value=g.date;
     document.getElementById('g-note').value=g.note||'';
   } else {
     document.getElementById('g-amount').value='';
-
+    document.getElementById('g-yer').value='isyeri';
+    document.getElementById('g-banka').value='Yapı Kredi';
+    document.getElementById('g-banka-group').style.display='none';
     document.getElementById('g-note').value='';
     document.getElementById('g-date').value=today();
   }
@@ -6590,9 +6613,18 @@ function toggleGiderOdendi(id) {
   toast(g.odendi ? 'Ödendi olarak işaretlendi ✓' : 'Ödendi işareti kaldırıldı ✓', 'success');
 }
 
+function toggleGiderBanka() {
+  const cat = document.getElementById('g-category').value;
+  const bankaGroup = document.getElementById('g-banka-group');
+  if(bankaGroup) bankaGroup.style.display = cat === 'Kredi Kartı' ? '' : 'none';
+}
+
 function saveGider() {
   const eid=document.getElementById('g-id').value;
-  const d={category:document.getElementById('g-category').value,amount:parseFloat(document.getElementById('g-amount').value)||0,date:document.getElementById('g-date').value,note:document.getElementById('g-note').value.trim()};
+  const cat=document.getElementById('g-category').value;
+  const yer=document.getElementById('g-yer').value||'isyeri';
+  const banka=cat==='Kredi Kartı'?document.getElementById('g-banka').value:'';
+  const d={category:cat,yer,banka,amount:parseFloat(document.getElementById('g-amount').value)||0,date:document.getElementById('g-date').value,note:document.getElementById('g-note').value.trim()};
   if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
   if(eid){const i=S.giderler.findIndex(g=>g.id===parseInt(eid));if(i>-1)S.giderler[i]={...S.giderler[i],...d};}
   else{d.id=S.nextId++;S.giderler.push(d);}
