@@ -2880,7 +2880,7 @@ function startNowLineTimer() {
 function getFilteredEvents() {
   let evs = S.events;
   // Hem işletme sahibi hem eğitmen görünür eğitmenlere göre filtreler
-  evs = evs.filter(e=>visibleTrainers.has(e.trainerId));
+  evs = evs.filter(e=>!e.trainerId || visibleTrainers.has(e.trainerId));
   return evs;
 }
 
