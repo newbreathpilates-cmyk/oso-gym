@@ -488,7 +488,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       </div>
       <div class="form-group" id="trainer-pin-group" style="display:none">
         <label class="form-label">🔐 PIN Giriniz</label>
-        <input type="password" class="form-input" id="trainer-pin-input" maxlength="4" placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:8px" onkeydown="if(event.key==='Enter') loginTrainer()">
+        <input type="password" class="form-input" id="trainer-pin-input" maxlength="4" placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:8px" oninput="if(this.value.length===4) loginTrainer()" onkeydown="if(event.key==='Enter') loginTrainer()">
       </div>
       <button class="btn-login" onclick="loginTrainer()">Giriş Yap</button>
     </div>
@@ -1468,10 +1468,17 @@ function selectTrainerCard(id, el) {
   el.classList.add('selected');
   selectedTrainerId = id;
   clearLoginError();
-  // PIN alanını sıfırla
+  const trainer = S.trainers.find(t=>t.id===id);
   const pinGroup = document.getElementById('trainer-pin-group');
   const pinInput = document.getElementById('trainer-pin-input');
-  if(pinGroup) { pinGroup.style.display='none'; }
+  if(trainer && trainer.pin) {
+    pinGroup.style.display = 'block';
+    pinInput.value = '';
+    setTimeout(()=>pinInput.focus(), 150);
+  } else {
+    pinGroup.style.display = 'none';
+    if(pinInput) pinInput.value = '';
+  }
 }
 
 function loginTrainer() {
@@ -1479,25 +1486,15 @@ function loginTrainer() {
   const trainer = S.trainers.find(t=>t.id===selectedTrainerId);
   if(!trainer) { showLoginError('Eğitmen bulunamadı.'); return; }
   if(trainer.status==='pasif') { showLoginError('Bu hesap devre dışı bırakılmıştır.'); return; }
-  
   if(trainer.pin) {
-    const pinGroup = document.getElementById('trainer-pin-group');
     const pinInput = document.getElementById('trainer-pin-input');
-    const pinVisible = pinGroup.style.display === 'block';
-    if(!pinVisible) {
-      pinGroup.style.display='block';
-      pinInput.value='';
-      setTimeout(()=>pinInput.focus(), 100);
-      return;
-    }
     if(pinInput.value.trim() !== trainer.pin) {
       showLoginError('PIN hatalı. Tekrar deneyin.');
-      pinInput.value='';
+      pinInput.value = '';
       setTimeout(()=>pinInput.focus(), 100);
       return;
     }
   }
-  
   currentUser = { role:'trainer', trainerId: trainer.id, trainerName: trainer.name };
   sessionStorage.setItem('nbp_user', JSON.stringify(currentUser));
   enterApp();
@@ -1742,8 +1739,11 @@ function checkSixMonthChampions() {
 }
 
 function openPinChange() {
-  // Sadece işletme sahibi değiştirebilir
-  if(currentUser.role !== 'owner') { toast('Sadece işletme sahibi PIN değiştirebilir.','error'); return; }
+  // Eğitmen kendi PIN'ini, işletme sahibi kendi PIN'ini değiştirebilir
+  if(currentUser.role === 'trainer') {
+    const t = S.trainers.find(x=>x.id===currentUser.trainerId);
+    if(!t || !t.pin) { toast('Önce işletme sahibi size bir PIN atamalı.','error'); return; }
+  }
   document.getElementById('pin-current').value='';
   document.getElementById('pin-new').value='';
   document.getElementById('pin-confirm').value='';
@@ -3271,6 +3271,9 @@ function saveEvent() {
   const specialCount=0;
   const singleDropCount=0;
   if(!date||!startTime){toast('Tarih ve saat zorunludur.','error');return;}
+  // Deneme/Tanışma randevusunda eğitmen zorunlu değil
+  const isDenemeType = type === 'Deneme / Tanışma';
+  if(!trainerId && !isDenemeType){toast('Eğitmen seçimi zorunludur.','error');return;}
 
   // Müsait olmama bloğu kontrolü
   const evStart = (parseInt(startTime.split(':')[0])-6)*60 + parseInt(startTime.split(':')[1]);
@@ -5099,12 +5102,15 @@ function saveTrainer(){
   toast('Eğitmen kaydedildi.','success');
 }
 function deleteTrainer(id){
+  if(!confirm('Bu eğitmeni silmek istediğinizden emin misiniz? Randevuları silinmez, "Silinmiş Eğitmen" olarak görünür.')) return;
   const t=S.trainers.find(x=>x.id===id);
   const name=t?t.name:'Bu eğitmen';
+  // Randevuları koru ama eğitmen adını sakla
+  S.events.forEach(ev=>{ if(ev.trainerId===id) ev._deletedTrainerName = name; });
   S.trainers=S.trainers.filter(t=>t.id!==id);
   visibleTrainers=new Set(S.trainers.map(t=>t.id));
   save();renderTrainers();
-  toast(name+' silindi.');
+  toast(name+' silindi. Randevuları korundu.');
 }
 
 // ══════════════════════════════════════
