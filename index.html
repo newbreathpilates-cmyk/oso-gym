@@ -1779,6 +1779,14 @@ function logout() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.querySelectorAll('.pin-digit').forEach(d=>d.value='');
+  // PIN kutusunu sıfırla
+  const pinInput = document.getElementById('trainer-pin-input');
+  const pinGroup = document.getElementById('trainer-pin-group');
+  if(pinInput) pinInput.value = '';
+  if(pinGroup) pinGroup.style.display = 'none';
+  // Eğitmen seçimini sıfırla
+  selectedTrainerId = null;
+  document.querySelectorAll('.trainer-select-card').forEach(c=>c.classList.remove('selected'));
   clearLoginError();
 }
 
@@ -2921,7 +2929,7 @@ function switchView(v){calView=v;renderCalendar();}
 // ══════════════════════════════════════
 function populateEventTrainers() {
   const sel=document.getElementById('ev-trainer');
-  sel.innerHTML=S.trainers.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  sel.innerHTML='<option value="">— Eğitmen Seçin (Opsiyonel) —</option>'+S.trainers.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
 }
 function populateEventMembers() {
   const sel=document.getElementById('ev-member-add');
