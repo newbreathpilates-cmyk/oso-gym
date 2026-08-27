@@ -370,6 +370,7 @@ padding: 10px 12px;
 .week-header { min-width: 520px; }
 /* ── EĞİTMEN KARTLARI ── */
 div[style*="grid-template-columns:repeat(3,1fr)"] { grid-template-columns: 1fr !important; }
+#trainer-pin-group div[style*="grid-template-columns:repeat(3,1fr)"] { grid-template-columns: repeat(3,1fr) !important; }
 /* ── TOPBAR ── */
 .topbar { height: auto; min-height: 48px; padding: 8px 12px; flex-wrap: wrap; gap: 6px; }
 .topbar-title { font-size: 14px; }
@@ -454,19 +455,19 @@ font-size: 28px;
 <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--green);background:white" id="tpd-3"></div>
 </div>
 <input type="hidden" id="trainer-pin-input">
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto">
-<button type="button" onclick="trainerPinPress('1')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">1</button>
-<button type="button" onclick="trainerPinPress('2')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">2</button>
-<button type="button" onclick="trainerPinPress('3')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">3</button>
-<button type="button" onclick="trainerPinPress('4')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">4</button>
-<button type="button" onclick="trainerPinPress('5')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">5</button>
-<button type="button" onclick="trainerPinPress('6')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">6</button>
-<button type="button" onclick="trainerPinPress('7')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">7</button>
-<button type="button" onclick="trainerPinPress('8')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">8</button>
-<button type="button" onclick="trainerPinPress('9')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">9</button>
-<button type="button" onclick="trainerPinPress('')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);visibility:hidden"></button>
-<button type="button" onclick="trainerPinPress('0')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">0</button>
-<button type="button" onclick="trainerPinPress('⌫')" style="padding:16px;font-size:22px;font-weight:700;border:1.5px solid var(--border2);border-radius:12px;background:white;cursor:pointer;color:var(--text);">⌫</button>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto">
+<button type="button" onclick="trainerPinPress('1')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">1</button>
+<button type="button" onclick="trainerPinPress('2')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">2</button>
+<button type="button" onclick="trainerPinPress('3')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">3</button>
+<button type="button" onclick="trainerPinPress('4')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">4</button>
+<button type="button" onclick="trainerPinPress('5')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">5</button>
+<button type="button" onclick="trainerPinPress('6')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">6</button>
+<button type="button" onclick="trainerPinPress('7')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">7</button>
+<button type="button" onclick="trainerPinPress('8')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">8</button>
+<button type="button" onclick="trainerPinPress('9')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">9</button>
+<button type="button" onclick="trainerPinPress('')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);visibility:hidden"></button>
+<button type="button" onclick="trainerPinPress('0')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">0</button>
+<button type="button" onclick="trainerPinPress('⌫')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">⌫</button>
 </div>
 </div>
 <button class="btn-login" onclick="loginTrainer()">Giriş Yap</button>
