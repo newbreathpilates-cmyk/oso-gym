@@ -447,27 +447,12 @@ font-size: 28px;
 <div class="trainer-select-grid" id="trainer-cards-grid"></div>
 </div>
 <div class="form-group" id="trainer-pin-group" style="display:none">
-<label class="form-label">🔐 PIN Giriniz</label>
-<div style="display:flex;justify-content:center;gap:10px;margin-bottom:12px" id="trainer-pin-display">
-<div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--green);background:white" id="tpd-0"></div>
-<div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--green);background:white" id="tpd-1"></div>
-<div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--green);background:white" id="tpd-2"></div>
-<div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--green);background:white" id="tpd-3"></div>
-</div>
-<input type="hidden" id="trainer-pin-input">
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto">
-<button type="button" onclick="trainerPinPress('1')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">1</button>
-<button type="button" onclick="trainerPinPress('2')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">2</button>
-<button type="button" onclick="trainerPinPress('3')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">3</button>
-<button type="button" onclick="trainerPinPress('4')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">4</button>
-<button type="button" onclick="trainerPinPress('5')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">5</button>
-<button type="button" onclick="trainerPinPress('6')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">6</button>
-<button type="button" onclick="trainerPinPress('7')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">7</button>
-<button type="button" onclick="trainerPinPress('8')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">8</button>
-<button type="button" onclick="trainerPinPress('9')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">9</button>
-<button type="button" onclick="trainerPinPress('')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);visibility:hidden"></button>
-<button type="button" onclick="trainerPinPress('0')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">0</button>
-<button type="button" onclick="trainerPinPress('⌫')" style="padding:12px;font-size:18px;font-weight:700;border:1.5px solid var(--border2);border-radius:10px;background:white;cursor:pointer;color:var(--text);">⌫</button>
+<label class="form-label">PIN Kodu</label>
+<div class="pin-input" id="trainer-pin-input">
+<input class="pin-digit" type="password" maxlength="1" inputmode="numeric">
+<input class="pin-digit" type="password" maxlength="1" inputmode="numeric">
+<input class="pin-digit" type="password" maxlength="1" inputmode="numeric">
+<input class="pin-digit" type="password" maxlength="1" inputmode="numeric">
 </div>
 </div>
 <button class="btn-login" onclick="loginTrainer()">Giriş Yap</button>
@@ -1381,31 +1366,15 @@ selectedTrainerId = id;
 clearLoginError();
 const trainer = S.trainers.find(t=>t.id===id);
 const pinGroup = document.getElementById('trainer-pin-group');
-const pinInput = document.getElementById('trainer-pin-input');
+const pinDigits = document.querySelectorAll('#trainer-pin-input .pin-digit');
 if(trainer && trainer.pin) {
 pinGroup.style.display = 'block';
-pinInput.value = '';
-for(let i=0;i<4;i++){const dot=document.getElementById('tpd-'+i);if(dot)dot.style.background='white';}
-setTimeout(()=>{}, 150);
+pinDigits.forEach(d=>d.value='');
+if(pinDigits[0]) setTimeout(()=>pinDigits[0].focus(), 150);
 } else {
 pinGroup.style.display = 'none';
-if(pinInput) pinInput.value = '';
+pinDigits.forEach(d=>d.value='');
 }
-}
-function trainerPinPress(val) {
-const input = document.getElementById('trainer-pin-input');
-if(!input) return;
-if(val === '⌫') {
-input.value = input.value.slice(0,-1);
-} else if(input.value.length < 4) {
-input.value += val;
-}
-// Update dots
-for(let i=0;i<4;i++){
-const dot = document.getElementById('tpd-'+i);
-if(dot) dot.style.background = i < input.value.length ? 'var(--green)' : 'white';
-}
-if(input.value.length === 4) setTimeout(()=>loginTrainer(), 100);
 }
 function loginTrainer() {
 if(!selectedTrainerId) { showLoginError('Lütfen bir eğitmen seçin.'); return; }
@@ -1413,11 +1382,12 @@ const trainer = S.trainers.find(t=>t.id===selectedTrainerId);
 if(!trainer) { showLoginError('Eğitmen bulunamadı.'); return; }
 if(trainer.status==='pasif') { showLoginError('Bu hesap devre dışı bırakılmıştır.'); return; }
 if(trainer.pin) {
-const pinInput = document.getElementById('trainer-pin-input');
-if(pinInput.value.trim() !== trainer.pin) {
+const pin = getPin('trainer-pin-input');
+if(pin !== trainer.pin) {
 showLoginError('PIN hatalı. Tekrar deneyin.');
-pinInput.value = '';
-setTimeout(()=>pinInput.focus(), 100);
+document.querySelectorAll('#trainer-pin-input .pin-digit').forEach(d=>d.value='');
+const first = document.querySelector('#trainer-pin-input .pin-digit');
+if(first) setTimeout(()=>first.focus(), 100);
 return;
 }
 }
@@ -1671,11 +1641,8 @@ document.getElementById('login-screen').style.display = 'flex';
 document.getElementById('app').style.display = 'none';
 document.querySelectorAll('.pin-digit').forEach(d=>d.value='');
 // PIN kutusunu sıfırla
-const pinInput = document.getElementById('trainer-pin-input');
 const pinGroup = document.getElementById('trainer-pin-group');
-if(pinInput) pinInput.value = '';
 if(pinGroup) pinGroup.style.display = 'none';
-for(let i=0;i<4;i++){const dot=document.getElementById('tpd-'+i);if(dot)dot.style.background='white';}
 // Eğitmen seçimini sıfırla
 selectedTrainerId = null;
 document.querySelectorAll('.trainer-select-card').forEach(c=>c.classList.remove('selected'));
@@ -6317,6 +6284,18 @@ if(i===arr.length-1 && input.value.length===1) loginOwner();
 input.addEventListener('keydown',e=>{
 if(e.key==='Backspace'&&!input.value&&i>0) arr[i-1].focus();
 if(e.key==='Enter') loginOwner();
+});
+input.addEventListener('focus',()=>input.select());
+});
+document.querySelectorAll('#trainer-pin-input .pin-digit').forEach((input,i,arr)=>{
+input.addEventListener('input',()=>{
+input.value = input.value.replace(/[^0-9]/g,'').slice(-1);
+if(input.value.length===1 && i<arr.length-1) arr[i+1].focus();
+if(i===arr.length-1 && input.value.length===1) loginTrainer();
+});
+input.addEventListener('keydown',e=>{
+if(e.key==='Backspace'&&!input.value&&i>0) arr[i-1].focus();
+if(e.key==='Enter') loginTrainer();
 });
 input.addEventListener('focus',()=>input.select());
 });
