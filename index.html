@@ -4962,9 +4962,31 @@ if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tuta
 if(eid){
 const i=S.payments.findIndex(p=>p.id==eid);
 if(i>-1) S.payments[i]={...S.payments[i],...d};
-// Üyenin aktif paketi bu ödemeye aitse tarihi de güncelle
-if(m && m.package===pkg) {
+if(m) {
+if(m.package===pkg) {
+// Paket aynı — sadece tarihi güncelle, kullanılan ders sayısı korunur
 m.start=date;
+} else {
+// Paket değişti (örn. 15 Ders'ten 10 Ders'e düzenlendi) — mevcut aktif paketi geçmişe kaydet
+if(m.package && m.start) {
+if(!m.paketGecmisi) m.paketGecmisi = [];
+m.paketGecmisi.push({
+package: m.package,
+start: m.start,
+date: m.start,
+end: localDate(),
+used: m.used||0,
+total: pkgSessions(m.package),
+amount: (S.payments.filter(p=>p.memberId===mid&&p.package===m.package).slice(-1)[0]||{}).amount||0
+});
+}
+// Düzenlenen ödemedeki yeni paketi aktif yap
+m.package=pkg;
+m.start=date;
+m.used=0;
+m.status='Aktif';
+if(ozelDers>0) m.ozelDers=ozelDers;
+}
 }
 } else {
 d.id=S.nextId++;S.payments.push(d);
