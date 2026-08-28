@@ -626,7 +626,7 @@ font-size: 28px;
 <div class="form-group"><label class="form-label">Adres</label><input class="form-input" id="m-adres" placeholder="Mahalle, cadde, sokak, no..."></div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Durum</label>
-<select class="form-select" id="m-status"><option>Aktif</option><option>Donduruldu</option><option>Süresi Doldu</option><option>Dersleri Bitti</option><option>Paket Yok</option><option>Ara Verdi/Ayrıldı</option></select>
+<select class="form-select" id="m-status"><option value="Aktif">Aktif</option><option value="Süresi Doldu">Paket kullanım/üyelik süresi doldu</option><option value="Dersleri Bitti">Paket bitti</option><option value="Ara Verdi/Ayrıldı">Ayrıldı/Ara verdi</option></select>
 </div>
 <div class="form-group"><label class="form-label">Cinsiyet</label>
 <select class="form-select" id="m-gender" onchange="updateBMI()"><option>Kadın</option><option>Erkek</option><option>Belirtmek istemiyorum</option></select>
@@ -2988,23 +2988,14 @@ el.innerHTML=tempEventMembers.map(mid=>{
 const m=S.members.find(x=>x.id===mid);
 if(!m)return'';
 const total=pkgSessions(m.package);
-// Bu randevudan önce yapılmış (tamamlandı) ders sayısı
-const usedBefore = S.events.filter(e=>
-e.completed &&
-(e.members||[]).includes(mid) &&
-m.start && e.date >= m.start &&
-(e.date < evDate || (e.date === evDate && e.startTime < evTime)) &&
-e.id !== editingEventId
-).length;
-// Bu randevudan önce planlanmış (tamamlanmamış) ders sayısı
-const plannedBefore = S.events.filter(e=>
+// Kalan ders sayısı: üye kartındaki ile AYNI kaynaktan (m.used) hesaplanır.
+// Ayrıca üyenin bu randevu dışında hâlâ bekleyen (tamamlanmamış) diğer randevuları düşülür.
+const otherPlanned = S.events.filter(e=>
 !e.completed &&
 (e.members||[]).includes(mid) &&
-m.start && e.date >= m.start &&
-(e.date < evDate || (e.date === evDate && e.startTime < evTime)) &&
 e.id !== editingEventId
 ).length;
-const remaining = total===999 ? 999 : Math.max(0, total - usedBefore - plannedBefore);
+const remaining = total===999 ? 999 : Math.max(0, total - (m.used||0) - otherPlanned);
 const remainText = total===999 ? 'Sınırsız' : `${remaining} ders kaldı`;
 const remainColor = remaining<=2?'#b91c1c':remaining<=4?'#92400e':'var(--green-text)';
 return `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 8px 3px 4px;font-size:11px">
@@ -3097,13 +3088,10 @@ document.getElementById('topbar-actions').innerHTML=`
 <select style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;font-family:inherit" id="member-filter" onchange="filterMembersTable()">
 <option value="">Tümü (A-Z)</option>
 <option value="aktif">Aktif</option>
-<option value="suresi-doldu">Süresi Doldu</option>
-<option value="dersleri-biten">Dersleri Biten</option>
-<option value="donduruldu">Donduruldu</option>
-<option value="paket-yok">Paket Yok</option>
-<option value="son-10-gun">Paket Süresi Bitmek Üzere (Son 15 Gün)</option>
-<option value="son-2-ders">Son 2 Ders Kalan</option>
-<option value="son-5-ders">Son 5 Ders Kalan</option>
+<option value="son-10-gun">Paket kullanım/üyelik süresi bitmek üzere son 15 gün</option>
+<option value="suresi-doldu">Paket kullanım/üyelik süresi bitti</option>
+<option value="dersleri-biten">Paket/Dersler bitti</option>
+<option value="son-2-ders">Son 2 ders kalan</option>
 </select>
 ${!isTrainer ? `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>` : `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>`}
 </div>`;
@@ -3140,8 +3128,6 @@ return fullName.includes(nq) || phone.includes(nq);
 // Kategori filtresi
 if(f==='aktif') list = list.filter(m=>m.status==='Aktif');
 else if(f==='suresi-doldu') list = list.filter(m=>m.status==='Süresi Doldu');
-else if(f==='donduruldu') list = list.filter(m=>m.status==='Donduruldu');
-else if(f==='paket-yok') list = list.filter(m=>!m.package||pkgSessions(m.package)===0);
 else if(f==='son-10-gun') list = list.filter(m=>{
 if(!m.package||!m.start) return false;
 const d = daysLeft(m);
@@ -3152,12 +3138,6 @@ const total = pkgSessions(m.package||'');
 if(total===0||total===999) return false;
 const remaining = Math.max(0, total - (m.used||0));
 return remaining<=2 && remaining>0 && m.status==='Aktif';
-});
-else if(f==='son-5-ders') list = list.filter(m=>{
-const total = pkgSessions(m.package||'');
-if(total===0||total===999) return false;
-const remaining = Math.max(0, total - (m.used||0));
-return remaining<=5 && remaining>0 && m.status==='Aktif';
 });
 else if(f==='dersleri-biten') list = list.filter(m=>{
 const total = pkgSessions(m.package||'');
