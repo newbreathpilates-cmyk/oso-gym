@@ -3062,7 +3062,16 @@ if(!confirm(confirmMsg)) return;
 if(ev && ev.completed) {
 (ev.members||[]).forEach(mid=>{
 const m=S.members.find(x=>x.id===mid);
-if(m) m.used=Math.max(0,(m.used||0)-1);
+if(m) {
+// Ders hangi pakete sayılmıştı? (tarihe göre — aktif paket mi, geçmiş bir paket mi)
+const period = findPackagePeriodForDate(m, ev.date);
+if(period.type==='history' && m.paketGecmisi && m.paketGecmisi[period.index]) {
+const hp = m.paketGecmisi[period.index];
+hp.used = Math.max(0,(hp.used||0)-1);
+} else {
+m.used=Math.max(0,(m.used||0)-1);
+}
+}
 });
 }
 const before = S.events.length;
@@ -5043,32 +5052,30 @@ if(!payment) return;
 if(!confirm(payment.member + ' adlı üyenin ' + payment.date + ' tarihli ' + payment.package + ' ödemesini silmek istediğinizden emin misiniz?')) return;
 const m = S.members.find(x=>x.id===payment.memberId);
 if(m) {
-// Bu ödemeyle paket geçmişe atıldıysa, en son geçmiş kaydını geri yükle
-const otherPayments = S.payments.filter(p=>p.id!==id && p.memberId===payment.memberId);
-if(otherPayments.length > 0) {
-const latest = otherPayments.sort((a,b)=>b.date>a.date?1:-1)[0];
-m.package = latest.package;
-m.start = latest.date;
-m.used = 0;
-// Paket geçmişinden bu ödemeye ait kaydı sil
-if(m.paketGecmisi) {
-m.paketGecmisi = m.paketGecmisi.filter(p=>!(p.package===payment.package));
-}
-} else {
-// Başka ödeme yoksa — eski paketi geçmişten geri getir
+// Bu ödeme, üyenin ŞU AN aktif olan paketiyle birebir eşleşiyor mu?
+// Eşleştirme paket ADI + BAŞLANGIÇ TARİHİ ikilisine göre yapılır — aynı isimli
+// farklı dönemlerdeki paketler (örn. iki ayrı "10 Ders Bireysel" alımı) birbirine karışmaz.
+const isActivePackage = m.package === payment.package && m.start === payment.date;
+if(isActivePackage) {
+// Aktif paket siliniyor — bir önceki paketi geçmişten geri getir
 if(m.paketGecmisi && m.paketGecmisi.length > 0) {
-const prevPkg = [...m.paketGecmisi].sort((a,b)=>b.date>a.date?1:-1)[0];
+const sorted = [...m.paketGecmisi].sort((a,b)=> (b.start||b.date) > (a.start||a.date) ? 1 : -1);
+const prevPkg = sorted[0];
 m.package = prevPkg.package;
 m.start = prevPkg.start || prevPkg.date;
 m.used = prevPkg.used || 0;
 m.status = 'Aktif';
 m.paketGecmisi = m.paketGecmisi.filter(p=>p !== prevPkg);
 } else {
+// Geçmişte başka paket yoksa — paketsiz duruma dön
 m.package = '';
 m.start = '';
 m.used = 0;
 m.status = 'Paket Yok';
 }
+} else if(m.paketGecmisi) {
+// Aktif paket değil, geçmişteki bir kayıt — sadece TAM eşleşen (paket adı + tarih) kaydı sil, diğer aynı isimli paketlere dokunma
+m.paketGecmisi = m.paketGecmisi.filter(p=>!(p.package===payment.package && (p.start||p.date)===payment.date));
 }
 }
 S.payments=S.payments.filter(p=>p.id!==id);
@@ -5283,11 +5290,19 @@ const finishedMembers = [];
 (ev.members||[]).forEach(mid=>{
 const m=S.members.find(x=>x.id===mid);
 if(m) {
+// Ders hangi pakete ait? (dersin tarihine göre — aktif paket mi, geçmiş bir paket mi)
+const period = findPackagePeriodForDate(m, ev.date);
+if(period.type==='history') {
+// Geçmiş bir pakete ait ders — o geçmiş paketin sayacını artır, aktif paketi etkileme
+const hp = m.paketGecmisi[period.index];
+hp.used = (hp.used||0) + 1;
+} else {
 m.used=(m.used||0)+1;
 const total = pkgSessions(m.package);
 if(total>0 && total<999 && m.used>=total) {
 m.status = 'Dersleri Bitti';
 finishedMembers.push(m);
+}
 }
 }
 });
@@ -6211,6 +6226,31 @@ if(pkgSessions(m.package)>=999) return 'Sınırsız'; // Sınırsız paket
 const d=new Date(m.start);
 d.setDate(d.getDate()+(pkgDays[m.package]||30));
 return localDate(d);
+}
+// Bir ders tarihi, üyenin şu anki aktif paketine mi yoksa geçmiş bir pakete mi ait?
+// Paket başlangıç tarihinden itibaren geçerlilik süresi (pkgDays) içindeki dersler o pakete sayılır.
+// Aynı isimli farklı dönemlerdeki paketler tarih aralığına göre ayırt edilir.
+function findPackagePeriodForDate(m, dateStr) {
+// Önce şu anki aktif paketi kontrol et
+if(m.package && m.start) {
+const end = getEnd(m);
+const unlimited = pkgSessions(m.package)>=999;
+if(dateStr >= m.start && (unlimited || end==='Sınırsız' || dateStr <= end)) {
+return {type:'current'};
+}
+}
+// Geçmiş paketlerde bu tarih aralığına denk gelen bir dönem var mı?
+if(m.paketGecmisi && m.paketGecmisi.length) {
+for(let i=0;i<m.paketGecmisi.length;i++){
+const p = m.paketGecmisi[i];
+const pStart = p.start || p.date;
+const pEnd = p.end || pStart;
+if(pStart && dateStr >= pStart && dateStr <= pEnd) {
+return {type:'history', index:i};
+}
+}
+}
+return {type:'current'}; // Hiçbir aralığa denk gelmiyorsa güvenli varsayım: aktif paket
 }
 function daysLeft(m){
 if(!m.start||!m.package) return 0;
