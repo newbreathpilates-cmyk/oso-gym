@@ -3584,29 +3584,51 @@ end: null, // aktif
 used: m.used||0,
 total: pkgSessions(m.package),
 amount: null,
-aktif: true
+aktif: m.status === 'Aktif',
+isCurrent: true,
+memberStatus: m.status
 });
 }
 if(!tumListe.length) { sec.style.display='none'; return; }
 sec.style.display='';
+// Üye durumu görünen metinleri (Üye Düzenle ekranındaki etiketlerle birebir aynı)
+const statusLabels = {
+'Aktif': 'Aktif',
+'Süresi Doldu': 'Paket kullanım/üyelik süresi doldu',
+'Dersleri Bitti': 'Paket bitti',
+'Ara Verdi/Ayrıldı': 'Ayrıldı/Ara verdi'
+};
+const statusColors = {
+'Süresi Doldu': {bg:'#fef3c7',fg:'#92400e'},
+'Dersleri Bitti': {bg:'#e5e7eb',fg:'#6b7280'},
+'Ara Verdi/Ayrıldı': {bg:'#fee2e2',fg:'#991b1b'}
+};
 el.innerHTML = tumListe.sort((a,b)=>b.start>a.start?1:-1).map(function(p, idx){
 const total = p.total===999?'∞':p.total||'—';
-const durum = p.aktif
+let durum;
+if(p.isCurrent && p.memberStatus && p.memberStatus!=='Aktif') {
+// Bu, üyenin şu anki kayıtlı paketi ama üye artık "Aktif" değil — gerçek durumunu göster
+const label = statusLabels[p.memberStatus] || p.memberStatus;
+const c = statusColors[p.memberStatus] || {bg:'#e5e7eb',fg:'#6b7280'};
+durum = '<span style="background:'+c.bg+';color:'+c.fg+';padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">'+label+'</span>';
+} else {
+durum = p.aktif
 ? '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">Aktif</span>'
 : '<span style="background:#e5e7eb;color:#6b7280;padding:2px 8px;border-radius:10px;font-size:10px">Tamamlandı</span>';
+}
 const bitis = p.end || (m&&m.package===p.package&&m.start===p.start ? getEnd(m) : '—');
 return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #dbeafe;font-size:12px">'+
 '<div style="flex:1">'+
 '<div style="font-weight:600;color:#1e3a8a">'+p.package+'</div>'+
-'<div style="font-size:10px;color:#6b7280;margin-top:2px">'+p.start+' → '+(p.aktif?bitis:p.end)+'</div>'+
+'<div style="font-size:10px;color:#6b7280;margin-top:2px">'+p.start+' → '+(p.aktif||p.isCurrent?bitis:p.end)+'</div>'+
 '</div>'+
 '<div style="text-align:right;display:flex;align-items:center;gap:8px">'+
 '<div>'+
 '<div style="font-weight:700">'+p.used+'/'+total+' ders</div>'+
 '<div style="margin-top:3px">'+durum+'</div>'+
 '</div>'+
-'<button type="button" onclick="editPaketGecmisi('+idx+','+JSON.stringify(p.aktif?true:false)+')" style="border:1px solid #bfdbfe;background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#1e3a8a">✏️</button>'+
-(!p.aktif ? '<button type="button" onclick="deletePaketGecmisiByKey(\''+p.package.replace(/'/g,"\\'")+"','"+p.start+'\')" style="border:1px solid #fecaca;background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#b91c1c">🗑️</button>' : '')+
+'<button type="button" onclick="editPaketGecmisi('+idx+','+JSON.stringify(p.isCurrent?true:false)+')" style="border:1px solid #bfdbfe;background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#1e3a8a">✏️</button>'+
+(!p.isCurrent ? '<button type="button" onclick="deletePaketGecmisiByKey(\''+p.package.replace(/'/g,"\\'")+"','"+p.start+'\')" style="border:1px solid #fecaca;background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#b91c1c">🗑️</button>' : '')+
 '</div>'+
 '</div>';
 }).join('');
