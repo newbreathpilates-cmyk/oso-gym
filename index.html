@@ -2090,6 +2090,77 @@ ${birthdayMembers.map(m=>`
 <span style="font-size:20px">${m._bdays===0?'🎉':'🎂'}</span>
 </div>`).join('')}
 </div>` : ''}`;
+// Eğitmen aylık performans hesabı: net ders saati, boşluk (dersler-arası boşluk) saati, TR tam-zamanlı kıyaslaması
+function calcTrainerPerformance(trainerId, monthStr) {
+const evs = S.events.filter(e=>e.trainerId===trainerId && e.completed && e.date.slice(0,7)===monthStr);
+// Günlere göre grupla
+const byDay = {};
+evs.forEach(ev=>{
+if(!byDay[ev.date]) byDay[ev.date]=[];
+const [h,m] = (ev.startTime||'00:00').split(':').map(Number);
+const startMin = h*60+m;
+const dur = ev.duration || 45;
+byDay[ev.date].push({start:startMin, end:startMin+dur});
+});
+let netDersDk = 0;
+let bosZamanDk = 0;
+Object.values(byDay).forEach(list=>{
+list.sort((a,b)=>a.start-b.start);
+list.forEach(l=>netDersDk += (l.end-l.start));
+for(let i=1;i<list.length;i++){
+const gap = list[i].start - list[i-1].end;
+if(gap>0) bosZamanDk += gap;
+}
+});
+const calisilanGun = Object.keys(byDay).length;
+const netDersSaat = netDersDk/60;
+const bosZamanSaat = bosZamanDk/60;
+// Türkiye standart tam-zamanlı: haftalık 45 saat (İş Kanunu) → aylık ~195 saat (45/7*30)
+const trStandartAylikSaat = 45/7*30;
+const tamZamanliOran = trStandartAylikSaat>0 ? Math.round((netDersSaat/trStandartAylikSaat)*100) : 0;
+return { netDersSaat, bosZamanSaat, calisilanGun, tamZamanliOran, trStandartAylikSaat };
+}
+function renderTrainerPerformanceCard() {
+if(!currentUser || currentUser.role!=='owner') return '';
+const monthStr = new Date().toISOString().slice(0,7);
+const rows = S.trainers.filter(t=>t.status!=='pasif').map(t=>{
+const perf = calcTrainerPerformance(t.id, monthStr);
+return {trainer:t, ...perf};
+}).sort((a,b)=>b.netDersSaat-a.netDersSaat);
+if(!rows.length) return '';
+return `
+<div class="card" style="margin-top:14px">
+<div class="card-title">📊 Eğitmen Aylık Performansı <span style="font-size:11px;font-weight:400;color:var(--text3)">${new Date().toLocaleDateString('tr-TR',{month:'long',year:'numeric'})} · TR standart tam-zamanlı: haftalık 45 saat</span></div>
+${rows.map(r=>`
+<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+<div style="font-weight:700;font-size:13px">${r.trainer.name}</div>
+<div style="font-size:11px;color:var(--text3)">${r.calisilanGun} gün çalıştı</div>
+</div>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+<div>
+<div style="font-size:16px;font-weight:700;color:var(--green)">${r.netDersSaat.toFixed(1)} sa</div>
+<div style="font-size:10px;color:var(--text3)">Net ders saati</div>
+</div>
+<div>
+<div style="font-size:16px;font-weight:700;color:#d97706">${r.bosZamanSaat.toFixed(1)} sa</div>
+<div style="font-size:10px;color:var(--text3)">Dersler arası boş zaman</div>
+</div>
+<div>
+<div style="font-size:16px;font-weight:700;color:${r.tamZamanliOran>=80?'#059669':r.tamZamanliOran>=50?'#d97706':'#dc2626'}">%${r.tamZamanliOran}</div>
+<div style="font-size:10px;color:var(--text3)">TR tam-zamanlıya oran</div>
+</div>
+</div>
+<div style="margin-top:6px;background:#f3f4f6;border-radius:10px;height:6px;overflow:hidden">
+<div style="height:6px;border-radius:10px;background:${r.tamZamanliOran>=80?'#059669':r.tamZamanliOran>=50?'#d97706':'#dc2626'};width:${Math.min(100,r.tamZamanliOran)}%"></div>
+</div>
+</div>
+`).join('')}
+<div style="margin-top:10px;font-size:10px;color:var(--text3);line-height:1.5">
+ℹ️ Net ders saati: tamamlanan derslerin toplam süresi. Boş zaman: aynı gün içinde dersler arasındaki boşluklar (günün ilk dersinden önce/son dersinden sonrasını kapsamaz). Tam-zamanlıya oran: Türkiye İş Kanunu'ndaki standart haftalık 45 saat (aylık ~195 saat) üzerinden hesaplanır.
+</div>
+</div>`;
+}
 document.getElementById('page-content').innerHTML += `
 <div class="two-col">
 <div class="card">
@@ -2210,6 +2281,7 @@ return `<div style="display:flex;align-items:center;justify-content:space-betwee
 </div>
 </div>
 `;
+document.getElementById('page-content').innerHTML += renderTrainerPerformanceCard();
 // 6 aylık şampiyon kontrolü
 // checkSixMonthChampions kaldırıldı
 }
