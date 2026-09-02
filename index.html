@@ -4300,16 +4300,25 @@ iframe.contentDocument.open();
 iframe.contentDocument.write(html);
 iframe.contentDocument.close();
 toast('Hazırlanıyor...','success');
+function cleanupIframe(){ try{ document.body.removeChild(iframe); }catch(e){} }
 setTimeout(function(){
-html2canvas(iframe.contentDocument.body, {scale:1.5, useCORS:true}).then(function(canvas){
-document.body.removeChild(iframe);
-const JsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+const opt = {
+margin: 0,
+filename: fileName,
+image: { type: 'jpeg', quality: 0.92 },
+html2canvas: { scale: 1.5, useCORS: true },
+jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+};
+// html2pdf'in resmi Worker API'si ile: önce canvas'ı oluştur, boyutuna göre TEK sayfa boyutu belirle, sonra PDF'e çevir
+html2pdf().set(opt).from(iframe.contentDocument.body).toContainer().toCanvas().then(function(){
+const canvas = this.prop.canvas;
 const pageWidthMM = 210; // A4 genişliği
 const pageHeightMM = canvas.height * (pageWidthMM / canvas.width); // içerik ne kadar uzunsa sayfa o kadar uzun — bölünme yok
-const pdf = new JsPDFCtor({ orientation:'portrait', unit:'mm', format:[pageWidthMM, pageHeightMM] });
-const imgData = canvas.toDataURL('image/jpeg', 0.92);
-pdf.addImage(imgData, 'JPEG', 0, 0, pageWidthMM, pageHeightMM);
-const pdfBlob = pdf.output('blob');
+this.opt.jsPDF = { unit:'mm', format:[pageWidthMM, pageHeightMM], orientation:'portrait' };
+this.opt.pagebreak = { mode: ['avoid-all'] };
+return this.toPdf();
+}).outputPdf('blob').then(function(pdfBlob){
+cleanupIframe();
 const pdfFile = new File([pdfBlob], fileName, {type:'application/pdf'});
 if(channel !== 'download' && navigator.canShare && navigator.canShare({files:[pdfFile]})) {
 // Native paylaşım menüsü — dosya gerçekten ekli gider, kullanıcı WhatsApp/Mail/Mesajlar arasından seçer
@@ -4327,9 +4336,9 @@ else if(channel === 'email') toast('PDF indirildi — mail uygulamanıza dosyay�
 else toast('PDF indiriliyor...','success');
 }
 }).catch(function(err){
-document.body.removeChild(iframe);
+cleanupIframe();
 console.error(err);
-toast('PDF oluşturulamadı.','error');
+toast('PDF oluşturulamadı: '+(err&&err.message?err.message:'bilinmeyen hata'),'error');
 });
 }, 200);
 } catch(e) { toast('Hata oluştu.','error'); console.error(e); }
