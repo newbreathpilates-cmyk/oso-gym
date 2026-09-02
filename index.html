@@ -416,6 +416,7 @@ font-size: 28px;
 @media (max-width: 768px) {
 .fab { display: flex; }
 }</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.12.1/html2pdf.bundle.min.js" integrity="sha512-D25Z8/1q2z65ZpJ3NzY6XiPZfwjhbv34OTQHDIZd+KPK+uWCovGt+fMkSzW8ArzCMFUgZt6Cdu7qoXNuy6a2GA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 <div id="login-screen">
@@ -4285,26 +4286,61 @@ memberEvents.map(function(ev){ const t=S.trainers.find(function(x){return x.id==
 saglikHTML+kurallarHTML+imzaHTML+
 '<div class="footer"><span>🌿 NEW BREATH PILATES Üye Yönetim Sistemi</span><span>'+m.name+' '+m.surname+' · '+new Date().toLocaleDateString('tr-TR')+'</span></div>'+
 '</body></html>';
-const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+const fileName = m.name+'_'+m.surname+'_NBP.pdf';
+const shareTitle = 'NEW BREATH PILATES — '+m.name+' '+m.surname+' Üye Bilgi Formu';
+// Formu görünmez bir iframe içinde render edip gerçek bir PDF'e dönüştür
+const iframe = document.createElement('iframe');
+iframe.style.position = 'fixed';
+iframe.style.left = '-9999px';
+iframe.style.top = '0';
+iframe.style.width = '800px';
+iframe.style.height = '1px';
+document.body.appendChild(iframe);
+iframe.contentDocument.open();
+iframe.contentDocument.write(html);
+iframe.contentDocument.close();
+toast('PDF hazırlanıyor...','success');
+setTimeout(function(){
+const opt = {
+margin: 10,
+filename: fileName,
+image: { type: 'jpeg', quality: 0.95 },
+html2canvas: { scale: 2, useCORS: true },
+jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+};
+html2pdf().set(opt).from(iframe.contentDocument.body).outputPdf('blob').then(function(pdfBlob){
+document.body.removeChild(iframe);
+const pdfFile = new File([pdfBlob], fileName, {type:'application/pdf'});
+if(channel !== 'download' && navigator.canShare && navigator.canShare({files:[pdfFile]})) {
+// Native paylaşım menüsü — dosya gerçekten ekli gider, kullanıcı WhatsApp/Mail/Mesajlar arasından seçer
+navigator.share({ files:[pdfFile], title: shareTitle }).catch(function(err){
+if(err && err.name !== 'AbortError') {
+downloadBlobFile(pdfBlob, fileName);
+toast('Paylaşım açılamadı, PDF indirildi.','error');
+}
+});
+} else {
+// Native paylaşım desteklenmiyor (örn. masaüstü tarayıcı) — PDF'i indir
+downloadBlobFile(pdfBlob, fileName);
+if(channel === 'whatsapp') toast('PDF indirildi — WhatsApp\'ı açıp dosyayı elle ekleyebilirsiniz.','success');
+else if(channel === 'email') toast('PDF indirildi — mail uygulamanıza dosyayı elle ekleyebilirsiniz.','success');
+else toast('PDF indiriliyor...','success');
+}
+}).catch(function(err){
+document.body.removeChild(iframe);
+console.error(err);
+toast('PDF oluşturulamadı.','error');
+});
+}, 300);
+} catch(e) { toast('Hata oluştu.','error'); console.error(e); }
+}
+function downloadBlobFile(blob, filename) {
 const url = URL.createObjectURL(blob);
 const a = document.createElement('a');
 a.href = url;
-a.download = m.name+'_'+m.surname+'_NBP.html';
+a.download = filename;
 a.click();
 setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
-if(channel === 'download') {
-toast('Dosya indiriliyor...','success');
-} else if(channel === 'whatsapp') {
-const phone = (m.phone||'').replace(/\D/g,'');
-const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
-const msg = encodeURIComponent('Merhaba '+m.name+' 👋\n\nNEW BREATH PILATES üye bilgi formunuz hazırlandı ve cihazınıza indirildi.\n\n📦 Paket: '+(m.package||'—')+'\n✅ Kalan Ders: '+remaining+'\n📅 Bitiş: '+endDate+'\n\n🌿 NEW BREATH PILATES');
-window.open('https://wa.me/'+(waPhone||'')+'?text='+msg, '_blank');
-} else {
-const subject = encodeURIComponent('NEW BREATH PILATES — '+m.name+' '+m.surname+' Üye Bilgi Formu');
-const body = encodeURIComponent('Merhaba '+m.name+',\n\nÜye bilgi formunuz ekte gönderilmektedir.\n\nPaket: '+(m.package||'—')+'\nKalan Ders: '+remaining+'\nBitiş: '+endDate+'\n\n🌿 NEW BREATH PILATES');
-window.open('mailto:'+(m.email||'')+'?subject='+subject+'&body='+body, '_blank');
-}
-} catch(e) { toast('Hata oluştu.','error'); console.error(e); }
 }
 function sendWhatsApp(id, type) {
 const m = S.members.find(x=>x.id===parseInt(id));
