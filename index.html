@@ -4316,7 +4316,9 @@ const pageWidthMM = 210; // A4 genişliği
 const pageHeightMM = canvas.height * (pageWidthMM / canvas.width); // içerik ne kadar uzunsa sayfa o kadar uzun — bölünme yok
 this.opt.jsPDF = { unit:'mm', format:[pageWidthMM, pageHeightMM], orientation:'portrait' };
 this.opt.pagebreak = { mode: ['avoid-all'] };
-return this.toPdf();
+// ÖNEMLİ: kütüphane sayfa boyutunu önbelleğe alıyor (toContainer() adımında eski A4 boyutuyla hesaplanmıştı).
+// Yeni boyutun gerçekten kullanılması için sayfa boyutunu elle yeniden hesaplatmak şart, yoksa eski A4 boyutuyla bölmeye devam eder.
+return this.setPageSize().toPdf();
 }).outputPdf('blob').then(function(pdfBlob){
 cleanupIframe();
 const pdfFile = new File([pdfBlob], fileName, {type:'application/pdf'});
