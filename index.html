@@ -4288,7 +4288,7 @@ saglikHTML+kurallarHTML+imzaHTML+
 '</body></html>';
 const fileName = m.name+'_'+m.surname+'_NBP.pdf';
 const shareTitle = 'NEW BREATH PILATES — '+m.name+' '+m.surname+' Üye Bilgi Formu';
-// Formu görünmez bir iframe içinde render edip gerçek bir PDF'e dönüştür
+// Formu görünmez bir iframe içinde render edip TEK PARÇA (sayfa bölünmesi olmadan) PDF'e dönüştür
 const iframe = document.createElement('iframe');
 iframe.style.position = 'fixed';
 iframe.style.left = '-9999px';
@@ -4299,17 +4299,17 @@ document.body.appendChild(iframe);
 iframe.contentDocument.open();
 iframe.contentDocument.write(html);
 iframe.contentDocument.close();
-toast('PDF hazırlanıyor...','success');
+toast('Hazırlanıyor...','success');
 setTimeout(function(){
-const opt = {
-margin: 10,
-filename: fileName,
-image: { type: 'jpeg', quality: 0.95 },
-html2canvas: { scale: 2, useCORS: true },
-jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-};
-html2pdf().set(opt).from(iframe.contentDocument.body).outputPdf('blob').then(function(pdfBlob){
+html2canvas(iframe.contentDocument.body, {scale:1.5, useCORS:true}).then(function(canvas){
 document.body.removeChild(iframe);
+const JsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+const pageWidthMM = 210; // A4 genişliği
+const pageHeightMM = canvas.height * (pageWidthMM / canvas.width); // içerik ne kadar uzunsa sayfa o kadar uzun — bölünme yok
+const pdf = new JsPDFCtor({ orientation:'portrait', unit:'mm', format:[pageWidthMM, pageHeightMM] });
+const imgData = canvas.toDataURL('image/jpeg', 0.92);
+pdf.addImage(imgData, 'JPEG', 0, 0, pageWidthMM, pageHeightMM);
+const pdfBlob = pdf.output('blob');
 const pdfFile = new File([pdfBlob], fileName, {type:'application/pdf'});
 if(channel !== 'download' && navigator.canShare && navigator.canShare({files:[pdfFile]})) {
 // Native paylaşım menüsü — dosya gerçekten ekli gider, kullanıcı WhatsApp/Mail/Mesajlar arasından seçer
@@ -4331,7 +4331,7 @@ document.body.removeChild(iframe);
 console.error(err);
 toast('PDF oluşturulamadı.','error');
 });
-}, 300);
+}, 200);
 } catch(e) { toast('Hata oluştu.','error'); console.error(e); }
 }
 function downloadBlobFile(blob, filename) {
