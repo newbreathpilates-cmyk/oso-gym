@@ -6215,12 +6215,26 @@ document.getElementById('sabit-gider-overlay')?.remove();
 openSabitGiderModal(id);
 }
 function deleteSabitGider(id) {
-if(!confirm('Bu sabit gideri silmek istiyor musunuz?')) return;
-S.sabitGiderler = S.sabitGiderler.filter(g=>g.id!==parseInt(id));
+const g = S.sabitGiderler.find(x=>x.id===parseInt(id));
+if(!g) return;
+const gelecektenKaldir = confirm(g.name + ' sabit giderini kaldırmak istiyorsunuz.\n\nTAMAM: Sadece bugünden itibaren kaldırılsın, geçmiş aylardaki kayıtlar korunsun (önerilen).\nİptal: Geçmiş dahil TAMAMEN silmek isterseniz İptal\'e basın, bir sonraki adımda onay isteyeceğiz.');
+if(gelecektenKaldir) {
+const selAy = window._giderAy || new Date().toISOString().slice(0,7);
+g.pasifOlduguAy = selAy;
+g.aktif = true;
 save();
 document.getElementById('sabit-gider-overlay')?.remove();
 renderGiderler();
-toast('Sabit gider silindi.','success');
+toast('Sabit gider ' + selAy + ' ayından itibaren kaldırıldı, geçmiş korundu ✓', 'success');
+return;
+}
+const kaliciSil = confirm('Geçmiş aylar dahil TAMAMEN ve KALICI olarak silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz ve geçmiş ay raporlarını da değiştirir. Sadece yanlışlıkla eklenmiş bir kayıt içinse kullanın.');
+if(!kaliciSil) return;
+S.sabitGiderler = S.sabitGiderler.filter(x=>x.id!==parseInt(id));
+save();
+document.getElementById('sabit-gider-overlay')?.remove();
+renderGiderler();
+toast('Sabit gider kalıcı olarak silindi.','success');
 }
 function openGiderModal(id) {
 document.getElementById('g-id').value=id||'';
