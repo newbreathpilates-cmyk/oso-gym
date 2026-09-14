@@ -1128,7 +1128,6 @@ Bu işlem geri alınamaz. Üyeye ait tüm veriler silinecek.
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const firebaseConfig = {
 apiKey: "AIzaSyBJn872wAkBGgvlbqpXWa3_pBA2Zbsyz-A",
 authDomain: "oso-gym-system.firebaseapp.com",
@@ -1139,18 +1138,9 @@ appId: "1:653274291080:web:defa1fdaf91039cfe3783d"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
 const DOC_REF = doc(db, 'osogym', 'state');
-// Kimlik doğrulama hazır olana kadar bekleyen yardımcı fonksiyon
-let authReadyResolve;
-const authReady = new Promise(res => { authReadyResolve = res; });
-onAuthStateChanged(auth, (user) => {
-if(user) authReadyResolve();
-});
-signInAnonymously(auth).catch(function(e){ console.error('Anonim giriş hatası:', e); });
 // Firebase'e kaydet
 window.firebaseSave = async function(state) {
-await authReady;
 try {
 await setDoc(DOC_REF, { data: JSON.stringify(state) });
 } catch(e) {
@@ -1162,7 +1152,6 @@ localStorage.setItem('pilates_v3', JSON.stringify(state));
 // Firebase'den yükle
 window.firebaseLoad = async function() {
 try {
-await authReady;
 const snap = await getDoc(DOC_REF);
 if(snap.exists()) {
 return JSON.parse(snap.data().data);
