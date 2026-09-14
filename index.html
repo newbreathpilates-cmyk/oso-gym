@@ -495,6 +495,7 @@ font-size: 28px;
 <div class="topbar-title" id="topbar-title">Panel</div>
 <div id="topbar-actions"></div>
 </div>
+<div id="trainer-notification-banner"></div>
 <div class="page-content" id="page-content">
 </div>
 </div>
@@ -1412,6 +1413,7 @@ visibleTrainers = new Set(S.trainers.map(t=>t.id));
 }
 if(currentUser.role === 'owner') navigateTo('dashboard');
 else navigateTo('trainer-portal');
+renderTrainerNotificationBanner();
 checkHatirlatmalar();
 }
 // Sayfa yenilenince oturumu geri yükle
@@ -1714,6 +1716,7 @@ document.getElementById('topbar-actions').innerHTML = '';
 const pages = { dashboard: renderDashboard, calendar: renderCalendar, members: renderMembers, trainers: renderTrainers, payments: renderPayments, giderler: renderGiderler, finansal: renderFinansal, hakedis: renderHakedis, 'paket-fiyatlari': renderPaketFiyatlari, export: renderExport, 'trainer-portal': renderTrainerPortal, 'attendance-report': renderAttendanceReport };
 if(pages[page]) pages[page]();
 updateFAB(page);
+renderTrainerNotificationBanner();
 }
 // ══════════════════════════════════════
 // DASHBOARD
@@ -3110,11 +3113,20 @@ const trn = S.trainers.find(t=>t.id===trainerId);
 toast((trn?trn.name:'Eğitmen')+' '+conflict.startTime+'-'+conflict.endTime+' arası müsait değil.','error');
 return;
 }
+let oldTrainerIdForNotify = null;
 if(editingEventId) {
 const i=S.events.findIndex(e=>e.id===editingEventId);
-if(i>-1) S.events[i]={...S.events[i],type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,teyitGerekli,members:tempEventMembers,specialCount,singleDropCount};
+if(i>-1) {
+oldTrainerIdForNotify = S.events[i].trainerId;
+S.events[i]={...S.events[i],type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,teyitGerekli,members:tempEventMembers,specialCount,singleDropCount};
+}
 } else {
 S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,teyitGerekli,members:tempEventMembers,specialCount,singleDropCount,completed:false});
+}
+// Eğitmene bildirim: sadece işletme sahibi değişiklik yaptıysa gönder
+if(currentUser.role==='owner') {
+if(trainerId) notifyTrainer(trainerId);
+if(oldTrainerIdForNotify && oldTrainerIdForNotify!==trainerId) notifyTrainer(oldTrainerIdForNotify);
 }
 save();closeModal('event-modal');
 // Takvim scroll pozisyonunu koru
@@ -3123,6 +3135,35 @@ const scrollPos = calScroll ? calScroll.scrollTop : 0;
 if(currentPage==='calendar') { renderCalendar(); setTimeout(()=>{ const cs=document.getElementById('week-grid-scroll'); if(cs) cs.scrollTop=scrollPos; },50); }
 if(currentPage==='dashboard') renderDashboard();
 toast('Randevu kaydedildi.','success');
+}
+function notifyTrainer(trainerId) {
+if(!trainerId) return;
+S.trainerNotifications = S.trainerNotifications || [];
+S.trainerNotifications.push({
+id: Date.now()+Math.random(),
+trainerId: trainerId,
+message: '⚠️ Randevu takviminiz güncellendi, tüm takvimi lütfen kontrol ediniz.',
+date: new Date().toISOString(),
+seen: false
+});
+}
+function renderTrainerNotificationBanner() {
+const el = document.getElementById('trainer-notification-banner');
+if(!el) return;
+if(!currentUser || currentUser.role!=='trainer') { el.innerHTML=''; return; }
+const unseen = (S.trainerNotifications||[]).filter(n=>n.trainerId===currentUser.trainerId && !n.seen);
+if(!unseen.length) { el.innerHTML=''; return; }
+const latest = unseen[unseen.length-1];
+el.innerHTML = `<div style="background:#FEF3C7;border-bottom:1px solid #F5D77A;color:#7A5C00;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13.5px">
+<span>${latest.message}</span>
+<button onclick="dismissTrainerNotifications()" style="background:none;border:1px solid #7A5C00;color:#7A5C00;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;white-space:nowrap">Kapat</button>
+</div>`;
+}
+function dismissTrainerNotifications() {
+if(!currentUser || currentUser.role!=='trainer') return;
+(S.trainerNotifications||[]).forEach(n=>{ if(n.trainerId===currentUser.trainerId) n.seen=true; });
+save();
+renderTrainerNotificationBanner();
 }
 function deleteEvent() {
 if(!editingEventId) { toast('Silinecek randevu bulunamadı.','error'); return; }
@@ -3149,6 +3190,7 @@ m.used=Math.max(0,(m.used||0)-1);
 const before = S.events.length;
 S.events = S.events.filter(e => parseInt(e.id) !== id);
 if(S.events.length < before) {
+if(ev && ev.trainerId) notifyTrainer(ev.trainerId);
 save();
 closeModal('event-modal');
 if(currentPage==='calendar') renderCalendar();
