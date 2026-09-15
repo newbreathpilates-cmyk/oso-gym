@@ -2794,7 +2794,7 @@ const options = [...S.members]
 .map(m=>{
 const total = pkgSessions(m.package);
 const used = m.used||0;
-const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(m.id)).length;
+const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(m.id) && e.id !== editingEventId).length;
 const remaining = total===999 ? 999 : Math.max(0, total - used - planned);
 const noPackage = !m.package || total===0;
 const isFinished = m.status==='Süresi Doldu' || m.status==='Dersleri Bitti' || m.status==='Donduruldu' || m.status==='Paket Yok' || m.status==='Ara Verdi/Ayrıldı';
