@@ -6217,8 +6217,24 @@ openSabitGiderModal(id);
 function deleteSabitGider(id) {
 const g = S.sabitGiderler.find(x=>x.id===parseInt(id));
 if(!g) return;
-const gelecektenKaldir = confirm(g.name + ' sabit giderini kaldırmak istiyorsunuz.\n\nTAMAM: Sadece bugünden itibaren kaldırılsın, geçmiş aylardaki kayıtlar korunsun (önerilen).\nİptal: Geçmiş dahil TAMAMEN silmek isterseniz İptal\'e basın, bir sonraki adımda onay isteyeceğiz.');
-if(gelecektenKaldir) {
+const overlay = document.createElement('div');
+overlay.id = 'sabit-gider-delete-overlay';
+overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+overlay.innerHTML = `
+<div style="background:white;border-radius:14px;padding:24px;max-width:360px;width:100%">
+<div style="font-weight:700;font-size:15px;margin-bottom:10px">${g.name} sabit giderini kaldır</div>
+<div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:20px">Nasıl kaldırılsın?</div>
+<button onclick="confirmSabitGiderKaldir(${g.id},'gelecek')" style="width:100%;padding:13px;border:none;border-radius:10px;background:var(--green,#059669);color:white;font-weight:600;font-size:13.5px;margin-bottom:10px;cursor:pointer">Bugünden itibaren kaldır<br><span style="font-weight:400;font-size:11.5px;opacity:0.9">Geçmiş aylar korunur — önerilen</span></button>
+<button onclick="confirmSabitGiderKaldir(${g.id},'kalici')" style="width:100%;padding:13px;border:1.5px solid #dc2626;border-radius:10px;background:white;color:#dc2626;font-weight:600;font-size:13.5px;margin-bottom:10px;cursor:pointer">Geçmiş dahil tamamen sil<br><span style="font-weight:400;font-size:11.5px;opacity:0.85">Geri alınamaz</span></button>
+<button onclick="document.getElementById('sabit-gider-delete-overlay').remove()" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--surface2,#f3f4f6);color:var(--text2);font-weight:500;font-size:13.5px;cursor:pointer">Vazgeç</button>
+</div>`;
+document.body.appendChild(overlay);
+}
+function confirmSabitGiderKaldir(id, mod) {
+const g = S.sabitGiderler.find(x=>x.id===id);
+document.getElementById('sabit-gider-delete-overlay')?.remove();
+if(!g) return;
+if(mod==='gelecek') {
 const selAy = window._giderAy || new Date().toISOString().slice(0,7);
 g.pasifOlduguAy = selAy;
 g.aktif = true;
@@ -6226,15 +6242,13 @@ save();
 document.getElementById('sabit-gider-overlay')?.remove();
 renderGiderler();
 toast('Sabit gider ' + selAy + ' ayından itibaren kaldırıldı, geçmiş korundu ✓', 'success');
-return;
-}
-const kaliciSil = confirm('Geçmiş aylar dahil TAMAMEN ve KALICI olarak silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz ve geçmiş ay raporlarını da değiştirir. Sadece yanlışlıkla eklenmiş bir kayıt içinse kullanın.');
-if(!kaliciSil) return;
-S.sabitGiderler = S.sabitGiderler.filter(x=>x.id!==parseInt(id));
+} else {
+S.sabitGiderler = S.sabitGiderler.filter(x=>x.id!==id);
 save();
 document.getElementById('sabit-gider-overlay')?.remove();
 renderGiderler();
 toast('Sabit gider kalıcı olarak silindi.','success');
+}
 }
 function openGiderModal(id) {
 document.getElementById('g-id').value=id||'';
