@@ -887,7 +887,15 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 <input type="hidden" id="tr-id">
 <div class="form-row">
 <div class="form-group"><label class="form-label">Ad Soyad</label><input class="form-input" id="tr-name" placeholder="Tam adı"></div>
-<div class="form-group"><label class="form-label">Uzmanlık</label><input class="form-input" id="tr-spec" placeholder="Mat Pilates, Reformer..."></div>
+<div class="form-group"><label class="form-label">Uzmanlık</label>
+<select class="form-select" id="tr-spec">
+<option value="Pilates">Pilates</option>
+<option value="Fonksiyonel Egzersiz">Fonksiyonel Egzersiz</option>
+<option value="Pilates-Fonksiyonel Egzersiz">Pilates-Fonksiyonel Egzersiz</option>
+<option value="Mat Pilates">Mat Pilates</option>
+<option value="Stajyer">Stajyer</option>
+</select>
+</div>
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Telefon</label><input class="form-input" id="tr-phone" placeholder="05xx..."></div>
@@ -897,6 +905,10 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 <option value="1">Mor</option><option value="2">Mavi-Yeşil</option>
 <option value="3">Turuncu</option><option value="4">Pembe</option>
 <option value="5">Yeşil</option><option value="6">Mavi</option>
+<option value="7">Kırmızı</option><option value="8">İndigo</option>
+<option value="9">Lime</option><option value="10">Fuşya</option>
+<option value="11">Kahverengi</option><option value="12">Gri</option>
+<option value="13">Sarı</option><option value="14">Turkuaz</option>
 </select>
 </div>
 </div>
@@ -1316,6 +1328,14 @@ const TC = {
 4: { bg:'#fce7f3', light:'#f9a8d4', border:'#DB2777', text:'#831843', dot:'#DB2777' },
 5: { bg:'#d1fae5', light:'#6ee7b7', border:'#059669', text:'#064e3b', dot:'#059669' },
 6: { bg:'#eff6ff', light:'#bfdbfe', border:'#2563EB', text:'#1e3a8a', dot:'#2563EB' },
+7: { bg:'#fee2e2', light:'#fca5a5', border:'#DC2626', text:'#7f1d1d', dot:'#DC2626' },
+8: { bg:'#e0e7ff', light:'#a5b4fc', border:'#4F46E5', text:'#312e81', dot:'#4F46E5' },
+9: { bg:'#ecfccb', light:'#bef264', border:'#65A30D', text:'#365314', dot:'#65A30D' },
+10: { bg:'#fae8ff', light:'#f0abfc', border:'#C026D3', text:'#701a75', dot:'#C026D3' },
+11: { bg:'#f5e9dc', light:'#d7b899', border:'#92400E', text:'#451a03', dot:'#92400E' },
+12: { bg:'#f1f5f9', light:'#cbd5e1', border:'#475569', text:'#1e293b', dot:'#475569' },
+13: { bg:'#fef9c3', light:'#fde047', border:'#CA8A04', text:'#713f12', dot:'#CA8A04' },
+14: { bg:'#ccfbf1', light:'#5eead4', border:'#0D9488', text:'#134e4a', dot:'#0D9488' },
 };
 function tc(colorId) { return TC[colorId] || TC[1]; }
 // ══════════════════════════════════════
