@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Breath Pilates — Mat Dersi Rezervasyon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#FAF8F3; --ink:#16261F; --ink-soft:#3E4E47;
+  --teal:#1E9E75; --teal-deep:#0E6647; --sand:#EAE3D3;
+  --line: rgba(22,38,31,0.14); --line-soft: rgba(22,38,31,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Work Sans',sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:'Fraunces',serif}
+.wrap{max-width:640px;margin:0 auto;padding:0 20px}
+header{padding:36px 0 24px;text-align:center}
+.brand .script{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:22px;color:var(--teal-deep)}
+.brand .word{font-family:'Fraunces',serif;font-weight:600;font-size:14px;letter-spacing:0.16em;margin-top:2px}
+h1{font-size:26px;font-weight:500;margin-top:18px;line-height:1.25}
+header p{color:var(--ink-soft);font-size:14.5px;margin-top:8px}
+.list{padding:10px 0 60px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:14px}
+.card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.card .date{font-family:'Fraunces',serif;font-size:18px;font-weight:500}
+.card .meta{font-size:13px;color:var(--ink-soft);margin-top:4px}
+.badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;white-space:nowrap}
+.badge.open{background:#d1fae5;color:#065f46}
+.badge.full{background:#fee2e2;color:#991b1b}
+.card .price{font-size:14px;font-weight:600;margin-top:10px;color:var(--teal-deep)}
+.btn{
+  display:inline-block;width:100%;text-align:center;padding:12px;border-radius:100px;
+  font-size:13.5px;font-weight:600;margin-top:12px;cursor:pointer;border:none;transition:background .2s;
+}
+.btn-primary{background:var(--teal-deep);color:#fff}
+.btn-primary:hover{background:var(--ink)}
+.btn-primary:disabled{background:#cbd5e1;cursor:not-allowed}
+.form{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft)}
+.form.show{display:block}
+.form input{
+  width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;
+  margin-bottom:10px;font-family:'Work Sans',sans-serif;
+}
+.empty{text-align:center;color:var(--ink-soft);padding:50px 20px;font-size:14px}
+.success{
+  background:#fff;border:1px solid var(--line);border-radius:10px;padding:22px;text-align:center;
+}
+.success h3{font-size:19px;margin-bottom:10px}
+.success .info{background:var(--cream);border-radius:8px;padding:14px;margin-top:14px;text-align:left;font-size:13.5px}
+.success .info div{padding:4px 0}
+.success .info b{font-weight:600}
+.wa-link{
+  display:inline-block;width:100%;text-align:center;padding:12px;border-radius:100px;
+  background:#25D366;color:#fff;font-size:13.5px;font-weight:600;margin-top:12px;text-decoration:none;
+}
+.loading{text-align:center;padding:60px 20px;color:var(--ink-soft);font-size:14px}
+footer{text-align:center;padding:30px 20px;font-size:12px;color:var(--ink-soft)}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="brand">
+    <div class="script">New Breath</div>
+    <div class="word">PILATES</div>
+  </div>
+  <h1>Mat Pilates Ders Rezervasyonu</h1>
+  <p>Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz ödeme onaylandığında kesinleşir.</p>
+</header>
+
+<div class="wrap list" id="list">
+  <div class="loading">Yükleniyor...</div>
+</div>
+
+<footer>🌿 New Breath Pilates · Beşiktaş, İstanbul</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBJn872wAkBGgvlbqpXWa3_pBA2Zbsyz-A",
+  authDomain: "oso-gym-system.firebaseapp.com",
+  projectId: "oso-gym-system",
+  storageBucket: "oso-gym-system.firebasestorage.app",
+  messagingSenderId: "653274291080",
+  appId: "1:653274291080:web:defa1fdaf91039cfe3783d"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const DERSLER_COL = collection(db, 'matDersler');
+const REZ_COL = collection(db, 'matRezervasyonlar');
+const AYAR_REF = doc(db, 'matAyarlar', 'genel');
+
+let ayarlar = { iban:'', ibanAdi:'', whatsappNo:'' };
+getDoc(AYAR_REF).then(snap => { if(snap.exists()) ayarlar = snap.data(); }).catch(()=>{});
+
+function formatTrDate(dateStr) {
+  try {
+    const d = new Date(dateStr+'T00:00:00');
+    return d.toLocaleDateString('tr-TR',{weekday:'long', day:'numeric', month:'long'});
+  } catch(e) { return dateStr; }
+}
+
+const listEl = document.getElementById('list');
+
+onSnapshot(DERSLER_COL, (snap) => {
+  const today = new Date().toISOString().slice(0,10);
+  let dersler = [];
+  snap.forEach(d => dersler.push({ id: d.id, ...d.data() }));
+  dersler = dersler
+    .filter(d => d.durum === 'acik' && d.tarih >= today)
+    .sort((a,b) => (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
+
+  if(!dersler.length) {
+    listEl.innerHTML = '<div class="empty">Şu anda açık bir mat dersi bulunmuyor. Yeni dersler için bizi Instagram\'dan takip edebilirsiniz.</div>';
+    return;
+  }
+
+  listEl.innerHTML = dersler.map(d => {
+    const dolu = (d.onayliSayisi||0) >= d.kapasite;
+    return `
+    <div class="card" data-ders-id="${d.id}">
+      <div class="top">
+        <div>
+          <div class="date">${formatTrDate(d.tarih)}</div>
+          <div class="meta">${d.saat} · ${d.egitmenAdi} · 45 dakika</div>
+        </div>
+        <span class="badge ${dolu?'full':'open'}">${dolu ? 'DOLU' : (d.onayliSayisi||0)+'/'+d.kapasite}</span>
+      </div>
+      <div class="price">${d.fiyat} TL / kişi</div>
+      ${dolu
+        ? `<button class="btn" disabled>Bu ders dolu</button>`
+        : `<button class="btn btn-primary" onclick="toggleForm('${d.id}')">Rezervasyon Yap</button>
+           <div class="form" id="form-${d.id}">
+             <input type="text" id="ad-${d.id}" placeholder="Ad Soyad">
+             <input type="tel" id="tel-${d.id}" placeholder="Telefon (05XX XXX XX XX)">
+             <button class="btn btn-primary" onclick="rezervasyonYap('${d.id}')">Gönder</button>
+           </div>
+           <div class="success" id="success-${d.id}" style="display:none"></div>`
+      }
+    </div>`;
+  }).join('');
+});
+
+window.toggleForm = function(id) {
+  const f = document.getElementById('form-'+id);
+  if(f) f.classList.toggle('show');
+};
+
+window.rezervasyonYap = async function(dersId) {
+  const adEl = document.getElementById('ad-'+dersId);
+  const telEl = document.getElementById('tel-'+dersId);
+  const ad = adEl.value.trim();
+  const tel = telEl.value.trim();
+  if(!ad || !tel) { alert('Lütfen ad soyad ve telefon numaranızı girin.'); return; }
+  const btn = document.querySelector(`#form-${dersId} button.btn-primary`);
+  if(btn) { btn.disabled = true; btn.textContent = 'Gönderiliyor...'; }
+  try {
+    await addDoc(REZ_COL, {
+      dersId: dersId,
+      adSoyad: ad,
+      telefon: tel,
+      durum: 'beklemede',
+      kayitTarihi: new Date().toISOString()
+    });
+    const card = document.querySelector(`[data-ders-id="${dersId}"]`);
+    const dateText = card.querySelector('.date').textContent;
+    const timeText = card.querySelector('.meta').textContent;
+    document.getElementById('form-'+dersId).style.display = 'none';
+    const successEl = document.getElementById('success-'+dersId);
+    const waMsg = encodeURIComponent(`Merhaba, ${dateText} ${timeText} tarihli mat dersi için rezervasyon yaptım (${ad}). Dekontu ekte gönderiyorum.`);
+    successEl.innerHTML = `
+      <h3>✓ Talebiniz alındı</h3>
+      <p style="font-size:13.5px;color:var(--ink-soft)">Yerinizin kesinleşmesi için lütfen ödemeyi yapıp dekontu WhatsApp'tan gönderin.</p>
+      <div class="info">
+        <div><b>IBAN:</b> ${ayarlar.iban||'—'}</div>
+        <div><b>Hesap Sahibi:</b> ${ayarlar.ibanAdi||'—'}</div>
+        <div><b>Tutar:</b> ${card.querySelector('.price').textContent}</div>
+      </div>
+      ${ayarlar.whatsappNo ? `<a class="wa-link" href="https://wa.me/${ayarlar.whatsappNo.replace(/\D/g,'')}?text=${waMsg}" target="_blank">WhatsApp'tan Dekont Gönder</a>` : ''}
+    `;
+    successEl.style.display = 'block';
+  } catch(e) {
+    console.error(e);
+    alert('Bir hata oluştu, lütfen tekrar deneyin.');
+    if(btn) { btn.disabled = false; btn.textContent = 'Gönder'; }
+  }
+};
+</script>
+</body>
+</html>
