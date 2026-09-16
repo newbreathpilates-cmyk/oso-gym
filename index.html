@@ -6497,7 +6497,7 @@ if(a) { window._matAyarlar = a; if(currentPage==='mat-dersleri') renderMatDersle
 function renderMatDersleri() {
 matKurulumYap();
 const dersler = [...window._matDersler].sort((a,b)=> (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
-document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openMatDersTakvimSecici()"><i class="ti ti-calendar"></i> Takvimden Seç</button> <button class="btn" onclick="openMatDersModal()"><i class="ti ti-plus"></i> Elle Ekle</button>`;
+document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openMatDersTakvimSecici()"><i class="ti ti-calendar"></i> Takvimden Seç</button>`;
 const ayarlarHTML = `
 <div class="card" style="margin-bottom:16px">
 <div class="card-title">💳 Ödeme Bilgileri <span style="font-size:11px;font-weight:400;color:var(--text3)">Rezervasyon sayfasında gösterilir, istediğin an güncelleyebilirsin</span></div>
@@ -6571,7 +6571,7 @@ whatsappNo: document.getElementById('mat-ayar-wapp').value.trim()
 window.matAyarlarKaydet(ayarlar).then(function(){
 window._matAyarlar = ayarlar;
 toast('Ödeme bilgileri kaydedildi ✓','success');
-}).catch(function(e){ console.error(e); toast('Kaydedilemedi.','error'); });
+}).catch(function(e){ console.error(e); toast('Kaydedilemedi: '+(e&&e.message?e.message:'bilinmeyen hata'),'error'); });
 }
 function openMatDersTakvimSecici() {
 window._matDersSecimModu = true;
@@ -6624,13 +6624,13 @@ p.then(function(){
 closeModal('mat-ders-modal');
 if(currentPage!=='mat-dersleri') navigateTo('mat-dersleri');
 toast('Mat dersi kaydedildi ✓','success');
-}).catch(function(e){ console.error(e); toast('Kaydedilemedi.','error'); });
+}).catch(function(e){ console.error(e); toast('Kaydedilemedi: '+(e&&e.message?e.message:'bilinmeyen hata'),'error'); });
 }
 function toggleMatDersDurum(id, mevcutDurum) {
 const yeni = mevcutDurum==='kapali' ? 'acik' : 'kapali';
 window.matDersGuncelle(id, {durum:yeni}).then(function(){
 toast(yeni==='kapali'?'Ders kapatıldı.':'Ders açıldı.','success');
-}).catch(function(e){ console.error(e); toast('İşlem başarısız.','error'); });
+}).catch(function(e){ console.error(e); toast('İşlem başarısız: '+(e&&e.message?e.message:'bilinmeyen hata'),'error'); });
 }
 function deleteMatDers(id) {
 const overlay = document.createElement('div');
@@ -6648,12 +6648,12 @@ function confirmDeleteMatDers(id) {
 document.getElementById('mat-ders-delete-overlay')?.remove();
 window.matDersSil(id).then(function(){
 toast('Ders silindi.','success');
-}).catch(function(e){ console.error(e); toast('Silinemedi.','error'); });
+}).catch(function(e){ console.error(e); toast('Silinemedi: '+(e&&e.message?e.message:'bilinmeyen hata'),'error'); });
 }
 function matRezDurumDegistir(rezId, dersId, yeniDurum) {
 window.matRezervasyonOnayla(rezId, dersId, yeniDurum).then(function(){
 toast(yeniDurum==='onaylandi'?'Rezervasyon onaylandı ✓':'Rezervasyon reddedildi.','success');
-}).catch(function(e){ console.error(e); toast('İşlem başarısız.','error'); });
+}).catch(function(e){ console.error(e); toast('İşlem başarısız: '+(e&&e.message?e.message:'bilinmeyen hata'),'error'); });
 }
 function renderExport() {
 document.getElementById('page-content').innerHTML=`
