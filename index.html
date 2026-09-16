@@ -943,6 +943,33 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 </div>
 </div>
 </div>
+<div class="modal-overlay" id="mat-ders-modal">
+<div class="modal" style="width:440px">
+<div class="modal-header">
+<div class="modal-title" id="mat-ders-modal-title">Mat Dersi Ekle</div>
+<button class="btn btn-icon" onclick="closeModal('mat-ders-modal')"><i class="ti ti-x"></i></button>
+</div>
+<div class="modal-body">
+<input type="hidden" id="md-id">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Tarih</label><input type="date" class="form-input" id="md-tarih"></div>
+<div class="form-group"><label class="form-label">Saat</label><input type="time" class="form-input" id="md-saat"></div>
+</div>
+<div class="form-group"><label class="form-label">Eğitmen</label>
+<select class="form-select" id="md-egitmen"></select>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Kapasite</label><input type="number" class="form-input" id="md-kapasite" value="5" min="1"></div>
+<div class="form-group"><label class="form-label">Min. Kişi</label><input type="number" class="form-input" id="md-minkisi" value="3" min="1"></div>
+</div>
+<div class="form-group"><label class="form-label">Kişi Başı Fiyat (TL)</label><input type="number" class="form-input" id="md-fiyat" value="500" min="0"></div>
+</div>
+<div class="modal-footer">
+<button class="btn" onclick="closeModal('mat-ders-modal')">İptal</button>
+<button class="btn btn-primary" onclick="saveMatDers()">Kaydet</button>
+</div>
+</div>
+</div>
 <div class="modal-overlay" id="payment-modal">
 <div class="modal" style="width:460px">
 <div class="modal-header">
@@ -1140,7 +1167,7 @@ Bu işlem geri alınamaz. Üyeye ait tüm veriler silinecek.
 <div class="toast" id="toast"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, updateDoc, query, where, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 const firebaseConfig = {
 apiKey: "AIzaSyBJn872wAkBGgvlbqpXWa3_pBA2Zbsyz-A",
 authDomain: "oso-gym-system.firebaseapp.com",
@@ -1206,6 +1233,92 @@ console.error('Gerçek zamanlı güncelleme hatası:', e);
 }
 });
 });
+// ══════════════════════════════════════
+// MAT PİLATES REZERVASYON SİSTEMİ — mevcut üye verisinden tamamen ayrı koleksiyonlar
+// ══════════════════════════════════════
+const MAT_DERSLER_COL = collection(db, 'matDersler');
+const MAT_REZ_COL = collection(db, 'matRezervasyonlar');
+const MAT_AYAR_REF = doc(db, 'matAyarlar', 'genel');
+
+window.matDersEkle = async function(dersData) {
+await authReady;
+const ref = await addDoc(MAT_DERSLER_COL, {
+...dersData,
+onayliSayisi: 0,
+olusturmaTarihi: new Date().toISOString()
+});
+return ref.id;
+};
+window.matDersGuncelle = async function(dersId, updates) {
+await authReady;
+await updateDoc(doc(db, 'matDersler', dersId), updates);
+};
+window.matDersSil = async function(dersId) {
+await authReady;
+await deleteDoc(doc(db, 'matDersler', dersId));
+};
+window.matDersleriDinle = function(callback) {
+authReady.then(() => {
+onSnapshot(MAT_DERSLER_COL, (snap) => {
+const list = [];
+snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+callback(list);
+});
+});
+};
+window.matRezervasyonlariDinle = function(dersId, callback) {
+authReady.then(() => {
+const q = query(MAT_REZ_COL, where('dersId', '==', dersId));
+onSnapshot(q, (snap) => {
+const list = [];
+snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+callback(list);
+});
+});
+};
+window.matTumRezervasyonlariDinle = function(callback) {
+authReady.then(() => {
+onSnapshot(MAT_REZ_COL, (snap) => {
+const list = [];
+snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+callback(list);
+});
+});
+};
+window.matRezervasyonOnayla = async function(rezId, dersId, yeniDurum) {
+await authReady;
+const rezRef = doc(db, 'matRezervasyonlar', rezId);
+const rezSnap = await getDoc(rezRef);
+if(!rezSnap.exists()) return;
+const eskiDurum = rezSnap.data().durum;
+await updateDoc(rezRef, { durum: yeniDurum });
+// Onaylı sayaç güncellemesi
+if(eskiDurum !== 'onaylandi' && yeniDurum === 'onaylandi') {
+const dersRef = doc(db, 'matDersler', dersId);
+const dersSnap = await getDoc(dersRef);
+if(dersSnap.exists()) {
+await updateDoc(dersRef, { onayliSayisi: (dersSnap.data().onayliSayisi||0) + 1 });
+}
+} else if(eskiDurum === 'onaylandi' && yeniDurum !== 'onaylandi') {
+const dersRef = doc(db, 'matDersler', dersId);
+const dersSnap = await getDoc(dersRef);
+if(dersSnap.exists()) {
+await updateDoc(dersRef, { onayliSayisi: Math.max(0, (dersSnap.data().onayliSayisi||0) - 1) });
+}
+}
+};
+window.matAyarlarKaydet = async function(ayarlar) {
+await authReady;
+await setDoc(MAT_AYAR_REF, ayarlar);
+};
+window.matAyarlarYukle = async function() {
+await authReady;
+try {
+const snap = await getDoc(MAT_AYAR_REF);
+if(snap.exists()) return snap.data();
+} catch(e) { console.error('Mat ayarları yüklenemedi:', e); }
+return null;
+};
 </script>
 <script>
 // ══════════════════════════════════════
@@ -1698,6 +1811,7 @@ const ownerNav = `
 <div class="nav-section">Veri</div>
 <button class="nav-item" data-page="attendance-report" onclick="navigateTo('attendance-report')"><i class="ti ti-chart-bar"></i> İstatistik</button>
 <button class="nav-item" data-page="export" onclick="navigateTo('export')"><i class="ti ti-database-export"></i> Dışa Aktar</button>
+<button class="nav-item" data-page="mat-dersleri" onclick="navigateTo('mat-dersleri')"><i class="ti ti-yoga"></i> Mat Dersleri</button>
 `;
 const trainerNav = `
 <div class="nav-section">Eğitmen Portalı</div>
@@ -1730,10 +1844,10 @@ currentPage = page;
 document.querySelectorAll('.nav-item[data-page]').forEach(el => {
 el.classList.toggle('active', el.dataset.page === page);
 });
-const titles = { dashboard:'Panel', calendar:'Takvim', members:'Üyeler', trainers:'Eğitmenler', payments:'Ödemeler', giderler:'Giderler', finansal:'Finansal Özet', hakedis:'Hakediş', 'paket-fiyatlari':'Paket Fiyatları', export:'Dışa Aktar', 'trainer-portal':'Derslerim', 'attendance-report':'Üye İstatistikleri' };
+const titles = { dashboard:'Panel', calendar:'Takvim', members:'Üyeler', trainers:'Eğitmenler', payments:'Ödemeler', giderler:'Giderler', finansal:'Finansal Özet', hakedis:'Hakediş', 'paket-fiyatlari':'Paket Fiyatları', export:'Dışa Aktar', 'trainer-portal':'Derslerim', 'attendance-report':'Üye İstatistikleri', 'mat-dersleri':'Mat Dersleri' };
 document.getElementById('topbar-title').textContent = titles[page] || page;
 document.getElementById('topbar-actions').innerHTML = '';
-const pages = { dashboard: renderDashboard, calendar: renderCalendar, members: renderMembers, trainers: renderTrainers, payments: renderPayments, giderler: renderGiderler, finansal: renderFinansal, hakedis: renderHakedis, 'paket-fiyatlari': renderPaketFiyatlari, export: renderExport, 'trainer-portal': renderTrainerPortal, 'attendance-report': renderAttendanceReport };
+const pages = { dashboard: renderDashboard, calendar: renderCalendar, members: renderMembers, trainers: renderTrainers, payments: renderPayments, giderler: renderGiderler, finansal: renderFinansal, hakedis: renderHakedis, 'paket-fiyatlari': renderPaketFiyatlari, export: renderExport, 'trainer-portal': renderTrainerPortal, 'attendance-report': renderAttendanceReport, 'mat-dersleri': renderMatDersleri };
 if(pages[page]) pages[page]();
 updateFAB(page);
 renderTrainerNotificationBanner();
@@ -6346,6 +6460,178 @@ S.giderler=S.giderler.filter(g=>g.id!==parseInt(id));
 save();renderGiderler();toast('Gider silindi.');
 }
 // ══════════════════════════════════════
+// ══════════════════════════════════════
+// MAT PİLATES DERSLERİ (yönetim ekranı)
+// ══════════════════════════════════════
+window._matDersler = window._matDersler || [];
+window._matRezervasyonlar = window._matRezervasyonlar || [];
+window._matListenersKuruldu = window._matListenersKuruldu || false;
+window._matAyarlar = window._matAyarlar || { iban:'', ibanAdi:'', whatsappNo:'' };
+function matKurulumYap() {
+if(window._matListenersKuruldu) return;
+window._matListenersKuruldu = true;
+window.matDersleriDinle(function(list){
+window._matDersler = list;
+if(currentPage==='mat-dersleri') renderMatDersleri();
+});
+window.matTumRezervasyonlariDinle(function(list){
+window._matRezervasyonlar = list;
+if(currentPage==='mat-dersleri') renderMatDersleri();
+});
+window.matAyarlarYukle().then(function(a){
+if(a) { window._matAyarlar = a; if(currentPage==='mat-dersleri') renderMatDersleri(); }
+});
+}
+function renderMatDersleri() {
+matKurulumYap();
+const dersler = [...window._matDersler].sort((a,b)=> (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
+document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openMatDersModal()"><i class="ti ti-plus"></i> Yeni Ders Ekle</button>`;
+const ayarlarHTML = `
+<div class="card" style="margin-bottom:16px">
+<div class="card-title">💳 Ödeme Bilgileri <span style="font-size:11px;font-weight:400;color:var(--text3)">Rezervasyon sayfasında gösterilir, istediğin an güncelleyebilirsin</span></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">IBAN</label><input class="form-input" id="mat-ayar-iban" placeholder="TR00 0000 0000 0000 0000 0000 00" value="${(window._matAyarlar.iban||'').replace(/"/g,'&quot;')}"></div>
+<div class="form-group"><label class="form-label">Hesap Sahibi</label><input class="form-input" id="mat-ayar-ibanadi" placeholder="Ad Soyad" value="${(window._matAyarlar.ibanAdi||'').replace(/"/g,'&quot;')}"></div>
+</div>
+<div class="form-group"><label class="form-label">WhatsApp Numarası (dekont için)</label><input class="form-input" id="mat-ayar-wapp" placeholder="05XX XXX XX XX" value="${(window._matAyarlar.whatsappNo||'').replace(/"/g,'&quot;')}"></div>
+<button class="btn btn-primary" style="margin-top:8px" onclick="saveMatAyarlar()">Kaydet</button>
+</div>`;
+let listHTML = '';
+if(!dersler.length) {
+listHTML = '<div class="card" style="text-align:center;color:var(--text3);padding:40px 20px">Henüz mat dersi eklenmedi. "Yeni Ders Ekle" ile başla.</div>';
+} else {
+listHTML = dersler.map(d => {
+const trainer = S.trainers.find(t=>t.name===d.egitmenAdi) || {color:1};
+const c = tc(trainer.color);
+const rezList = window._matRezervasyonlar.filter(r=>r.dersId===d.id);
+const onayli = rezList.filter(r=>r.durum==='onaylandi');
+const beklemede = rezList.filter(r=>r.durum==='beklemede');
+const dolu = onayli.length >= d.kapasite;
+const tarihFmt = formatTrDate(d.tarih);
+const durumBadge = d.durum==='kapali'
+? '<span style="background:#e5e7eb;color:#6b7280;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">Kapalı</span>'
+: dolu ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">DOLU</span>'
+: '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">Açık</span>';
+const rezRows = rezList.length ? rezList.map(r => {
+const rDurumBadge = r.durum==='onaylandi'
+? '<span style="color:#059669;font-weight:700;font-size:11px">✓ Onaylı</span>'
+: r.durum==='reddedildi' ? '<span style="color:#991b1b;font-weight:700;font-size:11px">✗ Reddedildi</span>'
+: '<span style="color:#d97706;font-weight:700;font-size:11px">⏳ Beklemede</span>';
+return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)">
+<div>
+<div style="font-weight:600;font-size:13px">${r.adSoyad}</div>
+<div style="font-size:11px;color:var(--text3)">${r.telefon} · ${rDurumBadge}</div>
+</div>
+<div style="display:flex;gap:6px">
+${r.durum!=='onaylandi' ? `<button class="btn" style="padding:4px 10px;font-size:11px;background:#d1fae5;color:#065f46" onclick="matRezDurumDegistir('${r.id}','${d.id}','onaylandi')">Onayla</button>` : ''}
+${r.durum!=='reddedildi' ? `<button class="btn" style="padding:4px 10px;font-size:11px;background:#fee2e2;color:#991b1b" onclick="matRezDurumDegistir('${r.id}','${d.id}','reddedildi')">Reddet</button>` : ''}
+</div>
+</div>`;
+}).join('') : '<div style="font-size:12px;color:var(--text3);padding:8px 0">Henüz rezervasyon yok.</div>';
+return `<div class="card" style="margin-bottom:12px">
+<div style="display:flex;justify-content:space-between;align-items:flex-start">
+<div>
+<div style="display:flex;align-items:center;gap:8px">
+<div style="width:8px;height:8px;border-radius:50%;background:${c.dot}"></div>
+<span style="font-weight:700;font-size:14px">${tarihFmt} · ${d.saat}</span>
+${durumBadge}
+</div>
+<div style="font-size:12px;color:var(--text3);margin-top:2px">${d.egitmenAdi} · ${onayli.length}/${d.kapasite} onaylı · Min. ${d.minKisi} kişi · ${d.fiyat} TL/kişi${beklemede.length?' · '+beklemede.length+' bekleyen':''}</div>
+</div>
+<div style="display:flex;gap:6px">
+<button class="btn btn-icon" onclick="openMatDersModal('${d.id}')"><i class="ti ti-edit"></i></button>
+<button class="btn btn-icon" onclick="toggleMatDersDurum('${d.id}','${d.durum}')"><i class="ti ti-${d.durum==='kapali'?'lock-open':'lock'}"></i></button>
+<button class="btn btn-icon" style="color:#dc2626" onclick="deleteMatDers('${d.id}')"><i class="ti ti-trash"></i></button>
+</div>
+</div>
+<div style="margin-top:8px">${rezRows}</div>
+</div>`;
+}).join('');
+}
+document.getElementById('page-content').innerHTML = ayarlarHTML + listHTML;
+}
+function saveMatAyarlar() {
+const ayarlar = {
+iban: document.getElementById('mat-ayar-iban').value.trim(),
+ibanAdi: document.getElementById('mat-ayar-ibanadi').value.trim(),
+whatsappNo: document.getElementById('mat-ayar-wapp').value.trim()
+};
+window.matAyarlarKaydet(ayarlar).then(function(){
+window._matAyarlar = ayarlar;
+toast('Ödeme bilgileri kaydedildi ✓','success');
+}).catch(function(e){ console.error(e); toast('Kaydedilemedi.','error'); });
+}
+function openMatDersModal(id) {
+const sel = document.getElementById('md-egitmen');
+sel.innerHTML = S.trainers.filter(t=>t.status!=='pasif').map(t=>`<option value="${t.name.replace(/"/g,'&quot;')}">${t.name}</option>`).join('');
+document.getElementById('md-id').value = id || '';
+document.getElementById('mat-ders-modal-title').textContent = id ? 'Mat Dersi Düzenle' : 'Mat Dersi Ekle';
+if(id) {
+const d = window._matDersler.find(x=>x.id===id);
+if(d) {
+document.getElementById('md-tarih').value = d.tarih;
+document.getElementById('md-saat').value = d.saat;
+sel.value = d.egitmenAdi;
+document.getElementById('md-kapasite').value = d.kapasite;
+document.getElementById('md-minkisi').value = d.minKisi;
+document.getElementById('md-fiyat').value = d.fiyat;
+}
+} else {
+document.getElementById('md-tarih').value = localDate();
+document.getElementById('md-saat').value = '10:00';
+document.getElementById('md-kapasite').value = 5;
+document.getElementById('md-minkisi').value = 3;
+document.getElementById('md-fiyat').value = 500;
+}
+openModal('mat-ders-modal');
+}
+function saveMatDers() {
+const id = document.getElementById('md-id').value;
+const data = {
+tarih: document.getElementById('md-tarih').value,
+saat: document.getElementById('md-saat').value,
+egitmenAdi: document.getElementById('md-egitmen').value,
+kapasite: parseInt(document.getElementById('md-kapasite').value)||5,
+minKisi: parseInt(document.getElementById('md-minkisi').value)||3,
+fiyat: parseFloat(document.getElementById('md-fiyat').value)||500,
+durum: 'acik'
+};
+if(!data.tarih || !data.saat || !data.egitmenAdi) { toast('Tarih, saat ve eğitmen zorunludur.','error'); return; }
+const p = id ? window.matDersGuncelle(id, data) : window.matDersEkle(data);
+p.then(function(){
+closeModal('mat-ders-modal');
+toast('Mat dersi kaydedildi ✓','success');
+}).catch(function(e){ console.error(e); toast('Kaydedilemedi.','error'); });
+}
+function toggleMatDersDurum(id, mevcutDurum) {
+const yeni = mevcutDurum==='kapali' ? 'acik' : 'kapali';
+window.matDersGuncelle(id, {durum:yeni}).then(function(){
+toast(yeni==='kapali'?'Ders kapatıldı.':'Ders açıldı.','success');
+}).catch(function(e){ console.error(e); toast('İşlem başarısız.','error'); });
+}
+function deleteMatDers(id) {
+const overlay = document.createElement('div');
+overlay.id = 'mat-ders-delete-overlay';
+overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+overlay.innerHTML = `<div style="background:white;border-radius:14px;padding:24px;max-width:340px;width:100%">
+<div style="font-weight:700;font-size:15px;margin-bottom:10px">Bu mat dersini sil</div>
+<div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:20px">Ders ve ona ait tüm rezervasyon kayıtları silinecek. Bu işlem geri alınamaz.</div>
+<button onclick="confirmDeleteMatDers('${id}')" style="width:100%;padding:13px;border:1.5px solid #dc2626;border-radius:10px;background:white;color:#dc2626;font-weight:600;font-size:13.5px;margin-bottom:10px;cursor:pointer">Evet, sil</button>
+<button onclick="document.getElementById('mat-ders-delete-overlay').remove()" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--surface2,#f3f4f6);color:var(--text2);font-weight:500;font-size:13.5px;cursor:pointer">Vazgeç</button>
+</div>`;
+document.body.appendChild(overlay);
+}
+function confirmDeleteMatDers(id) {
+document.getElementById('mat-ders-delete-overlay')?.remove();
+window.matDersSil(id).then(function(){
+toast('Ders silindi.','success');
+}).catch(function(e){ console.error(e); toast('Silinemedi.','error'); });
+}
+function matRezDurumDegistir(rezId, dersId, yeniDurum) {
+window.matRezervasyonOnayla(rezId, dersId, yeniDurum).then(function(){
+toast(yeniDurum==='onaylandi'?'Rezervasyon onaylandı ✓':'Rezervasyon reddedildi.','success');
+}).catch(function(e){ console.error(e); toast('İşlem başarısız.','error'); });
+}
 function renderExport() {
 document.getElementById('page-content').innerHTML=`
 <div class="two-col">
