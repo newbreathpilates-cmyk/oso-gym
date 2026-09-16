@@ -947,7 +947,7 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 <div class="modal" style="width:440px">
 <div class="modal-header">
 <div class="modal-title" id="mat-ders-modal-title">Mat Dersi Ekle</div>
-<button class="btn btn-icon" onclick="closeModal('mat-ders-modal')"><i class="ti ti-x"></i></button>
+<button class="btn btn-icon" onclick="closeModal('mat-ders-modal');if(currentPage!=='mat-dersleri')navigateTo('mat-dersleri')"><i class="ti ti-x"></i></button>
 </div>
 <div class="modal-body">
 <input type="hidden" id="md-id">
@@ -965,7 +965,7 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 <div class="form-group"><label class="form-label">Kişi Başı Fiyat (TL)</label><input type="number" class="form-input" id="md-fiyat" value="500" min="0"></div>
 </div>
 <div class="modal-footer">
-<button class="btn" onclick="closeModal('mat-ders-modal')">İptal</button>
+<button class="btn" onclick="closeModal('mat-ders-modal');if(currentPage!=='mat-dersleri')navigateTo('mat-dersleri')">İptal</button>
 <button class="btn btn-primary" onclick="saveMatDers()">Kaydet</button>
 </div>
 </div>
@@ -3071,6 +3071,11 @@ renderCalendar();
 toast('Silindi ✓','success');
 }
 function openNewEvent(date='', time='09:00') {
+if(window._matDersSecimModu) {
+window._matDersSecimModu = false;
+matDersTarihSaatSecildi(date||localDate(), time);
+return;
+}
 editingEventId=null;tempEventMembers=[];
 document.getElementById('event-modal-title').textContent='Randevu Ekle';
 document.getElementById('ev-delete-btn').style.display='none';
@@ -6485,7 +6490,7 @@ if(a) { window._matAyarlar = a; if(currentPage==='mat-dersleri') renderMatDersle
 function renderMatDersleri() {
 matKurulumYap();
 const dersler = [...window._matDersler].sort((a,b)=> (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
-document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openMatDersModal()"><i class="ti ti-plus"></i> Yeni Ders Ekle</button>`;
+document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openMatDersTakvimSecici()"><i class="ti ti-calendar"></i> Takvimden Seç</button> <button class="btn" onclick="openMatDersModal()"><i class="ti ti-plus"></i> Elle Ekle</button>`;
 const ayarlarHTML = `
 <div class="card" style="margin-bottom:16px">
 <div class="card-title">💳 Ödeme Bilgileri <span style="font-size:11px;font-weight:400;color:var(--text3)">Rezervasyon sayfasında gösterilir, istediğin an güncelleyebilirsin</span></div>
@@ -6561,6 +6566,16 @@ window._matAyarlar = ayarlar;
 toast('Ödeme bilgileri kaydedildi ✓','success');
 }).catch(function(e){ console.error(e); toast('Kaydedilemedi.','error'); });
 }
+function openMatDersTakvimSecici() {
+window._matDersSecimModu = true;
+toast('Takvimde ders eklemek istediğiniz boş bir saate tıklayın.','success');
+navigateTo('calendar');
+}
+function matDersTarihSaatSecildi(date, time) {
+openMatDersModal();
+document.getElementById('md-tarih').value = date;
+document.getElementById('md-saat').value = time;
+}
 function openMatDersModal(id) {
 const sel = document.getElementById('md-egitmen');
 sel.innerHTML = S.trainers.filter(t=>t.status!=='pasif').map(t=>`<option value="${t.name.replace(/"/g,'&quot;')}">${t.name}</option>`).join('');
@@ -6600,6 +6615,7 @@ if(!data.tarih || !data.saat || !data.egitmenAdi) { toast('Tarih, saat ve eğitm
 const p = id ? window.matDersGuncelle(id, data) : window.matDersEkle(data);
 p.then(function(){
 closeModal('mat-ders-modal');
+if(currentPage!=='mat-dersleri') navigateTo('mat-dersleri');
 toast('Mat dersi kaydedildi ✓','success');
 }).catch(function(e){ console.error(e); toast('Kaydedilemedi.','error'); });
 }
