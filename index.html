@@ -1168,6 +1168,7 @@ Bu işlem geri alınamaz. Üyeye ait tüm veriler silinecek.
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, updateDoc, query, where, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const firebaseConfig = {
 apiKey: "AIzaSyBJn872wAkBGgvlbqpXWa3_pBA2Zbsyz-A",
 authDomain: "oso-gym-system.firebaseapp.com",
@@ -1236,6 +1237,12 @@ console.error('Gerçek zamanlı güncelleme hatası:', e);
 // ══════════════════════════════════════
 // MAT PİLATES REZERVASYON SİSTEMİ — mevcut üye verisinden tamamen ayrı koleksiyonlar
 // ══════════════════════════════════════
+// Mat sistemi için izole, bağımsız kimlik doğrulama — ana üye verisi akışından tamamen ayrı, ona dokunmuyor
+const matAuth = getAuth(app);
+let matAuthReadyResolve;
+const authReady = new Promise(res => { matAuthReadyResolve = res; });
+onAuthStateChanged(matAuth, (user) => { if(user) matAuthReadyResolve(); });
+signInAnonymously(matAuth).catch(function(e){ console.error('Mat sistemi anonim giriş hatası:', e); });
 const MAT_DERSLER_COL = collection(db, 'matDersler');
 const MAT_REZ_COL = collection(db, 'matRezervasyonlar');
 const MAT_AYAR_REF = doc(db, 'matAyarlar', 'genel');
