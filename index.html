@@ -1536,6 +1536,7 @@ visibleTrainers = new Set(S.trainers.map(t=>t.id));
 }
 if(currentUser.role === 'owner') navigateTo('dashboard');
 else navigateTo('trainer-portal');
+matKurulumYap(); // Mat dersleri verisini erkenden yükle — Takvim'de gölge blok gösterebilmek için
 renderTrainerNotificationBanner();
 checkHatirlatmalar();
 }
@@ -2570,9 +2571,26 @@ return `<div style="top:${bstart}px;height:${bheight}px;left:0;width:100%;positi
 ${b.note?`<div style="font-size:9px;color:#9ca3af;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.note}</div>`:''}
 </div>`;
 }).join('');
+// Mat Pilates dersleri — ayrı sistemden gelen, sadece bilgi amaçlı gösterilen bloklar (düzenlenemez)
+const dayMatDersler = (window._matDersler||[]).filter(md=>md.tarih===ds);
+const matHtml = dayMatDersler.map(md=>{
+const trn = S.trainers.find(t=>t.name===md.egitmenAdi);
+if(trn && !visibleTrainers.has(trn.id)) return '';
+const [sh,sm]=(md.saat||'09:00').split(':').map(Number);
+const mstart=(sh-6)*60+sm;
+const mheight=45;
+const c = trn?tc(trn.color):TC[5];
+const onayli = (window._matRezervasyonlar||[]).filter(r=>r.dersId===md.id && r.durum==='onaylandi').length;
+const isim = (md.egitmenAdi||'').replace(/'/g,"\\'");
+return `<div style="top:${mstart}px;height:${mheight}px;left:0;width:100%;position:absolute;background:${c.bg};border-left:3px solid ${c.border};z-index:1;padding:4px 6px;overflow:hidden;box-sizing:border-box;opacity:0.9" onclick="event.stopPropagation();alert('🧘 Mat Pilates Dersi\\n${isim} · ${md.saat}\\n'+${onayli}+'/${md.kapasite} onaylı\\n\\nBu bloğu düzenlemek için Mat Dersleri sayfasını kullanın.')">
+<div style="font-size:10px;font-weight:700;color:${c.text};line-height:1.3">🧘 Mat Dersi</div>
+<div style="font-size:9px;color:${c.text};line-height:1.3;opacity:0.85">${md.egitmenAdi?md.egitmenAdi.split(' ')[0]:''} · ${onayli}/${md.kapasite}</div>
+</div>`;
+}).join('');
 return `<div class="week-col" style="position:relative;border-left:1px solid var(--border)" onclick="openNewEventAtTime('${ds}',event)" data-date="${ds}">
 ${hours.map(h=>`<div style="height:60px;border-bottom:1px solid var(--border);position:relative"><div style="position:absolute;top:30px;left:0;right:0;height:1px;background:rgba(0,0,0,0.04)"></div></div>`).join('')}
 ${unavHtml}
+${matHtml}
 ${slots.map(({ev,start,col,total})=>{
 const tr=S.trainers.find(t=>t.id===ev.trainerId);
 const c=tr?tc(tr.color):TC[1];
@@ -2683,9 +2701,26 @@ return `<div style="top:${bstart}px;height:${bheight}px;left:0;width:100%;positi
 ${b.note?`<div style="font-size:9px;color:#9ca3af;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.note}</div>`:''}
 </div>`;
 }).join('');
+// Mat Pilates dersleri — ayrı sistemden gelen, sadece bilgi amaçlı gösterilen bloklar (düzenlenemez)
+const dayMatDersler = (window._matDersler||[]).filter(md=>md.tarih===ds);
+const matHtml = dayMatDersler.map(md=>{
+const trn = S.trainers.find(t=>t.name===md.egitmenAdi);
+if(trn && !visibleTrainers.has(trn.id)) return '';
+const [sh,sm]=(md.saat||'09:00').split(':').map(Number);
+const mstart=(sh-6)*60+sm;
+const mheight=45;
+const c = trn?tc(trn.color):TC[5];
+const onayli = (window._matRezervasyonlar||[]).filter(r=>r.dersId===md.id && r.durum==='onaylandi').length;
+const isim = (md.egitmenAdi||'').replace(/'/g,"\\'");
+return `<div style="top:${mstart}px;height:${mheight}px;left:0;width:100%;position:absolute;background:${c.bg};border-left:3px solid ${c.border};z-index:1;padding:4px 6px;overflow:hidden;box-sizing:border-box;opacity:0.9" onclick="event.stopPropagation();alert('🧘 Mat Pilates Dersi\\n${isim} · ${md.saat}\\n'+${onayli}+'/${md.kapasite} onaylı\\n\\nBu bloğu düzenlemek için Mat Dersleri sayfasını kullanın.')">
+<div style="font-size:10px;font-weight:700;color:${c.text};line-height:1.3">🧘 Mat Dersi</div>
+<div style="font-size:9px;color:${c.text};line-height:1.3;opacity:0.85">${md.egitmenAdi?md.egitmenAdi.split(' ')[0]:''} · ${onayli}/${md.kapasite}</div>
+</div>`;
+}).join('');
 return `<div class="week-col" style="position:relative;border-left:1px solid var(--border)" onclick="openNewEventAtTime('${ds}',event)" data-date="${ds}">
 ${hours.map(h=>`<div style="height:60px;border-bottom:1px solid var(--border);position:relative"><div style="position:absolute;top:30px;left:0;right:0;height:1px;background:rgba(0,0,0,0.04)"></div></div>`).join('')}
 ${unavHtml}
+${matHtml}
 ${slots.map(({ev,start,col,total})=>{
 const tr=S.trainers.find(t=>t.id===ev.trainerId);
 const c=tr?tc(tr.color):TC[1];
@@ -2885,6 +2920,7 @@ let html=`<div class="month-cal">
 ${cells.map(cell=>{
 const ds=localDate(cell.date);
 const dayEvs=evs.filter(e=>e.date===ds);
+const dayMat=(window._matDersler||[]).filter(md=>md.tarih===ds);
 const isToday=ds===todayStr;
 return `<div class="month-cell ${cell.other?'other-month':''}" onclick="openNewEventOnDay('${ds}',event)">
 <div class="month-date ${isToday?'today':''}">${cell.date.getDate()}</div>
@@ -2894,6 +2930,11 @@ const c=tr?tc(tr.color):TC[1];
 return `<div class="month-event" style="background:${c.bg};border-left-color:${c.border};color:${c.text}" onclick="openEditEvent(${ev.id},event)">${ev.startTime} ${ev.type}</div>`;
 }).join('')}
 ${dayEvs.length>3?`<div style="font-size:10px;color:var(--text3);margin-top:2px">+${dayEvs.length-3} daha</div>`:''}
+${dayMat.map(md=>{
+const trn=S.trainers.find(t=>t.name===md.egitmenAdi);
+const c=trn?tc(trn.color):TC[5];
+return `<div class="month-event" style="background:${c.bg};border-left-color:${c.border};color:${c.text}" onclick="event.stopPropagation();alert('🧘 Mat Pilates Dersi — '+'${md.saat}')">🧘 ${md.saat} Mat</div>`;
+}).join('')}
 </div>`;
 }).join('')}
 </div>
@@ -6468,10 +6509,12 @@ window._matListenersKuruldu = true;
 window.matDersleriDinle(function(list){
 window._matDersler = list;
 if(currentPage==='mat-dersleri') renderMatDersListOnly();
+if(currentPage==='calendar') renderCalendar();
 });
 window.matTumRezervasyonlariDinle(function(list){
 window._matRezervasyonlar = list;
 if(currentPage==='mat-dersleri') renderMatDersListOnly();
+if(currentPage==='calendar') renderCalendar();
 });
 window.matAyarlarYukle().then(function(a){
 if(a) { window._matAyarlar = a; if(currentPage==='mat-dersleri') renderMatAyarlarFormOnly(); }
