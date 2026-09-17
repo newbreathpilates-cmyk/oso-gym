@@ -2959,7 +2959,7 @@ const options = [...S.members]
 .map(m=>{
 const total = pkgSessions(m.package);
 const used = m.used||0;
-const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(m.id) && e.id !== editingEventId).length;
+const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(m.id) && e.id !== editingEventId && (editingEventId==null || e.id < editingEventId)).length;
 const remaining = total===999 ? 999 : Math.max(0, total - used - planned);
 const noPackage = !m.package || total===0;
 const isFinished = m.status==='Süresi Doldu' || m.status==='Dersleri Bitti' || m.status==='Donduruldu' || m.status==='Paket Yok' || m.status==='Ara Verdi/Ayrıldı';
@@ -2979,7 +2979,7 @@ const total = pkgSessions(m.package);
 if(total===0) return 0;
 if(total===999) return 999;
 const used = m.used||0;
-const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(memberId) && (editingEventId ? e.id!==editingEventId : true)).length;
+const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(memberId) && e.id !== editingEventId && (editingEventId==null || e.id < editingEventId)).length;
 return Math.max(0, total - used - planned);
 }
 function addMemberToEvent(mid) {
@@ -3233,11 +3233,12 @@ el.innerHTML=tempEventMembers.map(mid=>{
 const m=S.members.find(x=>x.id===mid);
 if(!m)return'';
 const total=pkgSessions(m.package);
-// Kalan ders sayısı: tamamlanan + o an takvimde bekleyen (tamamlanmamış) diğer randevular düşülerek hesaplanır
+// Kalan ders sayısı: tamamlanan + BU RANDEVUDAN ÖNCE OLUŞTURULMUŞ bekleyen diğer randevular düşülerek hesaplanır (sıralama korunur)
 const otherPlanned = S.events.filter(e=>
 !e.completed &&
 (e.members||[]).includes(mid) &&
-e.id !== editingEventId
+e.id !== editingEventId &&
+(editingEventId==null || e.id < editingEventId)
 ).length;
 const remaining = total===999 ? 999 : Math.max(0, total - (m.used||0) - otherPlanned);
 const remainText = total===999 ? 'Sınırsız' : `${remaining} ders kaldı`;
