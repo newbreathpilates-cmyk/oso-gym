@@ -2959,7 +2959,7 @@ const options = [...S.members]
 .map(m=>{
 const total = pkgSessions(m.package);
 const used = m.used||0;
-const planned = 0; // Üye kartıyla tutarlı olması için basit hesaba dönüldü (bekleyen randevu düşülmüyor)
+const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(m.id) && e.id !== editingEventId).length;
 const remaining = total===999 ? 999 : Math.max(0, total - used - planned);
 const noPackage = !m.package || total===0;
 const isFinished = m.status==='Süresi Doldu' || m.status==='Dersleri Bitti' || m.status==='Donduruldu' || m.status==='Paket Yok' || m.status==='Ara Verdi/Ayrıldı';
@@ -2979,7 +2979,8 @@ const total = pkgSessions(m.package);
 if(total===0) return 0;
 if(total===999) return 999;
 const used = m.used||0;
-return Math.max(0, total - used); // Üye kartıyla tutarlı — bekleyen randevu düşülmüyor
+const planned = S.events.filter(e=>!e.completed && (e.members||[]).includes(memberId) && (editingEventId ? e.id!==editingEventId : true)).length;
+return Math.max(0, total - used - planned);
 }
 function addMemberToEvent(mid) {
 if(!mid) return;
@@ -3232,8 +3233,13 @@ el.innerHTML=tempEventMembers.map(mid=>{
 const m=S.members.find(x=>x.id===mid);
 if(!m)return'';
 const total=pkgSessions(m.package);
-// Kalan ders sayısı: üye kartındaki ile AYNI, basit kaynaktan (Toplam − Yapılan) hesaplanır — tutarlılık için
-const remaining = total===999 ? 999 : Math.max(0, total - (m.used||0));
+// Kalan ders sayısı: tamamlanan + o an takvimde bekleyen (tamamlanmamış) diğer randevular düşülerek hesaplanır
+const otherPlanned = S.events.filter(e=>
+!e.completed &&
+(e.members||[]).includes(mid) &&
+e.id !== editingEventId
+).length;
+const remaining = total===999 ? 999 : Math.max(0, total - (m.used||0) - otherPlanned);
 const remainText = total===999 ? 'Sınırsız' : `${remaining} ders kaldı`;
 const remainColor = remaining<=2?'#b91c1c':remaining<=4?'#92400e':'var(--green-text)';
 return `<div style="display:inline-flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 8px 3px 4px;font-size:11px">
