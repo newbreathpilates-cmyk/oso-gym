@@ -1236,19 +1236,13 @@ console.error('Gerçek zamanlı güncelleme hatası:', e);
 });
 // ══════════════════════════════════════
 // MAT PİLATES REZERVASYON SİSTEMİ — mevcut üye verisinden tamamen ayrı koleksiyonlar
+// (Firestore kuralları şu an herkese açık olduğu için kimlik doğrulama beklemeye gerek yok)
 // ══════════════════════════════════════
-// Mat sistemi için izole, bağımsız kimlik doğrulama — ana üye verisi akışından tamamen ayrı, ona dokunmuyor
-const matAuth = getAuth(app);
-let matAuthReadyResolve;
-const authReady = new Promise(res => { matAuthReadyResolve = res; });
-onAuthStateChanged(matAuth, (user) => { if(user) matAuthReadyResolve(); });
-signInAnonymously(matAuth).catch(function(e){ console.error('Mat sistemi anonim giriş hatası:', e); });
 const MAT_DERSLER_COL = collection(db, 'matDersler');
 const MAT_REZ_COL = collection(db, 'matRezervasyonlar');
 const MAT_AYAR_REF = doc(db, 'matAyarlar', 'genel');
 
 window.matDersEkle = async function(dersData) {
-await authReady;
 const ref = await addDoc(MAT_DERSLER_COL, {
 ...dersData,
 onayliSayisi: 0,
@@ -1257,43 +1251,34 @@ olusturmaTarihi: new Date().toISOString()
 return ref.id;
 };
 window.matDersGuncelle = async function(dersId, updates) {
-await authReady;
 await updateDoc(doc(db, 'matDersler', dersId), updates);
 };
 window.matDersSil = async function(dersId) {
-await authReady;
 await deleteDoc(doc(db, 'matDersler', dersId));
 };
 window.matDersleriDinle = function(callback) {
-authReady.then(() => {
 onSnapshot(MAT_DERSLER_COL, (snap) => {
 const list = [];
 snap.forEach(d => list.push({ id: d.id, ...d.data() }));
 callback(list);
 });
-});
 };
 window.matRezervasyonlariDinle = function(dersId, callback) {
-authReady.then(() => {
 const q = query(MAT_REZ_COL, where('dersId', '==', dersId));
 onSnapshot(q, (snap) => {
 const list = [];
 snap.forEach(d => list.push({ id: d.id, ...d.data() }));
 callback(list);
 });
-});
 };
 window.matTumRezervasyonlariDinle = function(callback) {
-authReady.then(() => {
 onSnapshot(MAT_REZ_COL, (snap) => {
 const list = [];
 snap.forEach(d => list.push({ id: d.id, ...d.data() }));
 callback(list);
 });
-});
 };
 window.matRezervasyonOnayla = async function(rezId, dersId, yeniDurum) {
-await authReady;
 const rezRef = doc(db, 'matRezervasyonlar', rezId);
 const rezSnap = await getDoc(rezRef);
 if(!rezSnap.exists()) return;
@@ -1315,11 +1300,9 @@ await updateDoc(dersRef, { onayliSayisi: Math.max(0, (dersSnap.data().onayliSayi
 }
 };
 window.matAyarlarKaydet = async function(ayarlar) {
-await authReady;
 await setDoc(MAT_AYAR_REF, ayarlar);
 };
 window.matAyarlarYukle = async function() {
-await authReady;
 try {
 const snap = await getDoc(MAT_AYAR_REF);
 if(snap.exists()) return snap.data();
