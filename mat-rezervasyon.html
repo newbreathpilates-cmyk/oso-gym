@@ -171,7 +171,9 @@ window.rezervasyonYap = async function(dersId) {
     document.getElementById('form-'+dersId).style.display = 'none';
     const successEl = document.getElementById('success-'+dersId);
     const waMsg = encodeURIComponent(`Merhaba, ${dateText} ${timeText} tarihli mat dersi için rezervasyon yaptım (${ad}). Dekontu ekte gönderiyorum.`);
-    successEl.innerHTML = `
+const waDigits = (ayarlar.whatsappNo||'').replace(/\D/g,'');
+const waPhone = waDigits.startsWith('0') ? '90'+waDigits.slice(1) : (waDigits.startsWith('90') ? waDigits : '90'+waDigits);
+successEl.innerHTML = `
       <h3>✓ Talebiniz alındı</h3>
       <p style="font-size:13.5px;color:var(--ink-soft)">Yerinizin kesinleşmesi için lütfen ödemeyi yapıp dekontu WhatsApp'tan gönderin.</p>
       <div class="info">
@@ -179,7 +181,7 @@ window.rezervasyonYap = async function(dersId) {
         <div><b>Hesap Sahibi:</b> ${ayarlar.ibanAdi||'—'}</div>
         <div><b>Tutar:</b> ${card.querySelector('.price').textContent}</div>
       </div>
-      ${ayarlar.whatsappNo ? `<a class="wa-link" href="https://wa.me/${ayarlar.whatsappNo.replace(/\D/g,'')}?text=${waMsg}" target="_blank">WhatsApp'tan Dekont Gönder</a>` : ''}
+      ${ayarlar.whatsappNo ? `<a class="wa-link" href="https://wa.me/${waPhone}?text=${waMsg}" target="_blank">WhatsApp'tan Dekont Gönder</a>` : ''}
     `;
     successEl.style.display = 'block';
   } catch(e) {
