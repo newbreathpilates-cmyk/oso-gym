@@ -6467,21 +6467,30 @@ if(window._matListenersKuruldu) return;
 window._matListenersKuruldu = true;
 window.matDersleriDinle(function(list){
 window._matDersler = list;
-if(currentPage==='mat-dersleri') renderMatDersleri();
+if(currentPage==='mat-dersleri') renderMatDersListOnly();
 });
 window.matTumRezervasyonlariDinle(function(list){
 window._matRezervasyonlar = list;
-if(currentPage==='mat-dersleri') renderMatDersleri();
+if(currentPage==='mat-dersleri') renderMatDersListOnly();
 });
 window.matAyarlarYukle().then(function(a){
-if(a) { window._matAyarlar = a; if(currentPage==='mat-dersleri') renderMatDersleri(); }
+if(a) { window._matAyarlar = a; if(currentPage==='mat-dersleri') renderMatAyarlarFormOnly(); }
 });
 }
 function renderMatDersleri() {
 matKurulumYap();
-const dersler = [...window._matDersler].sort((a,b)=> (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
 document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openMatDersTakvimSecici()"><i class="ti ti-calendar"></i> Takvimden Seç</button>`;
-const ayarlarHTML = `
+document.getElementById('page-content').innerHTML = `
+<div id="mat-ayarlar-container"></div>
+<div id="mat-ders-list-container"></div>
+`;
+renderMatAyarlarFormOnly();
+renderMatDersListOnly();
+}
+function renderMatAyarlarFormOnly() {
+const el = document.getElementById('mat-ayarlar-container');
+if(!el) return;
+el.innerHTML = `
 <div class="card" style="margin-bottom:16px">
 <div class="card-title">💳 Ödeme Bilgileri <span style="font-size:11px;font-weight:400;color:var(--text3)">Rezervasyon sayfasında gösterilir, istediğin an güncelleyebilirsin</span></div>
 <div class="form-row">
@@ -6491,6 +6500,11 @@ const ayarlarHTML = `
 <div class="form-group"><label class="form-label">WhatsApp Numarası (dekont için)</label><input class="form-input" id="mat-ayar-wapp" placeholder="05XX XXX XX XX" value="${(window._matAyarlar.whatsappNo||'').replace(/"/g,'&quot;')}"></div>
 <button class="btn btn-primary" style="margin-top:8px" onclick="saveMatAyarlar()">Kaydet</button>
 </div>`;
+}
+function renderMatDersListOnly() {
+const el = document.getElementById('mat-ders-list-container');
+if(!el) return;
+const dersler = [...window._matDersler].sort((a,b)=> (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
 let listHTML = '';
 if(!dersler.length) {
 listHTML = '<div class="card" style="text-align:center;color:var(--text3);padding:40px 20px">Henüz mat dersi eklenmedi. "Yeni Ders Ekle" ile başla.</div>';
@@ -6543,7 +6557,7 @@ ${durumBadge}
 </div>`;
 }).join('');
 }
-document.getElementById('page-content').innerHTML = ayarlarHTML + listHTML;
+el.innerHTML = listHTML;
 }
 function saveMatAyarlar() {
 const ayarlar = {
@@ -6551,8 +6565,8 @@ iban: document.getElementById('mat-ayar-iban').value.trim(),
 ibanAdi: document.getElementById('mat-ayar-ibanadi').value.trim(),
 whatsappNo: document.getElementById('mat-ayar-wapp').value.trim()
 };
-window.matAyarlarKaydet(ayarlar).then(function(){
 window._matAyarlar = ayarlar;
+window.matAyarlarKaydet(ayarlar).then(function(){
 toast('Ödeme bilgileri kaydedildi ✓','success');
 }).catch(function(e){ console.error(e); toast('Kaydedilemedi: '+(e&&e.message?e.message:'bilinmeyen hata'),'error'); });
 }
