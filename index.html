@@ -951,6 +951,7 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 </div>
 <div class="modal-body">
 <input type="hidden" id="md-id">
+<div class="form-group"><label class="form-label">Ders Adı</label><input type="text" class="form-input" id="md-dersadi" placeholder="örn. Mat Pilates, Power Pilates, Reformer Pilates..."></div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Tarih</label><input type="date" class="form-input" id="md-tarih"></div>
 <div class="form-group"><label class="form-label">Saat</label><input type="time" class="form-input" id="md-saat"></div>
@@ -1792,7 +1793,7 @@ const ownerNav = `
 <div class="nav-section">Genel</div>
 <button class="nav-item" data-page="dashboard" onclick="navigateTo('dashboard')"><i class="ti ti-layout-dashboard"></i> Panel</button>
 <button class="nav-item" data-page="calendar" onclick="navigateTo('calendar')"><i class="ti ti-calendar-event"></i> Takvim</button>
-<button class="nav-item" data-page="mat-dersleri" onclick="navigateTo('mat-dersleri')"><i class="ti ti-yoga"></i> Mat Dersleri</button>
+<button class="nav-item" data-page="mat-dersleri" onclick="navigateTo('mat-dersleri')"><i class="ti ti-yoga"></i> Online Ders Rezervasyonu</button>
 <div class="nav-section">Yönetim</div>
 <button class="nav-item" data-page="members" onclick="navigateTo('members')"><i class="ti ti-users"></i> Üyeler</button>
 <button class="nav-item" data-page="trainers" onclick="navigateTo('trainers')"><i class="ti ti-user-check"></i> Eğitmenler</button>
@@ -1835,7 +1836,7 @@ currentPage = page;
 document.querySelectorAll('.nav-item[data-page]').forEach(el => {
 el.classList.toggle('active', el.dataset.page === page);
 });
-const titles = { dashboard:'Panel', calendar:'Takvim', members:'Üyeler', trainers:'Eğitmenler', payments:'Ödemeler', giderler:'Giderler', finansal:'Finansal Özet', hakedis:'Hakediş', 'paket-fiyatlari':'Paket Fiyatları', export:'Dışa Aktar', 'trainer-portal':'Derslerim', 'attendance-report':'Üye İstatistikleri', 'mat-dersleri':'Mat Dersleri' };
+const titles = { dashboard:'Panel', calendar:'Takvim', members:'Üyeler', trainers:'Eğitmenler', payments:'Ödemeler', giderler:'Giderler', finansal:'Finansal Özet', hakedis:'Hakediş', 'paket-fiyatlari':'Paket Fiyatları', export:'Dışa Aktar', 'trainer-portal':'Derslerim', 'attendance-report':'Üye İstatistikleri', 'mat-dersleri':'Online Ders Rezervasyonu' };
 document.getElementById('topbar-title').textContent = titles[page] || page;
 document.getElementById('topbar-actions').innerHTML = '';
 const pages = { dashboard: renderDashboard, calendar: renderCalendar, members: renderMembers, trainers: renderTrainers, payments: renderPayments, giderler: renderGiderler, finansal: renderFinansal, hakedis: renderHakedis, 'paket-fiyatlari': renderPaketFiyatlari, export: renderExport, 'trainer-portal': renderTrainerPortal, 'attendance-report': renderAttendanceReport, 'mat-dersleri': renderMatDersleri };
@@ -2580,10 +2581,11 @@ const [sh,sm]=(md.saat||'09:00').split(':').map(Number);
 const mstart=(sh-6)*60+sm;
 const mheight=45;
 const c = trn?tc(trn.color):TC[5];
-const onayli = (window._matRezervasyonlar||[]).filter(r=>r.dersId===md.id && r.durum==='onaylandi').length;
-const isim = (md.egitmenAdi||'').replace(/'/g,"\\'");
-return `<div style="top:${mstart}px;height:${mheight}px;left:0;width:100%;position:absolute;background:${c.bg};border-left:3px solid ${c.border};z-index:1;padding:4px 6px;overflow:hidden;box-sizing:border-box;opacity:0.9" onclick="event.stopPropagation();alert('🧘 Mat Pilates Dersi\\n${isim} · ${md.saat}\\n'+${onayli}+'/${md.kapasite} onaylı\\n\\nBu bloğu düzenlemek için Mat Dersleri sayfasını kullanın.')">
-<div style="font-size:10px;font-weight:700;color:${c.text};line-height:1.3">🧘 Mat Dersi</div>
+const onayliList = (window._matRezervasyonlar||[]).filter(r=>r.dersId===md.id && r.durum==='onaylandi');
+const onayli = onayliList.length;
+const dersAdiGoster = md.dersAdi || 'Mat Pilates';
+return `<div style="top:${mstart}px;height:${mheight}px;left:0;width:100%;position:absolute;background:${c.bg};border-left:3px solid ${c.border};z-index:1;padding:4px 6px;overflow:hidden;box-sizing:border-box;opacity:0.9;cursor:pointer" onclick="event.stopPropagation();showOnlineDersDetay(${JSON.stringify(md.id)})">
+<div style="font-size:10px;font-weight:700;color:${c.text};line-height:1.3">🧘 ${dersAdiGoster}</div>
 <div style="font-size:9px;color:${c.text};line-height:1.3;opacity:0.85">${md.egitmenAdi?md.egitmenAdi.split(' ')[0]:''} · ${onayli}/${md.kapasite}</div>
 </div>`;
 }).join('');
@@ -2710,10 +2712,11 @@ const [sh,sm]=(md.saat||'09:00').split(':').map(Number);
 const mstart=(sh-6)*60+sm;
 const mheight=45;
 const c = trn?tc(trn.color):TC[5];
-const onayli = (window._matRezervasyonlar||[]).filter(r=>r.dersId===md.id && r.durum==='onaylandi').length;
-const isim = (md.egitmenAdi||'').replace(/'/g,"\\'");
-return `<div style="top:${mstart}px;height:${mheight}px;left:0;width:100%;position:absolute;background:${c.bg};border-left:3px solid ${c.border};z-index:1;padding:4px 6px;overflow:hidden;box-sizing:border-box;opacity:0.9" onclick="event.stopPropagation();alert('🧘 Mat Pilates Dersi\\n${isim} · ${md.saat}\\n'+${onayli}+'/${md.kapasite} onaylı\\n\\nBu bloğu düzenlemek için Mat Dersleri sayfasını kullanın.')">
-<div style="font-size:10px;font-weight:700;color:${c.text};line-height:1.3">🧘 Mat Dersi</div>
+const onayliList = (window._matRezervasyonlar||[]).filter(r=>r.dersId===md.id && r.durum==='onaylandi');
+const onayli = onayliList.length;
+const dersAdiGoster = md.dersAdi || 'Mat Pilates';
+return `<div style="top:${mstart}px;height:${mheight}px;left:0;width:100%;position:absolute;background:${c.bg};border-left:3px solid ${c.border};z-index:1;padding:4px 6px;overflow:hidden;box-sizing:border-box;opacity:0.9;cursor:pointer" onclick="event.stopPropagation();showOnlineDersDetay(${JSON.stringify(md.id)})">
+<div style="font-size:10px;font-weight:700;color:${c.text};line-height:1.3">🧘 ${dersAdiGoster}</div>
 <div style="font-size:9px;color:${c.text};line-height:1.3;opacity:0.85">${md.egitmenAdi?md.egitmenAdi.split(' ')[0]:''} · ${onayli}/${md.kapasite}</div>
 </div>`;
 }).join('');
@@ -2933,7 +2936,7 @@ ${dayEvs.length>3?`<div style="font-size:10px;color:var(--text3);margin-top:2px"
 ${dayMat.map(md=>{
 const trn=S.trainers.find(t=>t.name===md.egitmenAdi);
 const c=trn?tc(trn.color):TC[5];
-return `<div class="month-event" style="background:${c.bg};border-left-color:${c.border};color:${c.text}" onclick="event.stopPropagation();alert('🧘 Mat Pilates Dersi — '+'${md.saat}')">🧘 ${md.saat} Mat</div>`;
+return `<div class="month-event" style="background:${c.bg};border-left-color:${c.border};color:${c.text};cursor:pointer" onclick="event.stopPropagation();showOnlineDersDetay(${JSON.stringify(md.id)})">🧘 ${md.saat} ${(md.dersAdi||'Mat Pilates').split(' ')[0]}</div>`;
 }).join('')}
 </div>`;
 }).join('')}
@@ -6527,6 +6530,31 @@ window.matAyarlarYukle().then(function(a){
 if(a) { window._matAyarlar = a; if(currentPage==='mat-dersleri') renderMatAyarlarFormOnly(); }
 });
 }
+function showOnlineDersDetay(dersId) {
+if(currentUser && currentUser.role === 'owner') {
+navigateTo('mat-dersleri');
+setTimeout(function(){ openMatDersModal(dersId); }, 50);
+return;
+}
+// Eğitmen: sadece bilgi amaçlı, salt okunur görünüm — iletişim bilgisi gösterilmez
+const d = (window._matDersler||[]).find(x=>x.id===dersId);
+if(!d) return;
+const rezList = (window._matRezervasyonlar||[]).filter(r=>r.dersId===dersId);
+const onayli = rezList.filter(r=>r.durum==='onaylandi');
+const beklemede = rezList.filter(r=>r.durum==='beklemede');
+const overlay = document.createElement('div');
+overlay.id = 'online-ders-detay-overlay';
+overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+overlay.innerHTML = `<div style="background:white;border-radius:14px;padding:24px;max-width:360px;width:100%;max-height:80vh;overflow-y:auto">
+<div style="font-weight:700;font-size:16px;margin-bottom:4px">🧘 ${(d.dersAdi||'Mat Pilates')}</div>
+<div style="font-size:12px;color:var(--text3);margin-bottom:18px">${formatTrDate(d.tarih)} · ${d.saat} · ${d.egitmenAdi}</div>
+<div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:6px">✓ Onaylı (${onayli.length}/${d.kapasite})</div>
+${onayli.length ? onayli.map(r=>`<div style="font-size:13.5px;padding:5px 0;border-top:1px solid var(--border)">${r.adSoyad}</div>`).join('') : '<div style="font-size:12px;color:var(--text3);padding:5px 0">Henüz onaylı kayıt yok.</div>'}
+${beklemede.length ? `<div style="font-size:12px;font-weight:700;color:#d97706;margin-top:16px;margin-bottom:6px">⏳ Beklemede (${beklemede.length})</div>` + beklemede.map(r=>`<div style="font-size:13.5px;padding:5px 0;border-top:1px solid var(--border)">${r.adSoyad}</div>`).join('') : ''}
+<button onclick="document.getElementById('online-ders-detay-overlay').remove()" style="width:100%;margin-top:20px;padding:11px;border:none;border-radius:10px;background:var(--bg,#f3f4f6);color:var(--text2);font-weight:500;font-size:13.5px;cursor:pointer">Kapat</button>
+</div>`;
+document.body.appendChild(overlay);
+}
 function renderMatDersleri() {
 matKurulumYap();
 document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openMatDersTakvimSecici()"><i class="ti ti-calendar"></i> Takvimden Seç</button>`;
@@ -6557,7 +6585,7 @@ if(!el) return;
 const dersler = [...window._matDersler].sort((a,b)=> (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
 let listHTML = '';
 if(!dersler.length) {
-listHTML = '<div class="card" style="text-align:center;color:var(--text3);padding:40px 20px">Henüz mat dersi eklenmedi. "Yeni Ders Ekle" ile başla.</div>';
+listHTML = '<div class="card" style="text-align:center;color:var(--text3);padding:40px 20px">Henüz ders eklenmedi. "Takvimden Seç" ile başla.</div>';
 } else {
 listHTML = dersler.map(d => {
 const trainer = S.trainers.find(t=>t.name===d.egitmenAdi) || {color:1};
@@ -6592,7 +6620,7 @@ return `<div class="card" style="margin-bottom:12px">
 <div>
 <div style="display:flex;align-items:center;gap:8px">
 <div style="width:8px;height:8px;border-radius:50%;background:${c.dot}"></div>
-<span style="font-weight:700;font-size:14px">${tarihFmt} · ${d.saat}</span>
+<span style="font-weight:700;font-size:14px">${(d.dersAdi||'Mat Pilates')} · ${tarihFmt} · ${d.saat}</span>
 ${durumBadge}
 </div>
 <div style="font-size:12px;color:var(--text3);margin-top:2px">${d.egitmenAdi} · ${onayli.length}/${d.kapasite} onaylı · Min. ${d.minKisi} kişi · ${d.fiyat} TL/kişi${beklemede.length?' · '+beklemede.length+' bekleyen':''}</div>
@@ -6634,10 +6662,11 @@ function openMatDersModal(id) {
 const sel = document.getElementById('md-egitmen');
 sel.innerHTML = S.trainers.filter(t=>t.status!=='pasif').map(t=>`<option value="${t.name.replace(/"/g,'&quot;')}">${t.name}</option>`).join('');
 document.getElementById('md-id').value = id || '';
-document.getElementById('mat-ders-modal-title').textContent = id ? 'Mat Dersi Düzenle' : 'Mat Dersi Ekle';
+document.getElementById('mat-ders-modal-title').textContent = id ? 'Online Dersi Düzenle' : 'Online Dersi Ekle';
 if(id) {
 const d = window._matDersler.find(x=>x.id===id);
 if(d) {
+document.getElementById('md-dersadi').value = d.dersAdi || 'Mat Pilates';
 document.getElementById('md-tarih').value = d.tarih;
 document.getElementById('md-saat').value = d.saat;
 sel.value = d.egitmenAdi;
@@ -6646,6 +6675,7 @@ document.getElementById('md-minkisi').value = d.minKisi;
 document.getElementById('md-fiyat').value = d.fiyat;
 }
 } else {
+document.getElementById('md-dersadi').value = 'Mat Pilates';
 document.getElementById('md-tarih').value = localDate();
 document.getElementById('md-saat').value = '10:00';
 document.getElementById('md-kapasite').value = 5;
@@ -6657,6 +6687,7 @@ openModal('mat-ders-modal');
 function saveMatDers() {
 const id = document.getElementById('md-id').value;
 const data = {
+dersAdi: document.getElementById('md-dersadi').value.trim() || 'Mat Pilates',
 tarih: document.getElementById('md-tarih').value,
 saat: document.getElementById('md-saat').value,
 egitmenAdi: document.getElementById('md-egitmen').value,
@@ -6670,7 +6701,7 @@ const p = id ? window.matDersGuncelle(id, data) : window.matDersEkle(data);
 p.then(function(){
 closeModal('mat-ders-modal');
 if(currentPage!=='mat-dersleri') navigateTo('mat-dersleri');
-toast('Mat dersi kaydedildi ✓','success');
+toast('Ders kaydedildi ✓','success');
 }).catch(function(e){ console.error(e); toast('Kaydedilemedi: '+(e&&e.message?e.message:'bilinmeyen hata'),'error'); });
 }
 function toggleMatDersDurum(id, mevcutDurum) {
