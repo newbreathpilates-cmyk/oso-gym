@@ -979,8 +979,20 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 <select class="form-select" id="md-egitmen"></select>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Kapasite</label><input type="number" class="form-input" id="md-kapasite" value="5" min="1"></div>
-<div class="form-group"><label class="form-label">Min. Kişi</label><input type="number" class="form-input" id="md-minkisi" value="3" min="1"></div>
+<div class="form-group"><label class="form-label">Kapasite</label>
+<div style="display:flex;align-items:center;gap:10px">
+<button type="button" class="btn btn-icon" onclick="matStepperChange('md-kapasite',-1,1)"><i class="ti ti-minus"></i></button>
+<input type="number" class="form-input" id="md-kapasite" value="5" min="1" readonly style="text-align:center;max-width:64px;background:var(--bg)">
+<button type="button" class="btn btn-icon" onclick="matStepperChange('md-kapasite',1,1)"><i class="ti ti-plus"></i></button>
+</div>
+</div>
+<div class="form-group"><label class="form-label">Min. Kişi</label>
+<div style="display:flex;align-items:center;gap:10px">
+<button type="button" class="btn btn-icon" onclick="matStepperChange('md-minkisi',-1,1)"><i class="ti ti-minus"></i></button>
+<input type="number" class="form-input" id="md-minkisi" value="3" min="1" readonly style="text-align:center;max-width:64px;background:var(--bg)">
+<button type="button" class="btn btn-icon" onclick="matStepperChange('md-minkisi',1,1)"><i class="ti ti-plus"></i></button>
+</div>
+</div>
 </div>
 <div class="form-group"><label class="form-label">Kişi Başı Fiyat (TL)</label><input type="number" class="form-input" id="md-fiyat" value="500" min="0"></div>
 </div>
@@ -6700,6 +6712,12 @@ function matDersTarihSaatSecildi(date, time) {
 openMatDersModal();
 document.getElementById('md-tarih').value = date;
 document.getElementById('md-saat').value = time;
+}
+function matStepperChange(id, delta, min) {
+const el = document.getElementById(id);
+const current = parseInt(el.value) || min;
+const yeni = Math.max(min, current + delta);
+el.value = yeni;
 }
 function openMatDersModal(id) {
 const sel = document.getElementById('md-egitmen');
