@@ -61,6 +61,11 @@ box-shadow: 0 24px 80px rgba(0,0,0,0.18);
 .form-label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
 .form-input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border2); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; color: var(--text); background: white; transition: border 0.15s; }
 input[type="date"].form-input, input[type="time"].form-input { width: 100%; max-width: 100%; box-sizing: border-box; min-height: 44px; padding: 9px 12px; line-height: normal; } /* iOS'ta tarih/saat kutuları farklı boyutlanıp taşabiliyor, ikisini de eşitliyoruz */
+.mat-stepper { display:flex; align-items:center; gap:8px; }
+.mat-stepper-btn { width:44px; height:44px; min-width:44px; border:1.5px solid var(--border2); border-radius:var(--radius-sm); background:white; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:600; color:var(--text2); cursor:pointer; flex-shrink:0; padding:0; box-sizing:border-box; }
+.mat-stepper-btn:active { background:var(--bg); }
+.mat-stepper-value { flex:1; height:44px; border:1.5px solid var(--border2); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; text-align:center; font-size:16px; font-weight:600; color:var(--text); background:var(--bg); box-sizing:border-box; font-family:inherit; }
+.mat-stepper-value::-webkit-outer-spin-button, .mat-stepper-value::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
 .form-input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,0.12); }
 .pin-input { display: flex; gap: 10px; justify-content: center; }
 .pin-digit { width: 52px; height: 52px; text-align: center; font-size: 20px; font-weight: 600; border: 1.5px solid var(--border2); border-radius: var(--radius-sm); font-family: inherit; color: var(--text); transition: border 0.15s; }
@@ -980,17 +985,17 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Kapasite</label>
-<div style="display:flex;align-items:center;gap:10px">
-<button type="button" class="btn btn-icon" onclick="matStepperChange('md-kapasite',-1,1)"><i class="ti ti-minus"></i></button>
-<input type="number" class="form-input" id="md-kapasite" value="5" min="1" readonly style="text-align:center;max-width:64px;background:var(--bg)">
-<button type="button" class="btn btn-icon" onclick="matStepperChange('md-kapasite',1,1)"><i class="ti ti-plus"></i></button>
+<div class="mat-stepper">
+<button type="button" class="mat-stepper-btn" onclick="matStepperChange('md-kapasite',-1,1)"><i class="ti ti-minus"></i></button>
+<input type="number" class="mat-stepper-value" id="md-kapasite" value="5" min="1" readonly>
+<button type="button" class="mat-stepper-btn" onclick="matStepperChange('md-kapasite',1,1)"><i class="ti ti-plus"></i></button>
 </div>
 </div>
 <div class="form-group"><label class="form-label">Min. Kişi</label>
-<div style="display:flex;align-items:center;gap:10px">
-<button type="button" class="btn btn-icon" onclick="matStepperChange('md-minkisi',-1,1)"><i class="ti ti-minus"></i></button>
-<input type="number" class="form-input" id="md-minkisi" value="3" min="1" readonly style="text-align:center;max-width:64px;background:var(--bg)">
-<button type="button" class="btn btn-icon" onclick="matStepperChange('md-minkisi',1,1)"><i class="ti ti-plus"></i></button>
+<div class="mat-stepper">
+<button type="button" class="mat-stepper-btn" onclick="matStepperChange('md-minkisi',-1,1)"><i class="ti ti-minus"></i></button>
+<input type="number" class="mat-stepper-value" id="md-minkisi" value="3" min="1" readonly>
+<button type="button" class="mat-stepper-btn" onclick="matStepperChange('md-minkisi',1,1)"><i class="ti ti-plus"></i></button>
 </div>
 </div>
 </div>
