@@ -58,6 +58,14 @@ header p{color:var(--ink-soft);font-size:14.5px;margin-top:8px}
 }
 .loading{text-align:center;padding:60px 20px;color:var(--ink-soft);font-size:14px}
 footer{text-align:center;padding:30px 20px;font-size:12px;color:var(--ink-soft)}
+.rules-section{padding:6px 20px 20px;border-top:1px solid var(--line)}
+.rules-title{font-size:17px;font-weight:500;margin:26px 0 18px;text-align:center}
+.rule-group{margin-bottom:20px}
+.rule-group h3{font-size:12.5px;font-weight:600;color:var(--teal-deep);text-transform:uppercase;letter-spacing:0.03em;margin-bottom:8px}
+.rule-group ul{list-style:none;padding:0}
+.rule-group li{font-size:13.5px;line-height:1.55;color:var(--ink-soft);padding:6px 0 6px 18px;position:relative}
+.rule-group li::before{content:"—";position:absolute;left:0;color:var(--teal)}
+.rule-group li b{color:var(--ink);font-weight:600}
 </style>
 </head>
 <body>
@@ -73,7 +81,35 @@ footer{text-align:center;padding:30px 20px;font-size:12px;color:var(--ink-soft)}
   <div class="loading">Yükleniyor...</div>
 </div>
 
+<div class="wrap rules-section">
+  <h2 class="rules-title">📋 Katılım Kuralları</h2>
+  <div class="rule-group">
+    <h3>Kıyafet ve Hazırlık</h3>
+    <ul>
+      <li>Derslere, rahat hareket edebileceğiniz, spora uygun kıyafetlerle katılım sağlamanızı rica ederiz</li>
+      <li>Ders başlangıcından en az 5 dakika önce hazır olun</li>
+    </ul>
+  </div>
+  <div class="rule-group">
+    <h3>Rezervasyon ve İptal</h3>
+    <ul>
+      <li>Yeriniz, ödeme dekontu onaylandığında kesinleşir</li>
+      <li>Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar — böyle bir durumda size en kısa sürede haber verilir ve ödemeniz <b>tam olarak iade edilir</b></li>
+      <li>Katılımcı tarafından yapılan iptal ve devamsızlık durumlarında ödeme iadesi yapılmamaktadır</li>
+      <li><b>Katılamayacağınızı lütfen bize önceden bildirin</b> — bu sayede yerinizi, o derse katılmak isteyip kontenjan bulamayan başka bir üyemiz için değerlendirebiliriz 🙏</li>
+    </ul>
+  </div>
+  <div class="rule-group">
+    <h3>Sağlık</h3>
+    <ul>
+      <li>Sakatlık, hamilelik veya kronik bir rahatsızlığınız varsa lütfen dersten önce eğitmeninize bilgi verin</li>
+    </ul>
+  </div>
+</div>
+
 <footer>🌿 New Breath Pilates · Beşiktaş, İstanbul</footer>
+
+<img src="logo.png" alt="New Breath Pilates" style="position:fixed;bottom:14px;right:14px;width:36px;height:36px;object-fit:contain;opacity:0.85;z-index:50;pointer-events:none">
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
