@@ -124,8 +124,8 @@ onSnapshot(DERSLER_COL, (snap) => {
     <div class="card" data-ders-id="${d.id}">
       <div class="top">
         <div>
-          <div class="date">${formatTrDate(d.tarih)}</div>
-          <div class="meta">${d.saat} · ${d.egitmenAdi} · 45 dakika</div>
+          <div class="date">${d.dersAdi || 'Mat Pilates'}</div>
+          <div class="meta">${formatTrDate(d.tarih)} · ${d.saat} · ${d.egitmenAdi} · 45 dakika</div>
         </div>
         <span class="badge ${dolu?'full':'open'}">${dolu ? 'DOLU' : (d.onayliSayisi||0)+'/'+d.kapasite}</span>
       </div>
@@ -166,11 +166,11 @@ window.rezervasyonYap = async function(dersId) {
       kayitTarihi: new Date().toISOString()
     });
     const card = document.querySelector(`[data-ders-id="${dersId}"]`);
-    const dateText = card.querySelector('.date').textContent;
-    const timeText = card.querySelector('.meta').textContent;
+    const dersAdiText = card.querySelector('.date').textContent;
+    const metaText = card.querySelector('.meta').textContent;
     document.getElementById('form-'+dersId).style.display = 'none';
     const successEl = document.getElementById('success-'+dersId);
-    const waMsg = encodeURIComponent(`Merhaba, ${dateText} ${timeText} tarihli mat dersi için rezervasyon yaptım (${ad}). Dekontu ekte gönderiyorum.`);
+    const waMsg = encodeURIComponent(`Merhaba, ${dersAdiText} — ${metaText} için rezervasyon yaptım (${ad}). Dekontu ekte gönderiyorum.`);
 const waDigits = (ayarlar.whatsappNo||'').replace(/\D/g,'');
 const waPhone = waDigits.startsWith('0') ? '90'+waDigits.slice(1) : (waDigits.startsWith('90') ? waDigits : '90'+waDigits);
 successEl.innerHTML = `
