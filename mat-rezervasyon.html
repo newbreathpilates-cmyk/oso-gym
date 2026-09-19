@@ -140,9 +140,14 @@ function formatTrDate(dateStr) {
 
 function maskeAd(fullName) {
   if(!fullName) return '';
-  return fullName.trim().split(/\s+/).map(word => {
-    if(word.length <= 2) return word;
-    return word[0] + '*'.repeat(word.length-2) + word[word.length-1];
+  const words = fullName.trim().split(/\s+/);
+  return words.map((word, i) => {
+    if(word.length === 0) return word;
+    if(word.length <= 1) return word;
+    const isLast = i === words.length - 1; // soyad kabul edilir, son harfi büyük gösterilir
+    const first = word[0];
+    const last = isLast ? word[word.length-1].toLocaleUpperCase('tr-TR') : word[word.length-1];
+    return first + '****' + last;
   }).join(' ');
 }
 
@@ -167,7 +172,10 @@ function renderDersList() {
     const onaylananlar = rezList.filter(r => r.durum === 'onaylandi');
     const bekleyenSayisi = rezList.filter(r => r.durum === 'beklemede').length;
     const isimlerHTML = onaylananlar.length
-      ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:6px">Katılanlar: ${onaylananlar.map(r=>maskeAd(r.adSoyad)).join(', ')}</div>`
+      ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+           <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--teal-deep);margin-bottom:6px">KATILANLAR;</div>
+           ${onaylananlar.map(r=>`<div style="font-size:13.5px;color:var(--ink-soft);padding:3px 0">${maskeAd(r.adSoyad)}</div>`).join('')}
+         </div>`
       : '';
     return `
     <div class="card" data-ders-id="${d.id}">
