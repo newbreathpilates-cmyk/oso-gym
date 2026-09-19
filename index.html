@@ -1000,7 +1000,12 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 </div>
 </div>
 </div>
-<div class="form-group"><label class="form-label">Kişi Başı Fiyat (TL)</label><input type="number" class="form-input" id="md-fiyat" value="500" min="0"></div>
+<div class="form-group"><label class="form-label">Kişi Başı Fiyat (TL)</label>
+<div style="display:flex;gap:8px;align-items:center">
+<input type="number" class="form-input" id="md-fiyat" value="500" min="0">
+<button type="button" class="btn" style="white-space:nowrap;flex-shrink:0" onclick="document.getElementById('md-fiyat').value=0">Ücretsiz Yap</button>
+</div>
+</div>
 </div>
 <div class="modal-footer">
 <button class="btn" onclick="closeModal('mat-ders-modal');if(currentPage!=='mat-dersleri')navigateTo('mat-dersleri')">İptal</button>
@@ -6684,7 +6689,7 @@ return `<div class="card" style="margin-bottom:12px">
 <span style="font-weight:700;font-size:14px">${(d.dersAdi||'Mat Pilates')} · ${tarihFmt} · ${d.saat}</span>
 ${durumBadge}
 </div>
-<div style="font-size:12px;color:var(--text3);margin-top:2px">${d.egitmenAdi} · ${onayli.length}/${d.kapasite} onaylı · Min. ${d.minKisi} kişi · ${d.fiyat} TL/kişi${beklemede.length?' · '+beklemede.length+' bekleyen':''}</div>
+<div style="font-size:12px;color:var(--text3);margin-top:2px">${d.egitmenAdi} · ${onayli.length}/${d.kapasite} onaylı · Min. ${d.minKisi} kişi · ${d.fiyat===0?'<b style="color:#059669">Ücretsiz</b>':d.fiyat+' TL/kişi'}${beklemede.length?' · '+beklemede.length+' bekleyen':''}</div>
 </div>
 <div style="display:flex;gap:6px">
 <button class="btn btn-icon" onclick="openMatDersModal('${d.id}')"><i class="ti ti-edit"></i></button>
@@ -6753,6 +6758,7 @@ openModal('mat-ders-modal');
 }
 function saveMatDers() {
 const id = document.getElementById('md-id').value;
+const fiyatRaw = document.getElementById('md-fiyat').value;
 const data = {
 dersAdi: document.getElementById('md-dersadi').value.trim() || 'Mat Pilates',
 tarih: document.getElementById('md-tarih').value,
@@ -6760,7 +6766,7 @@ saat: document.getElementById('md-saat').value,
 egitmenAdi: document.getElementById('md-egitmen').value,
 kapasite: parseInt(document.getElementById('md-kapasite').value)||5,
 minKisi: parseInt(document.getElementById('md-minkisi').value)||3,
-fiyat: parseFloat(document.getElementById('md-fiyat').value)||500,
+fiyat: fiyatRaw==='' ? 500 : Math.max(0, parseFloat(fiyatRaw)||0), // 0 = ücretsiz ders, geçerli bir değer
 durum: 'acik'
 };
 if(!data.tarih || !data.saat || !data.egitmenAdi) { toast('Tarih, saat ve eğitmen zorunludur.','error'); return; }
