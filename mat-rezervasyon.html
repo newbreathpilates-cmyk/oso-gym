@@ -211,8 +211,8 @@ window.rezervasyonYap = async function(dersId) {
     const ucretsiz = dersBilgi && dersBilgi.fiyat === 0;
     if(ucretsiz) {
       successEl.innerHTML = `
-        <h3>✓ Rezervasyonunuz alındı</h3>
-        <p style="font-size:13.5px;color:var(--ink-soft)">Bu ders ücretsizdir, ekstra bir işlem yapmanıza gerek yok. Görüşmek üzere!</p>
+        <h3>✓ Kaydınızı gördük</h3>
+        <p style="font-size:13.5px;color:var(--ink-soft)">Yeriniz kesinleşmesi için lütfen bizden haber bekleyiniz. Yeriniz kesinleştiğinde size WhatsApp üzerinden bilgi vereceğiz.</p>
       `;
       successEl.style.display = 'block';
       return;
@@ -222,7 +222,7 @@ const waDigits = (ayarlar.whatsappNo||'').replace(/\D/g,'');
 const waPhone = waDigits.startsWith('0') ? '90'+waDigits.slice(1) : (waDigits.startsWith('90') ? waDigits : '90'+waDigits);
 successEl.innerHTML = `
       <h3>✓ Talebiniz alındı</h3>
-      <p style="font-size:13.5px;color:var(--ink-soft)">Yerinizin kesinleşmesi için lütfen ödemeyi yapıp dekontu WhatsApp'tan gönderin.</p>
+      <p style="font-size:13.5px;color:var(--ink-soft)">Yerinizin kesinleşmesi için lütfen ödemeyi yapıp dekontu WhatsApp'tan gönderin. Yeriniz kesinleştiğinde size WhatsApp üzerinden ayrıca haber vereceğiz.</p>
       <div class="info">
         <div><b>IBAN:</b> ${ayarlar.iban||'—'}</div>
         <div><b>Hesap Sahibi:</b> ${ayarlar.ibanAdi||'—'}</div>
