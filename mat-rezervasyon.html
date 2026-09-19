@@ -75,7 +75,7 @@ footer{text-align:center;padding:30px 20px;font-size:12px;color:var(--ink-soft)}
   <div class="brand">
     <img src="logo.png" alt="New Breath Pilates" style="height:120px;width:auto">
   </div>
-  <h1>New Breath Pilates — Yüz Yüze Ders Rezervasyonu</h1>
+  <h1>New Breath Pilates<br><span style="font-size:0.72em">Yüz Yüze Ders Rezervasyonu</span></h1>
   <p>Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz ödeme onaylandığında kesinleşir.</p>
 </header>
 
@@ -83,30 +83,7 @@ footer{text-align:center;padding:30px 20px;font-size:12px;color:var(--ink-soft)}
   <div class="loading">Yükleniyor...</div>
 </div>
 
-<div class="wrap rules-section">
-  <h2 class="rules-title">📋 Katılım Kuralları</h2>
-  <div class="rule-group">
-    <h3>Kıyafet ve Hazırlık</h3>
-    <ul>
-      <li>Derslere, rahat hareket edebileceğiniz, spora uygun kıyafetlerle katılım sağlamanızı rica ederiz.</li>
-      <li>Ders başlangıcından en az 5 dakika önce hazır olun.</li>
-    </ul>
-  </div>
-  <div class="rule-group">
-    <h3>Rezervasyon ve İptal</h3>
-    <ul>
-      <li>Yeriniz, ödeme dekontu onaylandığında kesinleşir.</li>
-      <li>Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar. Böyle bir durumda size en kısa sürede haber verilir ve ödemeniz <b>tam olarak iade edilir</b>.</li>
-      <li>Katılımcı tarafından yapılan iptal ve devamsızlık durumlarında ödeme iadesi yapılmamaktadır.</li>
-      <li><b>Katılamayacağınızı lütfen bize önceden bildirin.</b> Bu sayede yerinizi, o derse katılmak isteyip kontenjan bulamayan başka bir üyemiz için değerlendirebiliriz 🙏</li>
-    </ul>
-  </div>
-  <div class="rule-group">
-    <h3>Sağlık</h3>
-    <ul>
-      <li>Sakatlık, hamilelik veya kronik bir rahatsızlığınız varsa lütfen dersten önce eğitmeninize bilgi verin.</li>
-    </ul>
-  </div>
+<div class="wrap rules-section" id="rules-section">
 </div>
 
 <img src="logo.png" alt="New Breath Pilates" style="display:block;margin:0 auto 14px;width:56px;height:56px;object-fit:contain;opacity:0.9">
@@ -157,11 +134,49 @@ const listEl = document.getElementById('list');
 window._dersCache = {};
 window._rezByDers = {};
 
+function renderKurallar(hepsiUcretsizMi) {
+  const el = document.getElementById('rules-section');
+  if(!el) return;
+  const rezervasyonIptalMaddeleri = hepsiUcretsizMi ? `
+      <li>Yeriniz, katılımınız onaylandığında kesinleşir.</li>
+      <li>Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar. Böyle bir durumda size en kısa sürede haber verilir.</li>
+      <li><b>Katılamayacağınızı lütfen bize önceden bildirin.</b> Bu sayede yerinizi, o derse katılmak isteyip kontenjan bulamayan başka bir üyemiz için değerlendirebiliriz 🙏</li>
+  ` : `
+      <li>Yeriniz, ödeme dekontu onaylandığında kesinleşir.</li>
+      <li>Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar. Böyle bir durumda size en kısa sürede haber verilir ve ödemeniz <b>tam olarak iade edilir</b>.</li>
+      <li>Katılımcı tarafından yapılan iptal ve devamsızlık durumlarında ödeme iadesi yapılmamaktadır.</li>
+      <li><b>Katılamayacağınızı lütfen bize önceden bildirin.</b> Bu sayede yerinizi, o derse katılmak isteyip kontenjan bulamayan başka bir üyemiz için değerlendirebiliriz 🙏</li>
+  `;
+  el.innerHTML = `
+  <h2 class="rules-title">📋 Katılım Kuralları</h2>
+  <div class="rule-group">
+    <h3>Kıyafet ve Hazırlık</h3>
+    <ul>
+      <li>Derslere, rahat hareket edebileceğiniz, spora uygun kıyafetlerle katılım sağlamanızı rica ederiz.</li>
+      <li>Ders başlangıcından en az 5 dakika önce hazır olun.</li>
+    </ul>
+  </div>
+  <div class="rule-group">
+    <h3>Rezervasyon ve İptal</h3>
+    <ul>${rezervasyonIptalMaddeleri}</ul>
+  </div>
+  <div class="rule-group">
+    <h3>Sağlık</h3>
+    <ul>
+      <li>Sakatlık, hamilelik veya kronik bir rahatsızlığınız varsa lütfen dersten önce eğitmeninize bilgi verin.</li>
+    </ul>
+  </div>
+  `;
+}
+
 function renderDersList() {
   const today = new Date().toISOString().slice(0,10);
   let dersler = Object.values(window._dersCache)
     .filter(d => d.durum === 'acik' && d.tarih >= today)
     .sort((a,b) => (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
+
+  const hepsiUcretsizMi = dersler.length > 0 && dersler.every(d => d.fiyat === 0);
+  renderKurallar(hepsiUcretsizMi);
 
   if(!dersler.length) {
     listEl.innerHTML = '<div class="empty">Şu anda açık bir mat dersi bulunmuyor. Yeni dersler için bizi Instagram\'dan takip edebilirsiniz.</div>';
