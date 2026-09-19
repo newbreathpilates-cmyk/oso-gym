@@ -139,11 +139,13 @@ function formatTrDate(dateStr) {
 }
 
 const listEl = document.getElementById('list');
+window._dersCache = {};
 
 onSnapshot(DERSLER_COL, (snap) => {
   const today = new Date().toISOString().slice(0,10);
   let dersler = [];
   snap.forEach(d => dersler.push({ id: d.id, ...d.data() }));
+  dersler.forEach(d => { window._dersCache[d.id] = d; });
   dersler = dersler
     .filter(d => d.durum === 'acik' && d.tarih >= today)
     .sort((a,b) => (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
@@ -164,7 +166,7 @@ onSnapshot(DERSLER_COL, (snap) => {
         </div>
         <span class="badge ${dolu?'full':'open'}">${dolu ? 'DOLU' : (d.onayliSayisi||0)+'/'+d.kapasite}</span>
       </div>
-      <div class="price">${d.fiyat} TL / kişi</div>
+      <div class="price">${d.fiyat===0 ? 'Ücretsiz' : d.fiyat+' TL / kişi'}</div>
       ${dolu
         ? `<button class="btn" disabled>Bu ders dolu</button>`
         : `<button class="btn btn-primary" onclick="toggleForm('${d.id}')">Rezervasyon Yap</button>
@@ -205,6 +207,16 @@ window.rezervasyonYap = async function(dersId) {
     const metaText = card.querySelector('.meta').textContent;
     document.getElementById('form-'+dersId).style.display = 'none';
     const successEl = document.getElementById('success-'+dersId);
+    const dersBilgi = window._dersCache[dersId];
+    const ucretsiz = dersBilgi && dersBilgi.fiyat === 0;
+    if(ucretsiz) {
+      successEl.innerHTML = `
+        <h3>✓ Rezervasyonunuz alındı</h3>
+        <p style="font-size:13.5px;color:var(--ink-soft)">Bu ders ücretsizdir, ekstra bir işlem yapmanıza gerek yok. Görüşmek üzere!</p>
+      `;
+      successEl.style.display = 'block';
+      return;
+    }
     const waMsg = encodeURIComponent(`Merhaba, ${dersAdiText} — ${metaText} için rezervasyon yaptım (${ad}). Dekontu ekte gönderiyorum.`);
 const waDigits = (ayarlar.whatsappNo||'').replace(/\D/g,'');
 const waPhone = waDigits.startsWith('0') ? '90'+waDigits.slice(1) : (waDigits.startsWith('90') ? waDigits : '90'+waDigits);
