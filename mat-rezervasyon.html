@@ -224,12 +224,37 @@ window.toggleForm = function(id) {
   if(f) f.classList.toggle('show');
 };
 
+function dahaOnceUcretsizeKatilmisMi(telefon) {
+  const temizTel = (telefon||'').replace(/\D/g,'');
+  if(!temizTel) return false;
+  for(const dId in window._rezByDers) {
+    const dersBilgi = window._dersCache[dId];
+    if(!dersBilgi || dersBilgi.fiyat !== 0) continue;
+    const varMi = window._rezByDers[dId].some(r =>
+      r.durum === 'onaylandi' && (r.telefon||'').replace(/\D/g,'') === temizTel
+    );
+    if(varMi) return true;
+  }
+  return false;
+}
+
 window.rezervasyonYap = async function(dersId) {
   const adEl = document.getElementById('ad-'+dersId);
   const telEl = document.getElementById('tel-'+dersId);
   const ad = adEl.value.trim();
   const tel = telEl.value.trim();
   if(!ad || !tel) { alert('Lütfen ad soyad ve telefon numaranızı girin.'); return; }
+  const dersBilgi = window._dersCache[dersId];
+  if(dersBilgi && dersBilgi.fiyat === 0 && dahaOnceUcretsizeKatilmisMi(tel)) {
+    const successEl = document.getElementById('success-'+dersId);
+    document.getElementById('form-'+dersId).style.display = 'none';
+    successEl.innerHTML = `
+      <h3 style="color:#b91c1c">Kayıt yapılamadı</h3>
+      <p style="font-size:13.5px;color:var(--ink-soft)">Daha önce ücretsiz bir etkinliğimize katılmış olduğunuz için, ne yazık ki bu etkinliğe kayıt olamıyorsunuz. Ücretsiz etkinliklerimiz kişi başı yalnızca bir kez geçerlidir. Ücretli derslerimize her zaman katılabilirsiniz!</p>
+    `;
+    successEl.style.display = 'block';
+    return;
+  }
   const btn = document.querySelector(`#form-${dersId} button.btn-primary`);
   if(btn) { btn.disabled = true; btn.textContent = 'Gönderiliyor...'; }
   try {
@@ -245,7 +270,6 @@ window.rezervasyonYap = async function(dersId) {
     const metaText = card.querySelector('.meta').textContent;
     document.getElementById('form-'+dersId).style.display = 'none';
     const successEl = document.getElementById('success-'+dersId);
-    const dersBilgi = window._dersCache[dersId];
     const ucretsiz = dersBilgi && dersBilgi.fiyat === 0;
     if(ucretsiz) {
       successEl.innerHTML = `
