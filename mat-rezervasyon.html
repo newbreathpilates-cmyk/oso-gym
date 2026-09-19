@@ -76,7 +76,7 @@ footer{text-align:center;padding:30px 20px;font-size:12px;color:var(--ink-soft)}
     <img src="logo.png" alt="New Breath Pilates" style="height:120px;width:auto">
   </div>
   <h1>New Breath Pilates<br><span style="font-size:0.72em">Yüz Yüze Ders Rezervasyonu</span></h1>
-  <p>Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz ödeme onaylandığında kesinleşir.</p>
+  <p id="intro-text">Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz ödeme onaylandığında kesinleşir.</p>
 </header>
 
 <div class="wrap list" id="list">
@@ -135,6 +135,12 @@ window._dersCache = {};
 window._rezByDers = {};
 
 function renderKurallar(hepsiUcretsizMi) {
+  const introEl = document.getElementById('intro-text');
+  if(introEl) {
+    introEl.textContent = hepsiUcretsizMi
+      ? 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz onaylandığında kesinleşir.'
+      : 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz ödeme onaylandığında kesinleşir.';
+  }
   const el = document.getElementById('rules-section');
   if(!el) return;
   const rezervasyonIptalMaddeleri = hepsiUcretsizMi ? `
