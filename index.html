@@ -6656,7 +6656,7 @@ listHTML = '<div class="card" style="text-align:center;color:var(--text3);paddin
 listHTML = dersler.map(d => {
 const trainer = S.trainers.find(t=>t.name===d.egitmenAdi) || {color:1};
 const c = tc(trainer.color);
-const rezList = window._matRezervasyonlar.filter(r=>r.dersId===d.id);
+const rezList = window._matRezervasyonlar.filter(r=>r.dersId===d.id).sort((a,b)=> (a.kayitTarihi||'') > (b.kayitTarihi||'') ? 1 : -1);
 const onayli = rezList.filter(r=>r.durum==='onaylandi');
 const beklemede = rezList.filter(r=>r.durum==='beklemede');
 const dolu = onayli.length >= d.kapasite;
@@ -6665,15 +6665,19 @@ const durumBadge = d.durum==='kapali'
 ? '<span style="background:#e5e7eb;color:#6b7280;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">Kapalı</span>'
 : dolu ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">DOLU</span>'
 : '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">Açık</span>';
+let siraNo = 0;
 const rezRows = rezList.length ? rezList.map(r => {
+if(r.durum==='beklemede') siraNo++;
 const rDurumBadge = r.durum==='onaylandi'
 ? '<span style="color:#059669;font-weight:700;font-size:11px">✓ Onaylı</span>'
 : r.durum==='reddedildi' ? '<span style="color:#991b1b;font-weight:700;font-size:11px">✗ Reddedildi</span>'
-: '<span style="color:#d97706;font-weight:700;font-size:11px">⏳ Beklemede</span>';
+: '<span style="color:#d97706;font-weight:700;font-size:11px">⏳ Beklemede · '+siraNo+'. sırada</span>';
+const kayitZamani = r.kayitTarihi ? new Date(r.kayitTarihi).toLocaleString('tr-TR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
 return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)">
 <div>
 <div style="font-weight:600;font-size:13px">${r.adSoyad}</div>
 <div style="font-size:11px;color:var(--text3)">${r.telefon} · ${rDurumBadge}</div>
+${kayitZamani?`<div style="font-size:10px;color:var(--text3);margin-top:1px">🕐 Kayıt: ${kayitZamani}</div>`:''}
 </div>
 <div style="display:flex;gap:6px">
 ${r.durum!=='onaylandi' ? `<button class="btn" style="padding:4px 10px;font-size:11px;background:#d1fae5;color:#065f46" onclick="matRezDurumDegistir('${r.id}','${d.id}','onaylandi')">Onayla</button>` : ''}
