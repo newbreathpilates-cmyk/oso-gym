@@ -138,15 +138,21 @@ function formatTrDate(dateStr) {
   } catch(e) { return dateStr; }
 }
 
+function maskeAd(fullName) {
+  if(!fullName) return '';
+  return fullName.trim().split(/\s+/).map(word => {
+    if(word.length <= 2) return word;
+    return word[0] + '*'.repeat(word.length-2) + word[word.length-1];
+  }).join(' ');
+}
+
 const listEl = document.getElementById('list');
 window._dersCache = {};
+window._rezByDers = {};
 
-onSnapshot(DERSLER_COL, (snap) => {
+function renderDersList() {
   const today = new Date().toISOString().slice(0,10);
-  let dersler = [];
-  snap.forEach(d => dersler.push({ id: d.id, ...d.data() }));
-  dersler.forEach(d => { window._dersCache[d.id] = d; });
-  dersler = dersler
+  let dersler = Object.values(window._dersCache)
     .filter(d => d.durum === 'acik' && d.tarih >= today)
     .sort((a,b) => (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
 
@@ -157,6 +163,12 @@ onSnapshot(DERSLER_COL, (snap) => {
 
   listEl.innerHTML = dersler.map(d => {
     const dolu = (d.onayliSayisi||0) >= d.kapasite;
+    const rezList = window._rezByDers[d.id] || [];
+    const onaylananlar = rezList.filter(r => r.durum === 'onaylandi');
+    const bekleyenSayisi = rezList.filter(r => r.durum === 'beklemede').length;
+    const isimlerHTML = onaylananlar.length
+      ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:6px">Katılanlar: ${onaylananlar.map(r=>maskeAd(r.adSoyad)).join(', ')}</div>`
+      : '';
     return `
     <div class="card" data-ders-id="${d.id}">
       <div class="top">
@@ -164,8 +176,10 @@ onSnapshot(DERSLER_COL, (snap) => {
           <div class="date">${d.dersAdi || 'Mat Pilates'}</div>
           <div class="meta">${formatTrDate(d.tarih)} · ${d.saat} · ${d.egitmenAdi} · 45 dakika</div>
         </div>
-        <span class="badge ${dolu?'full':'open'}">${dolu ? 'DOLU' : (d.onayliSayisi||0)+'/'+d.kapasite}</span>
+        <span class="badge ${dolu?'full':'open'}">${dolu ? 'DOLU' : (d.onayliSayisi||0)+'/'+d.kapasite+' onaylı'}</span>
       </div>
+      ${bekleyenSayisi>0 ? `<div style="font-size:11.5px;color:var(--teal-deep);margin-top:2px">🔥 ${bekleyenSayisi} kişi beklemede</div>` : ''}
+      ${isimlerHTML}
       <div class="price">${d.fiyat===0 ? 'Ücretsiz' : d.fiyat+' TL / kişi'}</div>
       ${dolu
         ? `<button class="btn" disabled>Bu ders dolu</button>`
@@ -179,6 +193,22 @@ onSnapshot(DERSLER_COL, (snap) => {
       }
     </div>`;
   }).join('');
+}
+
+onSnapshot(DERSLER_COL, (snap) => {
+  window._dersCache = {};
+  snap.forEach(d => { window._dersCache[d.id] = { id: d.id, ...d.data() }; });
+  renderDersList();
+});
+
+onSnapshot(REZ_COL, (snap) => {
+  window._rezByDers = {};
+  snap.forEach(docSnap => {
+    const r = { id: docSnap.id, ...docSnap.data() };
+    if(!window._rezByDers[r.dersId]) window._rezByDers[r.dersId] = [];
+    window._rezByDers[r.dersId].push(r);
+  });
+  renderDersList();
 });
 
 window.toggleForm = function(id) {
