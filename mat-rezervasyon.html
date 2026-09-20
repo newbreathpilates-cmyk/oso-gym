@@ -216,7 +216,7 @@ function renderDersList() {
         <div>
           <div class="date">${d.dersAdi || 'Mat Pilates'}</div>
           <div class="face-to-face-badge">📍 Bu dersler stüdyomuzda, yüz yüze gerçekleştirilir</div>
-          <div class="meta">${formatTrDate(d.tarih)} · ${d.saat} · ${d.egitmenAdi} · 45 dakika</div>
+          <div class="meta">${formatTrDate(d.tarih)} · ${d.saat} · ${d.egitmenAdi} · ${d.sure||45} dakika</div>
           <a class="map-link" href="https://www.google.com/maps/search/?api=1&query=New+Breath+Pilates+Be%C5%9Fikta%C5%9F+%C4%B0stanbul" target="_blank" rel="noopener">📍 Beşiktaş, İstanbul — Haritada Gör</a>
         </div>
         <span class="badge ${dolu?'full':'open'}">${dolu ? 'DOLU' : (d.onayliSayisi||0)+'/'+d.kapasite+' onaylı'}</span>
