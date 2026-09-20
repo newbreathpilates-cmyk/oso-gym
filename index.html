@@ -5493,7 +5493,9 @@ const tid = currentUser.trainerId;
 const trainer = S.trainers.find(t=>t.id===tid);
 const todayStr = localDate();
 const todayEvs = S.events.filter(e=>e.trainerId===tid&&e.date===todayStr).sort((a,b)=>a.startTime>b.startTime?1:-1);
-const upcomingEvs = S.events.filter(e=>e.trainerId===tid&&e.date>todayStr).sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:a.startTime>b.startTime?1:-1).slice(0,5);
+const allUpcomingEvs = S.events.filter(e=>e.trainerId===tid&&e.date>todayStr).sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:a.startTime>b.startTime?1:-1);
+const nextLessonDate = allUpcomingEvs.length ? allUpcomingEvs[0].date : null;
+const upcomingEvs = allUpcomingEvs.filter(e=>e.date===nextLessonDate);
 const c = trainer ? tc(trainer.color) : TC[1];
 // Doğum günü hesaplama
 const birthdayMembers = S.members.filter(m=>{
@@ -5555,6 +5557,7 @@ ${(function(){var opts='';for(var i=0;i<6;i++){var d=new Date();d.setMonth(d.get
 </div>
 <div class="portal-card">
 <div class="card-title">Yaklaşan Derslerim</div>
+${upcomingEvs.length ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text2);margin:-4px 0 6px"><span>${new Date(upcomingEvs[0].date).toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</span><span style="font-weight:700;color:#059669">${upcomingEvs.length} randevu</span></div>` : ''}
 ${upcomingEvs.length ? upcomingEvs.map(ev=>{
 const memberNames=(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name+' '+m.surname:'';}).filter(Boolean).join(', ');
 const guestName=ev.guestName||'';
