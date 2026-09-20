@@ -981,6 +981,13 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 <div class="form-group"><label class="form-label">Tarih</label><input type="date" class="form-input" id="md-tarih"></div>
 <div class="form-group"><label class="form-label">Saat</label><input type="time" class="form-input" id="md-saat"></div>
 </div>
+<div class="form-group"><label class="form-label">Süre (dk)</label>
+<div class="mat-stepper">
+<button type="button" class="mat-stepper-btn" onclick="matStepperChange('md-sure',-5,5)"><i class="ti ti-minus"></i></button>
+<input type="number" class="mat-stepper-value" id="md-sure" value="45" min="5" readonly>
+<button type="button" class="mat-stepper-btn" onclick="matStepperChange('md-sure',5,5)"><i class="ti ti-plus"></i></button>
+</div>
+</div>
 <div class="form-group"><label class="form-label">Eğitmen</label>
 <select class="form-select" id="md-egitmen"></select>
 </div>
@@ -6693,7 +6700,7 @@ return `<div class="card" style="margin-bottom:12px">
 <span style="font-weight:700;font-size:14px">${(d.dersAdi||'Mat Pilates')} · ${tarihFmt} · ${d.saat}</span>
 ${durumBadge}
 </div>
-<div style="font-size:12px;color:var(--text3);margin-top:2px">${d.egitmenAdi} · ${onayli.length}/${d.kapasite} onaylı · Min. ${d.minKisi} kişi · ${d.fiyat===0?'<b style="color:#059669">Ücretsiz</b>':d.fiyat+' TL/kişi'}${beklemede.length?' · '+beklemede.length+' bekleyen':''}</div>
+<div style="font-size:12px;color:var(--text3);margin-top:2px">${d.egitmenAdi} · ${d.sure||45} dk · ${onayli.length}/${d.kapasite} onaylı · Min. ${d.minKisi} kişi · ${d.fiyat===0?'<b style="color:#059669">Ücretsiz</b>':d.fiyat+' TL/kişi'}${beklemede.length?' · '+beklemede.length+' bekleyen':''}</div>
 </div>
 <div style="display:flex;gap:6px">
 <button class="btn btn-icon" onclick="openMatDersModal('${d.id}')"><i class="ti ti-edit"></i></button>
@@ -6745,6 +6752,7 @@ if(d) {
 document.getElementById('md-dersadi').value = d.dersAdi || 'Mat Pilates';
 document.getElementById('md-tarih').value = d.tarih;
 document.getElementById('md-saat').value = d.saat;
+document.getElementById('md-sure').value = d.sure || 45;
 sel.value = d.egitmenAdi;
 document.getElementById('md-kapasite').value = d.kapasite;
 document.getElementById('md-minkisi').value = d.minKisi;
@@ -6754,6 +6762,7 @@ document.getElementById('md-fiyat').value = d.fiyat;
 document.getElementById('md-dersadi').value = 'Mat Pilates';
 document.getElementById('md-tarih').value = localDate();
 document.getElementById('md-saat').value = '10:00';
+document.getElementById('md-sure').value = 45;
 document.getElementById('md-kapasite').value = 5;
 document.getElementById('md-minkisi').value = 3;
 document.getElementById('md-fiyat').value = 500;
@@ -6767,6 +6776,7 @@ const data = {
 dersAdi: document.getElementById('md-dersadi').value.trim() || 'Mat Pilates',
 tarih: document.getElementById('md-tarih').value,
 saat: document.getElementById('md-saat').value,
+sure: Math.max(5, parseInt(document.getElementById('md-sure').value)||45),
 egitmenAdi: document.getElementById('md-egitmen').value,
 kapasite: parseInt(document.getElementById('md-kapasite').value)||5,
 minKisi: parseInt(document.getElementById('md-minkisi').value)||3,
