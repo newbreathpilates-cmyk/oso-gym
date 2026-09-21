@@ -694,6 +694,10 @@ font-size: 28px;
 <div class="form-group" style="margin-bottom:8px"><label class="form-label">Bel (cm)</label><input type="number" class="form-input" id="m-bel" placeholder="—" step="0.5" oninput="updateRatios()"></div>
 <div class="form-group" style="margin-bottom:8px"><label class="form-label">Kalça (cm)</label><input type="number" class="form-input" id="m-kalca" placeholder="—" step="0.5" oninput="updateRatios()"></div>
 </div>
+<div class="form-row">
+<div class="form-group" style="margin-bottom:8px"><label class="form-label">Boyun (cm)</label><input type="number" class="form-input" id="m-boyun" placeholder="—" step="0.5" oninput="updateBMI()"></div>
+<div style="font-size:10px;color:#6b7280;align-self:center;line-height:1.4;margin-bottom:8px">Gırtlağın hemen altından ölçülür. Yağ oranı tahmini için gereklidir.</div>
+</div>
 <div class="form-row-3">
 <div class="form-group" style="margin-bottom:8px"><label class="form-label">Kol (cm)</label><input type="number" class="form-input" id="m-kol" placeholder="—" step="0.5"></div>
 <div class="form-group" style="margin-bottom:8px"><label class="form-label">Baldır (cm)</label><input type="number" class="form-input" id="m-baldir" placeholder="—" step="0.5"></div>
@@ -720,6 +724,15 @@ font-size: 28px;
 <div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:#4338ca">Bel/Boy Oranı</span><span id="m-whtr-val" style="font-size:16px;font-weight:700;color:#4338ca"></span></div>
 <div id="m-whtr-text" style="font-size:10px;font-weight:600;margin-top:2px"></div>
 <div style="font-size:9px;color:#6b7280;margin-top:4px;padding-top:4px;border-top:1px solid #e0d9ff">&lt;0.40 Zayıf · 0.40–0.49 İdeal · 0.50–0.59 Dikkat · ≥0.60 Yüksek Risk</div>
+</div>
+<div id="m-bf-display" style="display:none;padding:8px 12px;background:#f5f3ff;border-radius:var(--radius-sm);border:1px solid #e0d9ff">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:#4338ca">Tahmini Yağ Oranı</span><span id="m-bf-val" style="font-size:16px;font-weight:700;color:#4338ca"></span></div>
+<div id="m-bf-text" style="font-size:10px;font-weight:600;margin-top:2px;color:#4338ca"></div>
+<div id="m-lean-row" style="margin-top:8px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:#4338ca">Tahmini Yağsız Kütle</span><span id="m-lean-val" style="font-size:16px;font-weight:700;color:#4338ca"></span></div>
+<div id="m-lean-text" style="font-size:10px;font-weight:600;margin-top:2px;color:#4338ca"></div>
+</div>
+<div style="font-size:9px;color:#6b7280;margin-top:6px;padding-top:4px;border-top:1px solid #e0d9ff">ABD Donanması (Navy) formülü ile hesaplanmıştır. Mezura ölçümüne dayalı tahmindir, gerçek değerden sapabilir. Yağsız kütle; kas, kemik ve su toplamıdır.</div>
 </div>
 <div id="m-bel-risk" style="display:none;padding:6px 10px;border-radius:4px;border:1px solid;font-size:10px;font-weight:600"></div>
 </div>
@@ -3786,7 +3799,7 @@ loadPosturData(m.postur||{});
 toggleGroupMembers();
 } else {
 ['name','surname','phone','email','il','ilce','adres','note','emergency-name','emergency-rel','emergency-phone'].forEach(f=>document.getElementById('m-'+f).value='');
-['boy','kilo','gogus','bel','kalca','kol','baldir','altbaldir'].forEach(f=>document.getElementById('m-'+f).value='');
+['boy','kilo','gogus','bel','kalca','boyun','kol','baldir','altbaldir'].forEach(f=>document.getElementById('m-'+f).value='');
 document.getElementById('m-aktivite').value='';
 ['sedanter','aktif','sporcu'].forEach(v=>{const el=document.getElementById('lbl-'+v);if(el){el.style.borderColor='var(--border2)';el.style.background='white';el.style.color='#6b7280';}});
 const ad=document.getElementById('m-analysis-display');if(ad)ad.style.display='none';
@@ -3978,6 +3991,67 @@ save();
 renderPaketGecmisi(m.paketGecmisi||[], m);
 toast('Paket güncellendi ✓', 'success');
 }
+// ── YAĞ ORANI (ABD Donanması / U.S. Navy formülü) ──
+const NAVY_SAPMA = 3;
+const BF_NOTE = 'ABD Donanması (U.S. Navy) formülü ile hesaplanmıştır. Mezura ölçümüne dayalı bir tahmindir, gerçek değerden sapabilir. Yağsız kütle; kas, kemik ve su ağırlığının toplamıdır.';
+function calcNavyBF(o, gender) {
+  if(!o) return null;
+  const boy=parseFloat(o.boy), kilo=parseFloat(o.kilo), bel=parseFloat(o.bel), kalca=parseFloat(o.kalca), boyun=parseFloat(o.boyun);
+  if(!(boy>0 && kilo>0 && bel>0 && boyun>0)) return null;
+  let yag;
+  if(gender==='Erkek') {
+    const d = bel-boyun; if(d<=0) return null;
+    yag = 495/(1.0324 - 0.19077*Math.log10(d) + 0.15456*Math.log10(boy)) - 450;
+  } else if(gender==='Kadın') {
+    if(!(kalca>0)) return null;
+    const d = bel+kalca-boyun; if(d<=0) return null;
+    yag = 495/(1.29579 - 0.35004*Math.log10(d) + 0.22100*Math.log10(boy)) - 450;
+  } else return null;
+  if(!isFinite(yag) || yag<2 || yag>60) return null;
+  const lo = Math.max(0, yag-NAVY_SAPMA), hi = yag+NAVY_SAPMA;
+  return {
+    yag: yag, yagLo: lo, yagHi: hi,
+    yagsiz: kilo*(1-yag/100), yagsizLo: kilo*(1-hi/100), yagsizHi: kilo*(1-lo/100)
+  };
+}
+function bfTexts(r) {
+  return {
+    yag: 'Tahmini yağ oranı %'+r.yag.toFixed(1)+' — %2-3 sapma payıyla yaklaşık %'+Math.round(r.yagLo)+'–'+Math.round(r.yagHi)+' arasındadır.',
+    yagsiz: 'Tahmini yağsız kütle '+r.yagsiz.toFixed(1)+' kg — yaklaşık '+Math.round(r.yagsizLo)+'–'+Math.round(r.yagsizHi)+' kg arasındadır.'
+  };
+}
+function updateFatEstimate() {
+  const card = document.getElementById('m-bf-display');
+  if(!card) return;
+  const gender = document.getElementById('m-gender')?.value || '';
+  const disp = document.getElementById('m-analysis-display');
+  const o = {
+    boy: document.getElementById('m-boy').value, kilo: document.getElementById('m-kilo').value,
+    bel: document.getElementById('m-bel').value, kalca: document.getElementById('m-kalca').value,
+    boyun: document.getElementById('m-boyun').value
+  };
+  if(gender!=='Kadın' && gender!=='Erkek') { card.style.display='none'; return; }
+  const r = calcNavyBF(o, gender);
+  const leanRow = document.getElementById('m-lean-row');
+  if(r) {
+    const t = bfTexts(r);
+    document.getElementById('m-bf-val').textContent = '%'+r.yag.toFixed(1);
+    document.getElementById('m-bf-text').textContent = t.yag;
+    document.getElementById('m-lean-val').textContent = r.yagsiz.toFixed(1)+' kg';
+    document.getElementById('m-lean-text').textContent = t.yagsiz;
+    if(leanRow) leanRow.style.display='';
+    card.style.display=''; if(disp) disp.style.display='';
+  } else if(parseFloat(o.boy)>0 && parseFloat(o.kilo)>0 && parseFloat(o.bel)>0) {
+    const eksik = [];
+    if(!(parseFloat(o.boyun)>0)) eksik.push('boyun');
+    if(gender==='Kadın' && !(parseFloat(o.kalca)>0)) eksik.push('kalça');
+    if(!eksik.length) { card.style.display='none'; return; }
+    document.getElementById('m-bf-val').textContent = '—';
+    document.getElementById('m-bf-text').textContent = 'Yağ oranı için '+eksik.join(' ve ')+' ölçüsü girilmelidir.';
+    if(leanRow) leanRow.style.display='none';
+    card.style.display=''; if(disp) disp.style.display='';
+  } else { card.style.display='none'; }
+}
 // ── ÖLÇÜM GEÇMİŞİ ──
 let _editingOlcumIdx = null;
 function editOlcum(idx) {
@@ -4001,6 +4075,7 @@ document.getElementById('m-kalca').value = o.kalca||'';
 document.getElementById('m-kol').value = o.kol||'';
 document.getElementById('m-baldir').value = o.baldir||'';
 document.getElementById('m-altbaldir').value = o.altbaldir||'';
+document.getElementById('m-boyun').value = o.boyun||'';
 if(o.aktivite) setAktivite(o.aktivite);
 updateBMI();
 updateRatios();
@@ -4019,7 +4094,7 @@ resetOlcumForm();
 }
 }
 function resetOlcumForm() {
-['boy','kilo','gogus','bel','kalca','kol','baldir','altbaldir'].forEach(f=>{
+['boy','kilo','gogus','bel','kalca','boyun','kol','baldir','altbaldir'].forEach(f=>{
 const el=document.getElementById('m-'+f); if(el) el.value='';
 });
 document.getElementById('m-aktivite').value='';
@@ -4038,7 +4113,8 @@ bel: document.getElementById('m-bel').value||'',
 kalca: document.getElementById('m-kalca').value||'',
 kol: document.getElementById('m-kol').value||'',
 baldir: document.getElementById('m-baldir').value||'',
-altbaldir: document.getElementById('m-altbaldir').value||''
+altbaldir: document.getElementById('m-altbaldir').value||'',
+boyun: document.getElementById('m-boyun').value||''
 };
 // VKİ hesapla
 if(o.boy&&o.kilo) o.bmi=(parseFloat(o.kilo)/Math.pow(parseFloat(o.boy)/100,2)).toFixed(1);
@@ -4056,14 +4132,18 @@ el.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;pa
 return;
 }
 const sorted = [...gecmis].sort((a,b)=>b.tarih>a.tarih?1:-1);
+const _mm = S.members.find(x=>x.id==document.getElementById('m-id')?.value);
+const _gnd = (_mm&&_mm.gender) || document.getElementById('m-gender')?.value || '';
 el.innerHTML = sorted.map((o,i)=>{
 const prev = sorted[i+1];
+const bf = calcNavyBF(o,_gnd);
 const fields = [
 {label:'Boy',key:'boy',unit:'cm'},
 {label:'Kilo',key:'kilo',unit:'kg'},
 {label:'Göğüs',key:'gogus',unit:'cm'},
 {label:'Bel',key:'bel',unit:'cm'},
 {label:'Kalça',key:'kalca',unit:'cm'},
+{label:'Boyun',key:'boyun',unit:'cm'},
 {label:'Kol',key:'kol',unit:'cm'},
 {label:'Baldır',key:'baldir',unit:'cm'},
 {label:'Alt Baldır',key:'altbaldir',unit:'cm'},
@@ -4090,6 +4170,7 @@ ${diff!==null?`<div style="font-size:10px;font-weight:600;color:${diffColor}">${
 ${o.bmi?`<div style="background:#ede9fe;border-radius:4px;padding:5px 7px"><div style="font-size:9px;color:#6b7280">VKİ</div><div style="font-size:12px;font-weight:700;color:#4338ca">${o.bmi}</div></div>`:''}
 ${o.whr?`<div style="background:#ede9fe;border-radius:4px;padding:5px 7px"><div style="font-size:9px;color:#6b7280">WHR</div><div style="font-size:12px;font-weight:700;color:#4338ca">${o.whr}</div></div>`:''}
 ${o.whtr?`<div style="background:#ede9fe;border-radius:4px;padding:5px 7px"><div style="font-size:9px;color:#6b7280">WHtR</div><div style="font-size:12px;font-weight:700;color:#4338ca">${o.whtr}</div></div>`:''}
+${bf?`<div style="background:#ede9fe;border-radius:4px;padding:5px 7px"><div style="font-size:9px;color:#6b7280">Yağ (tahmini)</div><div style="font-size:12px;font-weight:700;color:#4338ca">%${bf.yag.toFixed(1)}</div></div><div style="background:#ede9fe;border-radius:4px;padding:5px 7px"><div style="font-size:9px;color:#6b7280">Yağsız kütle</div><div style="font-size:12px;font-weight:700;color:#4338ca">${bf.yagsiz.toFixed(1)} kg</div></div><div style="grid-column:1/-1;font-size:10px;color:#4338ca;margin-top:2px">Yağ yaklaşık %${Math.round(bf.yagLo)}–${Math.round(bf.yagHi)}, yağsız kütle yaklaşık ${Math.round(bf.yagsizLo)}–${Math.round(bf.yagsizHi)} kg arasındadır (Navy formülü, tahmindir)</div>`:''}
 </div>
 </div>`;
 }).join('');
@@ -4223,6 +4304,7 @@ display.style.display = 'none';
 updateRatios();
 }
 function updateRatios() {
+updateFatEstimate();
 const bel = parseFloat(document.getElementById('m-bel').value);
 const kalca = parseFloat(document.getElementById('m-kalca').value);
 const boy = parseFloat(document.getElementById('m-boy').value);
@@ -4464,6 +4546,18 @@ const imzaHTML = '<div style="margin-top:12px;padding:12px;background:#f0fdf8;bo
 (m.rulesAccepted?'<span style="color:#059669">✓ Kurallar kabul edildi</span> ':'')+
 (m.healthAccepted?'<span style="color:#059669">✓ Sağlık formu onaylandı</span>':'')+'</div></div>'+
 (m.signature?'<img src="'+m.signature+'" style="width:180px;height:66px;object-fit:contain;border:1px solid #a7f3d0;background:white;padding:3px;border-radius:4px">':'')+'</div>';
+const bfSrc = (function(){ for(let i=gecmis.length-1;i>=0;i--){ const r=calcNavyBF(gecmis[i], m.gender); if(r) return {o:gecmis[i], r:r}; } return null; })();
+const bfHTML = bfSrc ? (function(){
+const r=bfSrc.r, o=bfSrc.o;
+return '<div class="section" style="background:#f5f3ff;border-color:#e0d9ff">'+
+'<div class="sec-title" style="color:#4338ca">🧬 TAHMİNİ VÜCUT KOMPOZİSYONU <span style="font-size:16px;font-weight:400;color:#6b7280">('+o.tarih+' ölçümü)</span></div>'+
+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+'<div style="background:white;border:1px solid #e0d9ff;border-radius:6px;padding:12px;text-align:center"><div style="font-size:16px;font-weight:700;color:#6b7280;text-transform:uppercase">Tahmini Yağ Oranı</div><div style="font-size:40px;font-weight:900;color:#4338ca;margin:4px 0">%'+r.yag.toFixed(1)+'</div><div style="font-size:17px;color:#374151;line-height:1.4">%2-3 sapma payıyla yaklaşık <b>%'+Math.round(r.yagLo)+'–'+Math.round(r.yagHi)+'</b> arasındadır.</div></div>'+
+'<div style="background:white;border:1px solid #e0d9ff;border-radius:6px;padding:12px;text-align:center"><div style="font-size:16px;font-weight:700;color:#6b7280;text-transform:uppercase">Tahmini Yağsız Kütle</div><div style="font-size:40px;font-weight:900;color:#4338ca;margin:4px 0">'+r.yagsiz.toFixed(1)+' kg</div><div style="font-size:17px;color:#374151;line-height:1.4">Yaklaşık <b>'+Math.round(r.yagsizLo)+'–'+Math.round(r.yagsizHi)+' kg</b> arasındadır.</div></div>'+
+'</div>'+
+'<div style="margin-top:10px;font-size:16px;color:#374151;line-height:1.5">Hesapta kullanılan ölçüler: Boy '+o.boy+' cm · Kilo '+o.kilo+' kg · Bel '+o.bel+' cm'+(m.gender==='Kadın'?' · Kalça '+o.kalca+' cm':'')+' · Boyun '+o.boyun+' cm</div>'+
+'<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e0d9ff;font-size:15px;color:#6b7280;line-height:1.5">'+BF_NOTE+'</div></div>';
+})() : '';
 const html = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=760"><title>'+m.name+' '+m.surname+' — NEW BREATH PILATES</title>'+
 '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:16px;font-size:22px;color:#1a1a18;width:760px;max-width:100%;margin:0 auto}'+
 '.section{margin-bottom:14px;padding:12px 14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px}'+
@@ -4563,6 +4657,7 @@ const a=parseFloat(d)<0?'↓':parseFloat(d)>0?'↑':'→';
 return '<td style="font-weight:700;color:'+c+'">'+a+Math.abs(d)+'</td>';
 }).join('')+'<td>—</td><td>—</td></tr>':'')+ // vki, b/k sütunları için boş
 '</tbody></table></div>':'')+
+bfHTML+
 // SON DERSLER
 (memberEvents.length?'<div class="section">'+
 '<div class="sec-title">📅 SON DERSLER</div>'+
@@ -4626,7 +4721,11 @@ function printOlcumPDF(id) {
 try {
 const m = S.members.find(x=>x.id===parseInt(id));
 if(!m) return;
-const gecmis = (m.olcumGecmis||[]).sort((a,b)=>a.tarih>b.tarih?1:-1);
+const gecmis = (m.olcumGecmis||[]).sort((a,b)=>a.tarih>b.tarih?1:-1).map(function(o){
+const bf = calcNavyBF(o, m.gender);
+return Object.assign({}, o, bf ? {yagOrani: bf.yag.toFixed(1), yagsizKutle: bf.yagsiz.toFixed(1)} : {});
+});
+const bfVar = gecmis.some(function(o){return o.yagOrani;});
 if(!gecmis.length){toast('Bu üyeye ait ölçüm kaydı yok.','error');return;}
 const alanlar = [
 {key:'kilo',label:'Kilo',unit:'kg'},
@@ -4634,12 +4733,15 @@ const alanlar = [
 {key:'gogus',label:'Göğüs',unit:'cm'},
 {key:'bel',label:'Bel',unit:'cm'},
 {key:'kalca',label:'Kalça',unit:'cm'},
+{key:'boyun',label:'Boyun',unit:'cm'},
 {key:'kol',label:'Kol',unit:'cm'},
 {key:'baldir',label:'Baldır',unit:'cm'},
 {key:'altbaldir',label:'Alt Baldır',unit:'cm'},
 {key:'bmi',label:'VKİ',unit:''},
 {key:'whr',label:'Bel/Kalça Oranı',unit:''},
 {key:'whtr',label:'Bel/Boy Oranı',unit:''},
+{key:'yagOrani',label:'Tahmini Yağ',unit:'%'},
+{key:'yagsizKutle',label:'Tahmini Yağsız Kütle',unit:'kg'},
 ];
 const html = `<!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8">
@@ -4706,7 +4808,7 @@ return `<td><span class="${cls}" style="font-size:13px">${arrow} ${Math.abs(diff
 <strong>Referans Değerler:</strong><br>
 VKİ: &lt;18.5 Zayıf · 18.5–24.9 Normal · 25–29.9 Kilolu · ≥30 Obez<br>
 Bel/Kalça Oranı: Kadın &lt;0.85 normal ≥0.85 yüksek risk · Erkek &lt;0.90 normal ≥0.90 yüksek risk<br>
-Bel/Boy Oranı: &lt;0.40 Zayıf · 0.40–0.49 İdeal · 0.50–0.59 Dikkat · ≥0.60 Yüksek risk
+Bel/Boy Oranı: &lt;0.40 Zayıf · 0.40–0.49 İdeal · 0.50–0.59 Dikkat · ≥0.60 Yüksek risk${bfVar?'<br>Tahmini Yağ / Yağsız Kütle: ABD Donanması (U.S. Navy) formülü ile hesaplanmıştır. Mezura ölçümüne dayalı tahmindir, %2-3 sapma payıyla yaklaşık değerlerdir; gerçek değerden sapabilir.':''}
 </div>
 </body></html>`;
 const blob = new Blob([html],{type:'text/html;charset=utf-8'});
