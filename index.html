@@ -4431,66 +4431,63 @@ if(!curr||!prev) return '';
 const d = (parseFloat(curr)-parseFloat(prev)).toFixed(1);
 const color = parseFloat(d)<0?'#059669':parseFloat(d)>0?'#dc2626':'#6b7280';
 const arrow = parseFloat(d)<0?'↓':parseFloat(d)>0?'↑':'→';
-return '<br><span style="font-size:13px;font-weight:700;color:'+color+'">'+arrow+Math.abs(d)+unit+'</span>';
+return '<br><span style="font-size:14px;font-weight:700;color:'+color+'">'+arrow+Math.abs(d)+unit+'</span>';
 }
 const saglikHTML = '<div style="margin-top:12px;padding:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px">'+
-'<div style="font-weight:700;color:#1e3a8a;margin-bottom:8px;font-size:17px">SAĞLIK FORMU '+(m.healthAccepted?'<span style="color:#059669">✓ Onaylandı</span>':'')+'</div>'+
-sIds.map(function(sid,i){ const v=s[sid]||''; return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #dbeafe;font-size:15px;gap:10px"><span>'+sLabels[i]+'</span><span style="font-weight:700;color:'+(v==='evet'?'#b91c1c':v==='hayir'?'#059669':'#9e9e96')+'">'+(v==='evet'?'Evet ⚠️':v==='hayir'?'Hayır ✓':'—')+'</span></div>'; }).join('')+
-(m.healthNotes?'<div style="margin-top:8px;font-size:15px;line-height:1.5;color:#1e3a8a"><b>Not:</b> '+m.healthNotes+'</div>':'')+'</div>';
-const kurallarHTML = '<div style="margin-top:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;font-size:15px">'+
-'<div style="font-weight:700;margin-bottom:8px;font-size:18px">ÜYELİK KURALLARI</div>'+
-'<p style="font-weight:700;margin:8px 0 4px;font-size:16px">📦 Paket Süresi ve Kullanımı</p>'+
-'<ul style="padding-left:18px;margin:0 0 8px;line-height:1.6">'+
+'<div style="font-weight:700;color:#1e3a8a;margin-bottom:10px;font-size:22px">SAĞLIK FORMU '+(m.healthAccepted?'<span style="color:#059669">✓ Onaylandı</span>':'')+'</div>'+
+sIds.map(function(sid,i){ const v=s[sid]||''; return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #dbeafe;font-size:20px"><span>'+sLabels[i]+'</span><span style="font-weight:700;color:'+(v==='evet'?'#b91c1c':v==='hayir'?'#059669':'#9e9e96')+'">'+(v==='evet'?'Evet ⚠️':v==='hayir'?'Hayır ✓':'—')+'</span></div>'; }).join('')+
+(m.healthNotes?'<div style="margin-top:8px;font-size:20px;line-height:1.5;color:#1e3a8a"><b>Not:</b> '+m.healthNotes+'</div>':'')+'</div>';
+const kurallarHTML = '<div style="margin-top:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;font-size:20px">'+
+'<div style="font-weight:700;margin-bottom:10px;font-size:24px">ÜYELİK KURALLARI</div>'+
+'<p style="font-weight:700;margin:8px 0 4px;font-size:21px">📦 Paket Süresi ve Kullanımı</p>'+
+'<ul style="padding-left:20px;margin:0 0 8px;line-height:1.6">'+
 '<li>8 Ders paketleri 30 gün, 10-15 Ders paketleri 60 gün içinde kullanılmalıdır.</li>'+
 '<li>Süre sonunda kullanılmayan dersler geçersiz sayılır, iade yapılmaz.</li>'+
 '</ul>'+
-'<p style="font-weight:700;margin:8px 0 4px;font-size:16px">📅 Rezervasyon ve İptal</p>'+
-'<ul style="padding-left:18px;margin:0 0 8px;line-height:1.6">'+
+'<p style="font-weight:700;margin:8px 0 4px;font-size:21px">📅 Rezervasyon ve İptal</p>'+
+'<ul style="padding-left:20px;margin:0 0 8px;line-height:1.6">'+
 '<li>Dersler en az 48 saat öncesinden rezerve edilmelidir.</li>'+
 '<li>Her satın alınan paket için rezervasyondan 24 saat öncesinde 2 ücretsiz iptal hakkı vardır.</li>'+
 '<li>24 saatten kısa süre içinde yapılan iptallerde ders yapılmış sayılır ve paketten düşer.</li>'+
 '<li>Gelmeme (no-show) durumunda ders hakkı kullanılmış sayılır.</li>'+
 '</ul>'+
-'<p style="font-weight:700;margin:8px 0 4px;font-size:16px">🔄 Paket İptali ve İade</p>'+
-'<ul style="padding-left:18px;margin:0;line-height:1.6">'+
+'<p style="font-weight:700;margin:8px 0 4px;font-size:21px">🔄 Paket İptali ve İade</p>'+
+'<ul style="padding-left:20px;margin:0;line-height:1.6">'+
 '<li>İptal talebi ilk 7 gün içinde iletilirse, kullanılmayan dersler için tam iade yapılır.</li>'+
 '<li>7 günden sonra iade yapılmaz.</li>'+
 '<li>Paketler hiçbir koşulda dondurulamaz.</li>'+
 '</ul></div>';
-const imzaHTML = '<div style="margin-top:12px;padding:12px;background:#f0fdf8;border:2px solid #059669;border-radius:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">'+
-'<div><div style="font-weight:700;color:#065f46;margin-bottom:4px;font-size:14px">✅ BEYAN VE ONAY</div>'+
-'<div style="font-size:16px;font-weight:600;line-height:1.4;color:#374151">Üyelik kurallarını okudum, anladım ve kabul ediyorum.</div>'+
-'<div style="font-size:15px;line-height:1.5;margin-top:6px"><b>'+m.name+' '+m.surname+'</b> · '+(m.start||new Date().toLocaleDateString('tr-TR'))+'<br>'+
+const imzaHTML = '<div style="margin-top:12px;padding:12px;background:#f0fdf8;border:2px solid #059669;border-radius:6px;display:flex;justify-content:space-between;align-items:center">'+
+'<div><div style="font-weight:700;color:#065f46;margin-bottom:6px;font-size:18px">✅ BEYAN VE ONAY</div>'+
+'<div style="font-size:21px;font-weight:600;color:#374151">Üyelik kurallarını okudum, anladım ve kabul ediyorum.</div>'+
+'<div style="font-size:20px;margin-top:8px"><b>'+m.name+' '+m.surname+'</b> · '+(m.start||new Date().toLocaleDateString('tr-TR'))+'<br>'+
 (m.rulesAccepted?'<span style="color:#059669">✓ Kurallar kabul edildi</span> ':'')+
 (m.healthAccepted?'<span style="color:#059669">✓ Sağlık formu onaylandı</span>':'')+'</div></div>'+
-(m.signature?'<img src="'+m.signature+'" style="width:150px;height:55px;object-fit:contain;border:1px solid #a7f3d0;background:white;padding:3px;border-radius:4px">':'')+'</div>';
-const html = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'+m.name+' '+m.surname+' — NEW BREATH PILATES</title>'+
-'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:14px;font-size:16px;color:#1a1a18;max-width:820px;margin:0 auto;-webkit-text-size-adjust:100%}'+
-'.section{margin-bottom:14px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px}'+
-'.sec-title{font-size:18px;font-weight:700;margin-bottom:10px}'+
+(m.signature?'<img src="'+m.signature+'" style="width:180px;height:66px;object-fit:contain;border:1px solid #a7f3d0;background:white;padding:3px;border-radius:4px">':'')+'</div>';
+const html = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=760"><title>'+m.name+' '+m.surname+' — NEW BREATH PILATES</title>'+
+'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:16px;font-size:22px;color:#1a1a18;width:760px;max-width:100%;margin:0 auto}'+
+'.section{margin-bottom:14px;padding:12px 14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px}'+
+'.sec-title{font-size:22px;font-weight:700;margin-bottom:10px}'+
 '.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}'+
 '.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}'+
-'.lbl{font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.4px}'+
-'.val{font-size:17px;font-weight:600;overflow-wrap:anywhere}'+
+'.lbl{font-size:16px;color:#6b7280;text-transform:uppercase;letter-spacing:0.4px}'+
+'.val{font-size:21px;font-weight:600;overflow-wrap:anywhere}'+
 '.stat{background:#eff6ff;padding:8px;border-radius:4px;text-align:center}'+
-'.stat-val{font-size:32px;font-weight:900;color:#2563EB}'+
-'.stat-lbl{font-size:12px;color:#6b7280;text-transform:uppercase;margin-top:2px}'+
-'table{width:100%;border-collapse:collapse;font-size:15px}'+
-'th{background:#e0d9ff;padding:8px 6px;text-align:left;font-size:14px;font-weight:700}'+
+'.stat-val{font-size:35px;font-weight:900;color:#2563EB}'+
+'.stat-lbl{font-size:13px;color:#6b7280;text-transform:uppercase;margin-top:2px}'+
+'table{width:100%;border-collapse:collapse;font-size:20px}'+
+'th{background:#e0d9ff;padding:8px 8px;text-align:left;font-size:18px;font-weight:700}'+
 'td{padding:8px 6px;border-bottom:1px solid #e5e7eb;vertical-align:top}'+
-'.nw{white-space:nowrap}'+
-'.tight{font-size:14px}.tight th{font-size:13px}.tight th,.tight td{padding:8px 3px}'+
-'.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}'+
-'.footer{margin-top:16px;font-size:12px;color:#9e9e96;border-top:1px solid #e5e7eb;padding-top:8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}'+
-'@media (max-width:560px){.grid{grid-template-columns:1fr}}'+
+'.olcum{font-size:17px}.olcum th{font-size:16px;padding:8px 3px}.olcum td{padding:8px 3px;white-space:nowrap}'+
+'.footer{margin-top:16px;font-size:15px;color:#9e9e96;border-top:1px solid #e5e7eb;padding-top:8px;display:flex;justify-content:space-between}'+
 '</style></head><body>'+
 // HEADER
-'<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1D9E75;padding-bottom:12px;margin-bottom:14px;flex-wrap:wrap;gap:8px">'+
-'<div style="display:flex;align-items:center;gap:10px"><img src="logo.png" style="width:56px;height:56px;object-fit:contain"><div><div style="font-size:18px;font-weight:700;color:#1D9E75">NEW BREATH PILATES</div><div style="font-size:14px;color:#6b7280">Üye Bilgi Formu</div></div></div>'+
-'<div style="text-align:right;font-size:13px;color:#6b7280">'+new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})+'</div></div>'+
+'<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1D9E75;padding-bottom:12px;margin-bottom:14px">'+
+'<div style="display:flex;align-items:center;gap:10px"><img src="logo.png" style="width:64px;height:64px;object-fit:contain"><div><div style="font-size:26px;font-weight:700;color:#1D9E75">NEW BREATH PILATES</div><div style="font-size:18px;color:#6b7280">Üye Bilgi Formu</div></div></div>'+
+'<div style="text-align:right;font-size:18px;color:#6b7280">'+new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})+'</div></div>'+
 // KİŞİSEL BİLGİLER
 '<div class="section">'+
-'<div class="sec-title">'+m.name+' '+m.surname+(m.kanGrubu?'  <span style="background:#fee2e2;color:#b91c1c;padding:2px 10px;border-radius:10px;font-size:15px">'+m.kanGrubu+'</span>':'')+'</div>'+
+'<div class="sec-title">'+m.name+' '+m.surname+(m.kanGrubu?'  <span style="background:#fee2e2;color:#b91c1c;padding:2px 10px;border-radius:10px;font-size:19px">'+m.kanGrubu+'</span>':'')+'</div>'+
 '<div class="grid">'+
 (m.phone?'<div><div class="lbl">Telefon</div><div class="val">'+m.phone+'</div></div>':'')+
 (m.email?'<div><div class="lbl">E-posta</div><div class="val">'+m.email+'</div></div>':'')+
@@ -4500,7 +4497,7 @@ const html = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta n
 (m.il||m.ilce?'<div><div class="lbl">İl / İlçe</div><div class="val">'+(m.il||'')+(m.ilce?' / '+m.ilce:'')+'</div></div>':'')+
 (m.adres?'<div style="grid-column:span 2"><div class="lbl">Adres</div><div class="val">'+m.adres+'</div></div>':'')+
 '</div>'+
-(m.emergencyName?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb"><div style="font-size:14px;font-weight:700;color:#b45309;margin-bottom:6px">🚨 ACİL DURUM KİŞİSİ</div>'+
+(m.emergencyName?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb"><div style="font-size:18px;font-weight:700;color:#b45309;margin-bottom:6px">🚨 ACİL DURUM KİŞİSİ</div>'+
 '<div class="grid"><div><div class="lbl">Ad Soyad</div><div class="val">'+m.emergencyName+(m.emergencyRel?' ('+m.emergencyRel+')':'')+'</div></div>'+
 (m.emergencyPhone?'<div><div class="lbl">Telefon</div><div class="val">'+m.emergencyPhone+'</div></div>':'')+'</div></div>':'')+
 '</div>'+
@@ -4508,14 +4505,14 @@ const html = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta n
 '<div class="section" style="background:#eff6ff;border-color:#bfdbfe">'+
 '<div class="sec-title" style="color:#1e3a8a">📦 '+(m.package||'Paket tanımlanmamış')+'</div>'+
 '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+
-'<div style="background:#eff6ff;padding:12px;border-radius:6px;text-align:center"><div style="font-size:36px;font-weight:900;color:#2563EB">'+(total===999?'∞':total||'—')+'</div><div style="font-size:15px;font-weight:700;color:#374151;text-transform:uppercase;margin-top:4px">Toplam</div></div>'+
-'<div style="background:#eff6ff;padding:12px;border-radius:6px;text-align:center"><div style="font-size:36px;font-weight:900;color:#2563EB">'+used+'</div><div style="font-size:15px;font-weight:700;color:#374151;text-transform:uppercase;margin-top:4px">Yapılan</div></div>'+
-'<div style="background:#eff6ff;padding:12px;border-radius:6px;text-align:center"><div style="font-size:36px;font-weight:900;color:'+(remaining===0?'#dc2626':'#059669')+'">'+remaining+'</div><div style="font-size:15px;font-weight:700;color:#374151;text-transform:uppercase;margin-top:4px">Kalan</div></div>'+
+'<div style="background:#eff6ff;padding:12px;border-radius:6px;text-align:center"><div style="font-size:40px;font-weight:900;color:#2563EB">'+(total===999?'∞':total||'—')+'</div><div style="font-size:20px;font-weight:700;color:#374151;text-transform:uppercase;margin-top:4px">Toplam</div></div>'+
+'<div style="background:#eff6ff;padding:12px;border-radius:6px;text-align:center"><div style="font-size:40px;font-weight:900;color:#2563EB">'+used+'</div><div style="font-size:20px;font-weight:700;color:#374151;text-transform:uppercase;margin-top:4px">Yapılan</div></div>'+
+'<div style="background:#eff6ff;padding:12px;border-radius:6px;text-align:center"><div style="font-size:40px;font-weight:900;color:'+(remaining===0?'#dc2626':'#059669')+'">'+remaining+'</div><div style="font-size:20px;font-weight:700;color:#374151;text-transform:uppercase;margin-top:4px">Kalan</div></div>'+
 '</div>'+
-'<div style="margin-top:10px;font-size:17px;font-weight:700;color:#1e3a8a">📅 Başlangıç: '+(m.start||'—')+
+'<div style="margin-top:10px;font-size:22px;font-weight:700;color:#1e3a8a">📅 Başlangıç: '+(m.start||'—')+
 (days>0?' &nbsp;·&nbsp; <span style="color:#d97706">'+days+' gün kaldı</span>':days===0&&m.start?' &nbsp;·&nbsp; <span style="color:#dc2626">Bugün bitiyor</span>':m.start&&days<0?' &nbsp;·&nbsp; <span style="color:#dc2626">Süresi doldu</span>':'')+'</div>'+
-(endDate!=='—'&&endDate!=='Sınırsız'?'<div style="margin-top:6px;font-size:17px;font-weight:700;color:#1e3a8a">🏁 Bitiş: '+endDate+'</div>':
-endDate==='Sınırsız'?'<div style="margin-top:6px;font-size:17px;font-weight:700;color:#059669">♾️ Sınırsız Paket</div>':'')+
+(endDate!=='—'&&endDate!=='Sınırsız'?'<div style="margin-top:6px;font-size:22px;font-weight:700;color:#1e3a8a">🏁 Bitiş: '+endDate+'</div>':
+endDate==='Sınırsız'?'<div style="margin-top:6px;font-size:22px;font-weight:700;color:#059669">♾️ Sınırsız Paket</div>':'')+
 '</div>'+
 // PAKET BİTİŞ UYARISI
 (days<0||m.status==='Süresi Doldu'||m.status==='Dersleri Bitti'?function(){
@@ -4523,54 +4520,54 @@ endDate==='Sınırsız'?'<div style="margin-top:6px;font-size:17px;font-weight:7
 const completedEvs = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed&&e.date>=m.start);
 const lastLesson = completedEvs.length ? completedEvs.sort((a,b)=>b.date>a.date?1:-1)[0].date : endDate;
 return '<div style="margin-bottom:12px;padding:14px 16px;background:#dc2626;border-radius:8px;text-align:center">'+
-'<div style="font-size:18px;font-weight:900;color:white;letter-spacing:0.5px">🔴 PAKET YENİLEME GEREKLİ</div>'+
-'<div style="font-size:15px;color:white;margin-top:6px;line-height:1.6">Paketiniz <strong>'+lastLesson+'</strong> tarihinde sona ermiştir.<br>Bir sonraki randevunuzda paket yenilemesi yapınız.</div>'+
+'<div style="font-size:24px;font-weight:900;color:white;letter-spacing:0.5px">🔴 PAKET YENİLEME GEREKLİ</div>'+
+'<div style="font-size:20px;color:white;margin-top:6px;line-height:1.6">Paketiniz <strong>'+lastLesson+'</strong> tarihinde sona ermiştir.<br>Bir sonraki randevunuzda paket yenilemesi yapınız.</div>'+
 '</div>';
 }():'')+
 ((m.paketGecmisi&&m.paketGecmisi.length)?'<div class="section">'+
 '<div class="sec-title">📋 PAKET GEÇMİŞİ</div>'+
-'<div class="scroll"><table class="tight"><thead><tr><th>Paket</th><th>Başlangıç</th><th>Bitiş</th><th>Yapılan</th><th>Tutar</th></tr></thead><tbody>'+
+'<table><thead><tr><th>Paket</th><th>Başlangıç</th><th>Bitiş</th><th>Yapılan</th><th>Tutar</th></tr></thead><tbody>'+
 [...m.paketGecmisi].sort(function(a,b){return b.start>a.start?1:-1;}).map(function(p){
 const tot = p.total===999?'∞':p.total||'—';
-return '<tr><td style="font-weight:700">'+p.package+'</td><td class="nw">'+p.start+'</td><td class="nw">'+(p.end||'—')+'</td><td class="nw">'+p.used+'/'+tot+'</td><td class="nw">'+(p.amount?'₺'+p.amount.toLocaleString('tr-TR'):'—')+'</td></tr>';
+return '<tr><td style="font-weight:600">'+p.package+'</td><td>'+p.start+'</td><td>'+(p.end||'—')+'</td><td>'+p.used+'/'+tot+'</td><td>'+(p.amount?'₺'+p.amount.toLocaleString('tr-TR'):'—')+'</td></tr>';
 }).join('')+
-'</tbody></table></div></div>':'')+
+'</tbody></table></div>':'')+
 // ÖLÇÜM GEÇMİŞİ
-(gecmis.length?function(){
-const rowsDef=[['boy','Boy',' cm'],['kilo','Kilo',' kg'],['gogus','Göğüs',' cm'],['bel','Bel',' cm'],['kalca','Kalça',' cm'],['kol','Kol',' cm'],['baldir','Baldır',' cm'],['bmi','VKİ',''],['whr','B/K','']];
-const diffKeys=['kilo','gogus','bel','kalca','kol','baldir'];
-const last=gecmis.length-1;
-let t='<div class="section"><div class="sec-title">📏 ÖLÇÜM GEÇMİŞİ VE KARŞILAŞTIRMA</div><div class="scroll"><table style="min-width:100%"><thead><tr><th>Ölçüm</th>'+
-gecmis.map(function(o){return '<th class="nw">'+o.tarih+(o.aktivite?'<br><span style="font-size:12px;font-weight:400;color:#6b7280">'+o.aktivite+'</span>':'')+'</th>';}).join('')+
-(gecmis.length>1?'<th style="background:#c7d2fe">Toplam Değişim</th>':'')+'</tr></thead><tbody>';
-rowsDef.forEach(function(r){
-const k=r[0];
-t+='<tr><td style="font-weight:700">'+r[1]+'</td>'+
+(gecmis.length?'<div class="section">'+
+'<div class="sec-title">📏 ÖLÇÜM GEÇMİŞİ VE KARŞILAŞTIRMA</div>'+
+'<table class="olcum"><thead><tr>'+
+'<th>Tarih</th><th>Boy</th><th>Kilo</th><th>Göğüs</th><th>Bel</th><th>Kalça</th><th>Kol</th><th>Baldır</th><th>VKİ</th><th>B/K</th></tr></thead><tbody>'+
 gecmis.map(function(o,i){
-const prev=gecmis[i-1];
-const v=o[k];
-const bg=i===last?'background:#f5f3ff;font-weight:700;':'';
-const dh=(prev&&v&&prev[k]&&k!=='boy'&&k!=='whr')?diffHTML(v,prev[k],r[2]):'';
-return '<td class="nw" style="'+bg+'">'+(v?v+r[2]:'—')+dh+'</td>';
+const prev = gecmis[i-1];
+return '<tr style="'+(i===gecmis.length-1?'background:#f5f3ff;font-weight:600':'')+'">'+
+'<td><b>'+o.tarih+'</b>'+(o.aktivite?'<br><span style="font-size:13px;color:#6b7280">'+o.aktivite+'</span>':'')+'</td>'+
+'<td>'+(o.boy?o.boy+' cm':'—')+'</td>'+
+'<td>'+(o.kilo?o.kilo+' kg':'—')+(prev?diffHTML(o.kilo,prev.kilo,' kg'):'')+'</td>'+
+'<td>'+(o.gogus?o.gogus+' cm':'—')+(prev?diffHTML(o.gogus,prev.gogus,' cm'):'')+'</td>'+
+'<td>'+(o.bel?o.bel+' cm':'—')+(prev?diffHTML(o.bel,prev.bel,' cm'):'')+'</td>'+
+'<td>'+(o.kalca?o.kalca+' cm':'—')+(prev?diffHTML(o.kalca,prev.kalca,' cm'):'')+'</td>'+
+'<td>'+(o.kol?o.kol+' cm':'—')+(prev?diffHTML(o.kol,prev.kol,' cm'):'')+'</td>'+
+'<td>'+(o.baldir?o.baldir+' cm':'—')+(prev?diffHTML(o.baldir,prev.baldir,' cm'):'')+'</td>'+
+'<td>'+(o.bmi||'—')+(prev&&o.bmi&&prev.bmi?diffHTML(o.bmi,prev.bmi,''):'')+'</td>'+
+'<td>'+(o.whr||'—')+'</td>'+
+'</tr>';
 }).join('')+
-(gecmis.length>1?(function(){
-if(diffKeys.indexOf(k)<0) return '<td style="background:#e0e7ff">—</td>';
-const ilk=gecmis[0][k], son=gecmis[last][k];
-if(!ilk||!son) return '<td style="background:#e0e7ff">—</td>';
+(gecmis.length>1?'<tr style="background:#e0e7ff"><td style="font-weight:700;color:#3730a3;font-size:14px">Toplam Değişim</td>'+
+'<td>—</td>'+ // Boy sütunu (değişmez)
+['kilo','gogus','bel','kalca','kol','baldir'].map(function(k){
+const ilk=gecmis[0][k], son=gecmis[gecmis.length-1][k];
+if(!ilk||!son) return '<td>—</td>';
 const d=(parseFloat(son)-parseFloat(ilk)).toFixed(1);
 const c=parseFloat(d)<0?'#059669':parseFloat(d)>0?'#dc2626':'#6b7280';
 const a=parseFloat(d)<0?'↓':parseFloat(d)>0?'↑':'→';
-return '<td class="nw" style="background:#e0e7ff;font-weight:700;color:'+c+'">'+a+Math.abs(d)+r[2]+'</td>';
-})():'')+'</tr>';
-});
-t+='</tbody></table></div></div>';
-return t;
-}():'')+
+return '<td style="font-weight:700;color:'+c+'">'+a+Math.abs(d)+'</td>';
+}).join('')+'<td>—</td><td>—</td></tr>':'')+ // vki, b/k sütunları için boş
+'</tbody></table></div>':'')+
 // SON DERSLER
 (memberEvents.length?'<div class="section">'+
 '<div class="sec-title">📅 SON DERSLER</div>'+
 '<table><thead><tr><th>Tarih</th><th>Saat</th><th>Ders</th><th>Eğitmen</th></tr></thead><tbody>'+
-memberEvents.map(function(ev){ const t=S.trainers.find(function(x){return x.id===ev.trainerId;}); return '<tr><td class="nw">'+ev.date+'</td><td class="nw">'+ev.startTime+'</td><td>'+ev.type+'</td><td>'+(t?t.name:'—')+'</td></tr>'; }).join('')+
+memberEvents.map(function(ev){ const t=S.trainers.find(function(x){return x.id===ev.trainerId;}); return '<tr><td>'+ev.date+'</td><td>'+ev.startTime+'</td><td>'+ev.type+'</td><td>'+(t?t.name:'—')+'</td></tr>'; }).join('')+
 '</tbody></table></div>':'')+
 saglikHTML+kurallarHTML+imzaHTML+
 '<div class="footer"><span>🌿 NEW BREATH PILATES Üye Yönetim Sistemi</span><span>'+m.name+' '+m.surname+' · '+new Date().toLocaleDateString('tr-TR')+'</span></div>'+
