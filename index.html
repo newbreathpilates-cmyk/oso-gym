@@ -732,7 +732,7 @@ font-size: 28px;
 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:#4338ca">Tahmini Yağsız Kütle</span><span id="m-lean-val" style="font-size:16px;font-weight:700;color:#4338ca"></span></div>
 <div id="m-lean-text" style="font-size:10px;font-weight:600;margin-top:2px;color:#4338ca"></div>
 </div>
-<div style="font-size:9px;color:#6b7280;margin-top:6px;padding-top:4px;border-top:1px solid #e0d9ff">ABD Donanması (Navy) formülü ile hesaplanmıştır. Mezura ölçümüne dayalı tahmindir, gerçek değerden sapabilir. Yağsız kütle; kas, kemik ve su toplamıdır.</div>
+<div id="m-bf-note" style="font-size:9px;color:#6b7280;margin-top:6px;padding-top:4px;border-top:1px solid #e0d9ff">ABD Donanması (Navy) formülü ile hesaplanmıştır. Mezura ölçümüne dayalı tahmindir, gerçek değerden sapabilir. Yağsız kütle; kas, kemik ve su toplamıdır.</div>
 </div>
 <div id="m-bel-risk" style="display:none;padding:6px 10px;border-radius:4px;border:1px solid;font-size:10px;font-weight:600"></div>
 </div>
@@ -3996,6 +3996,24 @@ const LOGO_DATA_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALsAAADwCAM
 // ── YAĞ ORANI (ABD Donanması / U.S. Navy formülü) ──
 const NAVY_SAPMA = 3;
 const BF_NOTE = 'ABD Donanması (U.S. Navy) formülü ile hesaplanmıştır. Mezura ölçümüne dayalı bir tahmindir, gerçek değerden sapabilir. Yağsız kütle; kas, kemik ve su ağırlığının toplamıdır.';
+function memberAgeFrom(dob, yas) {
+  if(dob) {
+    const p = String(dob).split('-');
+    if(p.length===3) {
+      const b = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+      if(!isNaN(b.getTime())) {
+        const t = new Date(); let a = t.getFullYear()-b.getFullYear(); const md = t.getMonth()-b.getMonth();
+        if(md<0 || (md===0 && t.getDate()<b.getDate())) a--;
+        return a;
+      }
+    }
+  }
+  const y = parseInt(yas);
+  return y>0 ? y : null;
+}
+function isMinorMember(dob, yas) { const a = memberAgeFrom(dob, yas); return a!==null && a<18; }
+const BF_MINOR_TEXT = '18 yaş altı için hesaplanmaz';
+const BF_MINOR_LONG = '18 yaş altı üyeler için tahmini yağ oranı ve yağsız kütle hesaplanmaz.';
 function calcNavyBF(o, gender) {
   if(!o) return null;
   const boy=parseFloat(o.boy), kilo=parseFloat(o.kilo), bel=parseFloat(o.bel), kalca=parseFloat(o.kalca), boyun=parseFloat(o.boyun);
@@ -4032,6 +4050,18 @@ function updateFatEstimate() {
     bel: document.getElementById('m-bel').value, kalca: document.getElementById('m-kalca').value,
     boyun: document.getElementById('m-boyun').value
   };
+  const noteEl = document.getElementById('m-bf-note');
+  if(isMinorMember(document.getElementById('m-dob')?.value, document.getElementById('m-yas')?.value)) {
+    if(parseFloat(o.boy)>0 && parseFloat(o.kilo)>0 && parseFloat(o.bel)>0) {
+      document.getElementById('m-bf-val').textContent = '—';
+      document.getElementById('m-bf-text').textContent = BF_MINOR_TEXT;
+      const lr = document.getElementById('m-lean-row'); if(lr) lr.style.display='none';
+      if(noteEl) noteEl.style.display='none';
+      card.style.display=''; if(disp) disp.style.display='';
+    } else { card.style.display='none'; }
+    return;
+  }
+  if(noteEl) noteEl.style.display='';
   if(gender!=='Kadın' && gender!=='Erkek') { card.style.display='none'; return; }
   const r = calcNavyBF(o, gender);
   const leanRow = document.getElementById('m-lean-row');
@@ -4136,9 +4166,10 @@ return;
 const sorted = [...gecmis].sort((a,b)=>b.tarih>a.tarih?1:-1);
 const _mm = S.members.find(x=>x.id==document.getElementById('m-id')?.value);
 const _gnd = (_mm&&_mm.gender) || document.getElementById('m-gender')?.value || '';
+const _minor = _mm ? isMinorMember(_mm.dob,_mm.yas) : isMinorMember(document.getElementById('m-dob')?.value, document.getElementById('m-yas')?.value);
 el.innerHTML = sorted.map((o,i)=>{
 const prev = sorted[i+1];
-const bf = calcNavyBF(o,_gnd);
+const bf = _minor ? null : calcNavyBF(o,_gnd);
 const fields = [
 {label:'Boy',key:'boy',unit:'cm'},
 {label:'Kilo',key:'kilo',unit:'kg'},
@@ -4173,6 +4204,7 @@ ${o.bmi?`<div style="background:#ede9fe;border-radius:4px;padding:5px 7px"><div 
 ${o.whr?`<div style="background:#ede9fe;border-radius:4px;padding:5px 7px"><div style="font-size:9px;color:#6b7280">WHR</div><div style="font-size:12px;font-weight:700;color:#4338ca">${o.whr}</div></div>`:''}
 ${o.whtr?`<div style="background:#ede9fe;border-radius:4px;padding:5px 7px"><div style="font-size:9px;color:#6b7280">WHtR</div><div style="font-size:12px;font-weight:700;color:#4338ca">${o.whtr}</div></div>`:''}
 ${bf?`<div style="background:#ede9fe;border-radius:4px;padding:5px 7px"><div style="font-size:9px;color:#6b7280">Yağ (tahmini)</div><div style="font-size:12px;font-weight:700;color:#4338ca">%${bf.yag.toFixed(1)}</div></div><div style="background:#ede9fe;border-radius:4px;padding:5px 7px"><div style="font-size:9px;color:#6b7280">Yağsız kütle</div><div style="font-size:12px;font-weight:700;color:#4338ca">${bf.yagsiz.toFixed(1)} kg</div></div><div style="grid-column:1/-1;font-size:10px;color:#4338ca;margin-top:2px">Yağ yaklaşık %${Math.round(bf.yagLo)}–${Math.round(bf.yagHi)}, yağsız kütle yaklaşık ${Math.round(bf.yagsizLo)}–${Math.round(bf.yagsizHi)} kg arasındadır (Navy formülü, tahmindir)</div>`:''}
+${(_minor && o.kilo && o.bel)?`<div style="grid-column:1/-1;font-size:10px;color:#6b7280;margin-top:2px">Yağ oranı ve yağsız kütle: ${BF_MINOR_TEXT}</div>`:''}
 </div>
 </div>`;
 }).join('');
@@ -4387,6 +4419,7 @@ let age = today.getFullYear() - birthDate.getFullYear();
 const m = today.getMonth() - birthDate.getMonth();
 if(m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
 document.getElementById('m-yas').value = age;
+updateFatEstimate();
 }
 // ── DİJİTAL İMZA ──
 let signatureDrawing = false;
@@ -4548,7 +4581,8 @@ const imzaHTML = '<div style="margin-top:12px;padding:12px;background:#f0fdf8;bo
 (m.rulesAccepted?'<span style="color:#059669">✓ Kurallar kabul edildi</span> ':'')+
 (m.healthAccepted?'<span style="color:#059669">✓ Sağlık formu onaylandı</span>':'')+'</div></div>'+
 (m.signature?'<img src="'+m.signature+'" style="width:180px;height:66px;object-fit:contain;border:1px solid #a7f3d0;background:white;padding:3px;border-radius:4px">':'')+'</div>';
-const bfSrc = (function(){ for(let i=gecmis.length-1;i>=0;i--){ const r=calcNavyBF(gecmis[i], m.gender); if(r) return {o:gecmis[i], r:r}; } return null; })();
+const _minor = isMinorMember(m.dob, m.yas);
+const bfSrc = _minor ? null : (function(){ for(let i=gecmis.length-1;i>=0;i--){ const r=calcNavyBF(gecmis[i], m.gender); if(r) return {o:gecmis[i], r:r}; } return null; })();
 const bfHTML = bfSrc ? (function(){
 const r=bfSrc.r, o=bfSrc.o;
 return '<div class="section" style="background:#f5f3ff;border-color:#e0d9ff">'+
@@ -4559,7 +4593,7 @@ return '<div class="section" style="background:#f5f3ff;border-color:#e0d9ff">'+
 '</div>'+
 '<div style="margin-top:10px;font-size:16px;color:#374151;line-height:1.5">Hesapta kullanılan ölçüler: Boy '+o.boy+' cm · Kilo '+o.kilo+' kg · Bel '+o.bel+' cm'+(m.gender==='Kadın'?' · Kalça '+o.kalca+' cm':'')+' · Boyun '+o.boyun+' cm</div>'+
 '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e0d9ff;font-size:15px;color:#6b7280;line-height:1.5">'+BF_NOTE+'</div></div>';
-})() : '';
+})() : ((_minor && gecmis.length) ? '<div class="section" style="background:#f5f3ff;border-color:#e0d9ff"><div class="sec-title" style="color:#4338ca">🧬 TAHMİNİ VÜCUT KOMPOZİSYONU</div><div style="font-size:19px;color:#374151;line-height:1.5">'+BF_MINOR_LONG+'</div></div>' : '');
 const html = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=760"><title>'+m.name+' '+m.surname+' — NEW BREATH PILATES</title>'+
 '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:16px;font-size:22px;color:#1a1a18;width:760px;max-width:100%;margin:0 auto}'+
 '.section{margin-bottom:14px;padding:12px 14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px}'+
@@ -4723,8 +4757,9 @@ function printOlcumPDF(id) {
 try {
 const m = S.members.find(x=>x.id===parseInt(id));
 if(!m) return;
+const _minor = isMinorMember(m.dob, m.yas);
 const gecmis = (m.olcumGecmis||[]).sort((a,b)=>a.tarih>b.tarih?1:-1).map(function(o){
-const bf = calcNavyBF(o, m.gender);
+const bf = _minor ? null : calcNavyBF(o, m.gender);
 return Object.assign({}, o, bf ? {yagOrani: bf.yag.toFixed(1), yagsizKutle: bf.yagsiz.toFixed(1)} : {});
 });
 const bfVar = gecmis.some(function(o){return o.yagOrani;});
@@ -4742,9 +4777,7 @@ const alanlar = [
 {key:'bmi',label:'VKİ',unit:''},
 {key:'whr',label:'Bel/Kalça Oranı',unit:''},
 {key:'whtr',label:'Bel/Boy Oranı',unit:''},
-{key:'yagOrani',label:'Tahmini Yağ',unit:'%'},
-{key:'yagsizKutle',label:'Tahmini Yağsız Kütle',unit:'kg'},
-];
+].concat(bfVar?[{key:'yagOrani',label:'Tahmini Yağ',unit:'%'},{key:'yagsizKutle',label:'Tahmini Yağsız Kütle',unit:'kg'}]:[]);
 const html = `<!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8">
 <title>${m.name} ${m.surname} — Ölçüm Raporu</title>
@@ -4810,7 +4843,7 @@ return `<td><span class="${cls}" style="font-size:13px">${arrow} ${Math.abs(diff
 <strong>Referans Değerler:</strong><br>
 VKİ: &lt;18.5 Zayıf · 18.5–24.9 Normal · 25–29.9 Kilolu · ≥30 Obez<br>
 Bel/Kalça Oranı: Kadın &lt;0.85 normal ≥0.85 yüksek risk · Erkek &lt;0.90 normal ≥0.90 yüksek risk<br>
-Bel/Boy Oranı: &lt;0.40 Zayıf · 0.40–0.49 İdeal · 0.50–0.59 Dikkat · ≥0.60 Yüksek risk${bfVar?'<br>Tahmini Yağ / Yağsız Kütle: ABD Donanması (U.S. Navy) formülü ile hesaplanmıştır. Mezura ölçümüne dayalı tahmindir, %2-3 sapma payıyla yaklaşık değerlerdir; gerçek değerden sapabilir.':''}
+Bel/Boy Oranı: &lt;0.40 Zayıf · 0.40–0.49 İdeal · 0.50–0.59 Dikkat · ≥0.60 Yüksek risk${bfVar?'<br>Tahmini Yağ / Yağsız Kütle: ABD Donanması (U.S. Navy) formülü ile hesaplanmıştır. Mezura ölçümüne dayalı tahmindir, %2-3 sapma payıyla yaklaşık değerlerdir; gerçek değerden sapabilir.':''}${_minor?'<br>'+BF_MINOR_LONG:''}
 </div>
 </body></html>`;
 const blob = new Blob([html],{type:'text/html;charset=utf-8'});
