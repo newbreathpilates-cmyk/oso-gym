@@ -1954,7 +1954,7 @@ showPaketBitiAlert(bugunBitenler);
 localStorage.setItem('nbp_paket_alert_day', today);
 }
 }
-const activeM = S.members.filter(m=>m.status==='Aktif').length;
+const activeM = S.members.filter(m=>m.status!=='Ara Verdi/Ayrıldı').length;
 const expiredM = S.members.filter(m=>m.status==='Süresi Doldu').length;
 const tm = new Date().toISOString().slice(0,7);
 const todayStr = localDate();
@@ -3469,7 +3469,7 @@ document.getElementById('topbar-actions').innerHTML=`
 <option value="">Tümü (A-Z)</option>
 <option value="aktif">Aktif</option>
 <option value="son-10-gun">Paket kullanım/üyelik süresi bitmek üzere son 15 gün</option>
-<option value="suresi-doldu">Paket kullanım/üyelik süresi bitti</option>
+<option value="suresi-doldu">Paket kullanım süresi bitti</option>
 <option value="dersleri-biten">Paket/Dersler bitti</option>
 <option value="son-2-ders">Son 2 ders kalan</option>
 <option value="ayrildi">Ayrıldı/Ara Verdi</option>
