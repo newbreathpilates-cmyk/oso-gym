@@ -3472,6 +3472,7 @@ document.getElementById('topbar-actions').innerHTML=`
 <option value="suresi-doldu">Paket kullanım/üyelik süresi bitti</option>
 <option value="dersleri-biten">Paket/Dersler bitti</option>
 <option value="son-2-ders">Son 2 ders kalan</option>
+<option value="ayrildi">Ayrıldı/Ara Verdi</option>
 </select>
 ${!isTrainer ? `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>` : `<button class="btn btn-primary" onclick="openMemberModal()"><i class="ti ti-plus"></i> Yeni Üye</button>`}
 </div>`;
@@ -3525,6 +3526,7 @@ if(total===0||total===999) return false;
 const remaining = Math.max(0, total - (m.used||0));
 return remaining===0;
 });
+else if(f==='ayrildi') list = list.filter(m=>m.status==='Ara Verdi/Ayrıldı');
 // A-Z sırala
 list.sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr'));
 renderMembersTable(list);
