@@ -115,6 +115,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const DERSLER_COL = collection(db, 'matDersler');
 const REZ_COL = collection(db, 'matRezervasyonlar');
+const ZIYARET_COL = collection(db, 'siteZiyaretleri');
 const AYAR_REF = doc(db, 'matAyarlar', 'genel');
 
 let ayarlar = { iban:'', ibanAdi:'', whatsappNo:'' };
@@ -139,6 +140,18 @@ function maskeAd(fullName) {
     return first + '****' + last;
   }).join(' ');
 }
+
+// Anonim, sessiz ziyaret sayacı: kim olduğu değil sadece kaç kez açıldığı kaydedilir.
+// Aynı tarayıcı sekmesinde sayfa yenilense bile tekrar sayılmaz (sessionStorage).
+(function(){
+try {
+  if(!sessionStorage.getItem('nbp_ziyaret_kaydedildi')) {
+    const bugun = new Date().toISOString().slice(0,10);
+    addDoc(ZIYARET_COL, { tarih: bugun, ts: Date.now() }).catch(()=>{});
+    sessionStorage.setItem('nbp_ziyaret_kaydedildi','1');
+  }
+} catch(e) {}
+})();
 
 const listEl = document.getElementById('list');
 window._dersCache = {};
