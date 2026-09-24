@@ -145,6 +145,10 @@ function maskeAd(fullName) {
 // Aynı tarayıcı sekmesinde sayfa yenilense bile tekrar sayılmaz (sessionStorage).
 (function(){
 try {
+  // ?onizleme=1 ile girilirse bu cihaz kalıcı olarak sayaçtan hariç tutulur (sahibin kendi testleri sayılmasın diye).
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('onizleme')==='1') { localStorage.setItem('nbp_sahip_cihaz','1'); }
+  if(localStorage.getItem('nbp_sahip_cihaz')==='1') { return; }
   if(!sessionStorage.getItem('nbp_ziyaret_kaydedildi')) {
     const bugun = new Date().toISOString().slice(0,10);
     addDoc(ZIYARET_COL, { tarih: bugun, ts: Date.now() }).catch(()=>{});
