@@ -167,16 +167,21 @@ const listEl = document.getElementById('list');
 window._dersCache = {};
 window._rezByDers = {};
 
-function renderKurallar(hepsiUcretsizMi) {
+function renderKurallar(hepsiUcretsizMi, etkinlikYok) {
   const introEl = document.getElementById('intro-text');
   if(introEl) {
-    introEl.textContent = hepsiUcretsizMi
+    introEl.textContent = etkinlikYok
+      ? 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın.'
+      : hepsiUcretsizMi
       ? 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz onaylandığında adınızı katılanlar listesinde görebilirsiniz.'
       : 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz ödeme onaylandığında kesinleşir.';
   }
   const el = document.getElementById('rules-section');
   if(!el) return;
-  const rezervasyonIptalMaddeleri = hepsiUcretsizMi ? `
+  const rezervasyonIptalMaddeleri = etkinlikYok ? `
+      <li>Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar.</li>
+      <li><b>Katılamayacağınızı lütfen bize önceden bildirin.</b> Bu sayede yerinizi, o derse katılmak isteyip kontenjan bulamayan başka bir üyemiz için değerlendirebiliriz 🙏</li>
+  ` : hepsiUcretsizMi ? `
       <li>Yeriniz, katılımınız onaylandığında kesinleşir.</li>
       <li>Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar. Böyle bir durumda size en kısa sürede haber verilir.</li>
       <li><b>Katılamayacağınızı lütfen bize önceden bildirin.</b> Bu sayede yerinizi, o derse katılmak isteyip kontenjan bulamayan başka bir üyemiz için değerlendirebiliriz 🙏</li>
@@ -215,7 +220,7 @@ function renderDersList() {
     .sort((a,b) => (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
 
   const hepsiUcretsizMi = dersler.length > 0 && dersler.every(d => d.fiyat === 0);
-  renderKurallar(hepsiUcretsizMi);
+  renderKurallar(hepsiUcretsizMi, dersler.length === 0);
 
   if(!dersler.length) {
     listEl.innerHTML = '<div class="empty-banner"><div class="eb-title">Şu anda açık bir grup dersi etkinliği bulunmuyor.</div><div class="eb-sub">Yeni dersler için bizi Instagram\'dan takip edebilirsiniz.</div></div>';
