@@ -6817,8 +6817,8 @@ const buHaftaSayisi = kayitlar.filter(function(z){ return z.tarih >= buHaftaStr;
 const barlar = gunler.map(function(g){
 const v = gunSayisi[g]||0;
 const yukseklik = Math.round((v/maxDeger)*60) + (v>0?4:2);
-const gun = new Date(g+'T00:00:00').toLocaleDateString('tr-TR',{day:'numeric',month:'numeric'});
-return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><div title="'+g+': '+v+' ziyaret" style="width:100%;max-width:18px;height:'+yukseklik+'px;background:'+(g===bugun?'#1D9E75':'#a7d8c4')+';border-radius:3px 3px 0 0"></div><div style="font-size:9px;color:var(--text3);white-space:nowrap">'+gun+'</div></div>';
+const gun = new Date(g+'T00:00:00').getDate();
+return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;flex:1 1 0;min-width:0"><div title="'+g+': '+v+' ziyaret" style="width:100%;max-width:18px;height:'+yukseklik+'px;background:'+(g===bugun?'#1D9E75':'#a7d8c4')+';border-radius:3px 3px 0 0"></div><div style="font-size:10px;line-height:1;color:'+(g===bugun?'#1D9E75':'var(--text3)')+';font-weight:'+(g===bugun?'700':'400')+'">'+gun+'</div></div>';
 }).join('');
 const tabloSatirlari = [...gunler].reverse().map(function(g){
 const v = gunSayisi[g]||0;
@@ -6833,7 +6833,8 @@ el.innerHTML = `
 <div style="background:#f0fdf8;border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:#1D9E75">${bugunSayisi}</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Bugün</div></div>
 <div style="background:#f0fdf8;border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:#1D9E75">${buHaftaSayisi}</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Son 7 gün</div></div>
 </div>
-<div style="display:flex;align-items:flex-end;gap:4px;height:80px;padding:0 2px 4px">${barlar}</div>
+<div style="display:flex;align-items:flex-end;gap:3px;height:86px;padding:0;overflow:hidden">${barlar}</div>
+<div style="text-align:center;font-size:10px;color:var(--text3);margin-top:6px">${new Date(gunler[0]+'T00:00:00').toLocaleDateString('tr-TR',{day:'numeric',month:'long'})} – ${new Date(gunler[gunler.length-1]+'T00:00:00').toLocaleDateString('tr-TR',{day:'numeric',month:'long'})} · son 14 gün</div>
 <details style="margin-top:10px">
 <summary style="font-size:12px;color:var(--text2);cursor:pointer;font-weight:600">Günlük tabloyu göster</summary>
 <table style="width:100%;margin-top:6px;border-collapse:collapse">${tabloSatirlari}</table>
