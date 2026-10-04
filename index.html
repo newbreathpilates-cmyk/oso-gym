@@ -3084,7 +3084,7 @@ return;
 // Süresi dolmuş ama dersi kalan üye uyarısı
 if(m && m.status === 'Süresi Doldu' && remaining > 0) {
 const endDate = getEnd(m);
-if(!confirm(m.name+' '+m.surname+'\'ın paket süresi '+endDate+' tarihinde dolmuştur, ancak '+remaining+' ders hakkı kalmaktadır.\n\nYine de randevuya eklemek istiyor musunuz?')) {
+if(!confirm(m.name+' '+m.surname+'\'ın paket süresi '+endDate+' tarihinde dolmuştur, ancak '+remaining+' ders hakkı kalmaktadır.\n\nEklediğiniz bu randevu ciro ve hakediş (prim) hesaplarına dahil edilmeyecektir.\n\nYine de randevuya eklemek istiyor musunuz?')) {
 document.getElementById('ev-member-add').value='';
 return;
 }
@@ -3277,7 +3277,7 @@ return;
 // Süresi dolmuş ama dersi kalan üye uyarısı
 if(m && m.status === 'Süresi Doldu' && remaining > 0) {
 const endDate = getEnd(m);
-if(!confirm(m.name+' '+m.surname+'\'ın paket süresi '+endDate+' tarihinde dolmuştur, ancak '+remaining+' ders hakkı kalmaktadır.\n\nYine de randevuya eklemek istiyor musunuz?')) {
+if(!confirm(m.name+' '+m.surname+'\'ın paket süresi '+endDate+' tarihinde dolmuştur, ancak '+remaining+' ders hakkı kalmaktadır.\n\nEklediğiniz bu randevu ciro ve hakediş (prim) hesaplarına dahil edilmeyecektir.\n\nYine de randevuya eklemek istiyor musunuz?')) {
 document.getElementById('ev-member-add').value='';
 return;
 }
