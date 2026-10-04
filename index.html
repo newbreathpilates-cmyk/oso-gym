@@ -3219,6 +3219,17 @@ const rect = col.getBoundingClientRect();
 const relY = e.clientY - rect.top;
 // Each hour = 60px, starts at hour 7
 const totalMins = Math.max(0, Math.floor(relY));
+// Güvenlik ağı: tıklanan nokta aslında açık bir online dersin zaman aralığına denk geliyorsa
+// (kart tam kapatamadığı için boşluğa basılmış olsa bile), boş randevu formu yerine o dersin detayını göster.
+const clickedAbsMin = 6*60 + totalMins;
+const touchedDers = (window._matDersler||[]).find(function(md){
+if(md.tarih !== dateStr) return false;
+const parts = (md.saat||'0:0').split(':').map(Number);
+const start = parts[0]*60+parts[1];
+const end = start + (md.sure||45);
+return clickedAbsMin >= start-5 && clickedAbsMin <= end+5;
+});
+if(touchedDers) { showOnlineDersDetay(touchedDers.id); return; }
 const roundedMins = Math.floor(totalMins / 60) * 60; // snap to full hour
 const hour = 6 + Math.floor(roundedMins / 60);
 const min = roundedMins % 60;
