@@ -32,6 +32,8 @@ header p{color:var(--ink-soft);font-size:14.5px;margin-top:8px}
 .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;white-space:nowrap}
 .badge.open{background:#d1fae5;color:#065f46}
 .badge.full{background:#fee2e2;color:#991b1b}
+.badge.paid{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+.form-price{background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:10px 14px;margin-bottom:12px;text-align:center;font-size:15px;font-weight:700;color:#92400e}
 .card .price{font-size:14px;font-weight:600;margin-top:10px;color:var(--teal-deep)}
 .btn{
   display:inline-block;width:100%;text-align:center;padding:12px;border-radius:100px;
@@ -250,15 +252,19 @@ function renderDersList() {
           <div class="meta">${formatTrDate(d.tarih)} · ${d.saat} · ${d.egitmenAdi} · ${d.sure||45} dakika</div>
           <a class="map-link" href="https://www.google.com/maps/search/?api=1&query=New+Breath+Pilates+Be%C5%9Fikta%C5%9F+%C4%B0stanbul" target="_blank" rel="noopener">📍 Beşiktaş, İstanbul — Haritada Gör</a>
         </div>
-        <span class="badge ${dolu?'full':'open'}">${dolu ? 'DOLU' : (d.onayliSayisi||0)+'/'+d.kapasite+' onaylı'}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="badge ${dolu?'full':'open'}">${dolu ? 'DOLU' : (d.onayliSayisi||0)+'/'+d.kapasite+' onaylı'}</span>
+          ${d.fiyat>0 ? '<span class="badge paid">💳 Ücretli</span>' : ''}
+        </div>
       </div>
       ${bekleyenSayisi>0 ? `<div style="font-size:11.5px;color:var(--teal-deep);margin-top:2px">🔥 ${bekleyenSayisi} kişi beklemede</div>` : ''}
       ${isimlerHTML}
-      <div class="price">${d.fiyat===0 ? 'Ücretsiz' : d.fiyat+' TL / kişi'}</div>
+      ${d.fiyat===0 ? '<div class="price">Ücretsiz</div>' : ''}
       ${dolu
         ? `<button class="btn" disabled>Bu ders dolu</button>`
         : `<button class="btn btn-primary" onclick="toggleForm('${d.id}')">Rezervasyon Yap</button>
            <div class="form" id="form-${d.id}">
+             ${d.fiyat>0 ? '<div class="form-price">💳 Ücret: '+d.fiyat+' TL / kişi</div>' : ''}
              <input type="text" id="ad-${d.id}" placeholder="Ad Soyad">
              <input type="tel" id="tel-${d.id}" placeholder="Telefon (05XX XXX XX XX)">
              <button class="btn btn-primary" onclick="rezervasyonYap('${d.id}')">Gönder</button>
