@@ -73,6 +73,15 @@ header p{color:var(--ink-soft);font-size:14.5px;margin-top:8px}
 .loading{text-align:center;padding:60px 20px;color:var(--ink-soft);font-size:14px}
 footer{text-align:center;padding:30px 20px;font-size:12px;color:var(--ink-soft)}
 .rules-section{padding:6px 20px 20px;border-top:1px solid var(--line)}
+.gecmis-wrap{max-width:520px;margin:18px auto 0;padding:0 20px}
+.gecmis-toggle{width:100%;background:var(--card,#fff);border:1px solid var(--line-soft);border-radius:14px;padding:14px 16px;font-size:14px;font-weight:600;color:var(--ink-soft);text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.gecmis-toggle:active{opacity:0.8}
+.gecmis-list{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+.gecmis-card{background:var(--card,#fff);border:1px solid var(--line-soft);border-radius:14px;padding:14px 16px;opacity:0.82}
+.gecmis-card .date{font-weight:600;font-size:15px}
+.gecmis-card .meta{font-size:13px;color:var(--ink-soft);margin-top:2px}
+.gecmis-closed{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:600;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:5px 10px}
+.gecmis-more{width:100%;margin-top:10px;background:none;border:1px solid var(--line-soft);border-radius:10px;padding:10px;font-size:13px;font-weight:600;color:var(--teal-deep);cursor:pointer}
 .rules-title{font-size:17px;font-weight:500;margin:26px 0 18px;text-align:center}
 .rule-group{margin-bottom:20px}
 .rule-group h3{font-size:12.5px;font-weight:600;color:var(--teal-deep);text-transform:uppercase;letter-spacing:0.03em;margin-bottom:8px}
@@ -98,6 +107,8 @@ footer{text-align:center;padding:30px 20px;font-size:12px;color:var(--ink-soft)}
 <div class="wrap list" id="list">
   <div class="loading">Yükleniyor...</div>
 </div>
+
+<div class="gecmis-wrap" id="gecmis-section"></div>
 
 <div class="wrap rules-section" id="rules-section">
 </div>
@@ -217,15 +228,71 @@ function renderKurallar(hepsiUcretsizMi, etkinlikYok, karisikMi) {
   `;
 }
 
+// Bir dersin başlama saati geçti mi? (tarih + saat birlikte kontrol edilir)
+function dersBasladiMi(d) {
+  if(!d || !d.tarih) return false;
+  const dt = new Date(d.tarih + 'T' + (d.saat || '00:00') + ':00');
+  if(isNaN(dt.getTime())) return false;
+  return new Date() >= dt;
+}
+function toYMD(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+// Tüm geçmiş (saati geçmiş) etkinlikler, en yeniden en eskiye sıralı
+function tumGecmisEtkinlikler() {
+  return Object.values(window._dersCache)
+    .filter(d => dersBasladiMi(d))
+    .sort((a,b) => (a.tarih+a.saat) > (b.tarih+b.saat) ? -1 : 1);
+}
+let gecmisAcikMi = false;
+let gecmisAySiniri = 2; // kaç ay geriye kadar gösterilsin
+function gecmisKartHTML(d) {
+  const rezList = window._rezByDers[d.id] || [];
+  const onaylananlar = rezList.filter(r => r.durum === 'onaylandi');
+  const isimlerHTML = onaylananlar.length
+    ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+         <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--teal-deep);margin-bottom:6px">KATILANLAR</div>
+         ${onaylananlar.map(r=>`<div style="font-size:13px;color:var(--ink-soft);padding:2px 0">${maskeAd(r.adSoyad)}</div>`).join('')}
+       </div>`
+    : '';
+  return `
+    <div class="gecmis-card">
+      <div class="date">${d.dersAdi || 'Mat Pilates'}</div>
+      <div class="meta">${formatTrDate(d.tarih)} · ${d.saat} · ${d.egitmenAdi || '—'}</div>
+      <div class="gecmis-closed">⏹ Kayıtlar kapandı · Ders başladı/bitti</div>
+      ${isimlerHTML}
+    </div>`;
+}
+function renderGecmisBolumu() {
+  const el = document.getElementById('gecmis-section');
+  if(!el) return;
+  const tumGecmis = tumGecmisEtkinlikler();
+  if(!tumGecmis.length) { el.innerHTML = ''; return; }
+  if(!gecmisAcikMi) {
+    el.innerHTML = `<button class="gecmis-toggle" onclick="gecmisAcikMi=true;renderGecmisBolumu()"><span>📁 Geçmiş Etkinlikler (${tumGecmis.length})</span><span>▾</span></button>`;
+    return;
+  }
+  const simdi = new Date();
+  const sinirTarih = new Date(simdi.getFullYear(), simdi.getMonth()-gecmisAySiniri, simdi.getDate());
+  const sinirStr = toYMD(sinirTarih);
+  const gosterilecekler = tumGecmis.filter(d => d.tarih >= sinirStr);
+  const dahaVarMi = tumGecmis.length > gosterilecekler.length;
+  el.innerHTML = `
+    <button class="gecmis-toggle" onclick="gecmisAcikMi=false;renderGecmisBolumu()"><span>📁 Geçmiş Etkinlikler (${tumGecmis.length})</span><span>▴</span></button>
+    <div class="gecmis-list">${gosterilecekler.map(d => gecmisKartHTML(d)).join('')}</div>
+    ${dahaVarMi ? `<button class="gecmis-more" onclick="gecmisAySiniri+=2;renderGecmisBolumu()">Daha Fazla Göster</button>` : ''}
+  `;
+}
 function renderDersList() {
   const today = new Date().toISOString().slice(0,10);
   let dersler = Object.values(window._dersCache)
-    .filter(d => d.durum === 'acik' && d.tarih >= today)
+    .filter(d => d.durum === 'acik' && d.tarih >= today && !dersBasladiMi(d))
     .sort((a,b) => (a.tarih+a.saat) > (b.tarih+b.saat) ? 1 : -1);
 
   const hepsiUcretsizMi = dersler.length > 0 && dersler.every(d => d.fiyat === 0);
   const karisikMi = dersler.some(d => d.fiyat === 0) && dersler.some(d => d.fiyat > 0);
   renderKurallar(hepsiUcretsizMi, dersler.length === 0, karisikMi);
+  renderGecmisBolumu();
 
   if(!dersler.length) {
     listEl.innerHTML = '<div class="empty-banner"><div class="eb-title">Şu anda açık bir grup dersi etkinliği bulunmuyor.</div><div class="eb-sub">Yeni dersler için bizi Instagram\'dan takip edebilirsiniz.</div></div>';
