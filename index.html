@@ -7075,7 +7075,34 @@ toast('Ders silindi.','success');
 function matRezDurumDegistir(rezId, dersId, yeniDurum) {
 window.matRezervasyonOnayla(rezId, dersId, yeniDurum).then(function(){
 toast(yeniDurum==='onaylandi'?'Rezervasyon onaylandı ✓':'Rezervasyon reddedildi.','success');
+if(yeniDurum==='onaylandi') {
+const rez = (window._matRezervasyonlar||[]).find(function(r){ return r.id===rezId; });
+const ders = (window._matDersler||[]).find(function(d){ return d.id===dersId; });
+if(rez && rez.telefon) {
+const adSoyad = rez.adSoyad || '';
+const ilkAd = adSoyad.split(' ')[0] || adSoyad;
+const dersAdi = (ders && ders.dersAdi) ? ders.dersAdi : 'Pilates';
+const tarihStr = ders ? formatTrDateKisa(ders.tarih) : '';
+const saatStr = ders ? ders.saat : '';
+const msg = 'Merhaba '+adSoyad+' 🌿\n\n'+
+'New Breath Pilates\'teki etkinliğimize kaydınız onaylanmıştır! Sizi aramızda görmekten mutluluk duyacağız.\n\n'+
+'📅 Tarih: '+tarihStr+'\n'+
+'🕐 Saat: '+saatStr+'\n'+
+'📍 Konum: Beşiktaş, İstanbul\n\n'+
+'Ders başlangıcından en az 5 dakika önce hazır olmanızı rica ederiz. Rahat hareket edebileceğiniz, spora uygun bir kıyafetle gelmeniz yeterli.\n\n'+
+'Sizi bekliyoruz! 🤍';
+const phone = rez.telefon.replace(/\D/g,'');
+const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
+window.open('https://wa.me/'+waPhone+'?text='+encodeURIComponent(msg), '_blank');
+}
+}
 }).catch(function(e){ console.error(e); toast('İşlem başarısız: '+(e&&e.message?e.message:'bilinmeyen hata'),'error'); });
+}
+function formatTrDateKisa(dateStr) {
+if(!dateStr) return '';
+const d = new Date(dateStr+'T00:00:00');
+if(isNaN(d.getTime())) return dateStr;
+return d.toLocaleDateString('tr-TR', {day:'numeric', month:'long', weekday:'long'});
 }
 function renderExport() {
 document.getElementById('page-content').innerHTML=`
