@@ -427,7 +427,7 @@ successEl.innerHTML = `
       <div class="info">
         <div><b>IBAN:</b> ${ayarlar.iban||'—'}</div>
         <div><b>Hesap Sahibi:</b> ${ayarlar.ibanAdi||'—'}</div>
-        <div><b>Tutar:</b> ${card.querySelector('.price').textContent}</div>
+        <div><b>Tutar:</b> ${dersBilgi.fiyat} TL / kişi</div>
       </div>
       ${ayarlar.whatsappNo ? `<a class="wa-link" href="https://wa.me/${waPhone}?text=${waMsg}" target="_blank">WhatsApp'tan Dekont Gönder</a>` : ''}
     `;
