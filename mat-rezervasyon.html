@@ -93,19 +93,27 @@ footer{text-align:center;padding:30px 20px;font-size:12px;color:var(--ink-soft)}
   max-width:520px;margin:0 auto;padding:20px 24px;text-align:center;
   font-size:13.5px;line-height:1.65;color:var(--ink-soft);
 }
+.lang-toggle{
+  position:fixed;top:14px;right:14px;z-index:50;
+  background:#fff;border:1px solid var(--line);border-radius:100px;
+  padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--teal-deep);
+  cursor:pointer;box-shadow:0 2px 8px rgba(22,38,31,0.08);
+}
+.lang-toggle:active{opacity:0.75}
 </style>
 </head>
 <body>
+<button class="lang-toggle" id="lang-toggle" onclick="toggleLang()">EN</button>
 <header class="wrap">
   <div class="brand">
     <img src="logo.png" alt="New Breath Pilates" style="height:120px;width:auto">
   </div>
-  <h1>New Breath Pilates<br><span style="font-size:0.72em">Yüz Yüze Ders Rezervasyonu</span></h1>
+  <h1>New Breath Pilates<br><span id="subtitle-text" style="font-size:0.72em">Yüz Yüze Ders Rezervasyonu</span></h1>
   <p id="intro-text">Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın.</p>
 </header>
 
 <div class="wrap list" id="list">
-  <div class="loading">Yükleniyor...</div>
+  <div class="loading" id="loading-text">Yükleniyor...</div>
 </div>
 
 <div class="gecmis-wrap" id="gecmis-section"></div>
@@ -113,10 +121,10 @@ footer{text-align:center;padding:30px 20px;font-size:12px;color:var(--ink-soft)}
 <div class="wrap rules-section" id="rules-section">
 </div>
 
-<p class="closing-note">Bizi tanıyan ya da tanımayan herkes bu etkinliklere katılabilir. Amacımız, kaliteli egzersizi ve sağlıklı yaşamı herkes için daha ulaşılabilir kılmak 🌿</p>
+<p class="closing-note" id="closing-note-text">Bizi tanıyan ya da tanımayan herkes bu etkinliklere katılabilir. Amacımız, kaliteli egzersizi ve sağlıklı yaşamı herkes için daha ulaşılabilir kılmak 🌿</p>
 
 <img src="logo.png" alt="New Breath Pilates" style="display:block;margin:0 auto 14px;width:56px;height:56px;object-fit:contain;opacity:0.9">
-<footer>🌿 New Breath Pilates · Beşiktaş, İstanbul</footer>
+<footer id="footer-text">🌿 New Breath Pilates · Beşiktaş, İstanbul</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -140,10 +148,152 @@ const AYAR_REF = doc(db, 'matAyarlar', 'genel');
 let ayarlar = { iban:'', ibanAdi:'', whatsappNo:'' };
 getDoc(AYAR_REF).then(snap => { if(snap.exists()) ayarlar = snap.data(); }).catch(()=>{});
 
+// ── DİL (TR/EN) ──
+let LANG = localStorage.getItem('nbp_lang') === 'en' ? 'en' : 'tr';
+
+const I18N = {
+  tr: {
+    subtitle: 'Yüz Yüze Ders Rezervasyonu',
+    loading: 'Yükleniyor...',
+    introNoEvent: 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın.',
+    introMixed: 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın. Ücretli derslerde yeriniz ödeme onaylandığında, ücretsiz etkinliklerde ise kaydınız onaylandığında kesinleşir.',
+    introFree: 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz onaylandığında adınızı katılanlar listesinde görebilirsiniz.',
+    introPaid: 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz ödeme onaylandığında kesinleşir.',
+    emptyTitle: 'Şu anda açık bir grup dersi etkinliği bulunmuyor.',
+    emptySub: "Yeni dersler için bizi Instagram'dan takip edebilirsiniz.",
+    faceToFace: '📍 Bu dersler stüdyomuzda, yüz yüze gerçekleştirilir',
+    mapLink: '📍 Beşiktaş, İstanbul — Haritada Gör',
+    full: 'DOLU',
+    approved: 'onaylı',
+    paidBadge: '💳 Ücretli',
+    waitingSuffix: ' kişi beklemede',
+    waitingPrefix: '🔥 ',
+    attendees: 'KATILANLAR',
+    free: 'Ücretsiz',
+    classFull: 'Bu ders dolu',
+    reserve: 'Rezervasyon Yap',
+    feePrefix: '💳 Ücret: ',
+    feeSuffix: ' TL / kişi',
+    namePlaceholder: 'Ad Soyad',
+    phonePlaceholder: 'Telefon (05XX XXX XX XX)',
+    send: 'Gönder',
+    sending: 'Gönderiliyor...',
+    closedBadge: '⏹ Kayıtlar kapandı · Ders başladı/bitti',
+    historyFolder: n => `📁 Geçmiş Etkinlikler (${n})`,
+    showMore: 'Daha Fazla Göster',
+    rulesTitle: '📋 Katılım Kuralları',
+    groupClothing: 'Kıyafet ve Hazırlık',
+    clothing1: 'Derslere, rahat hareket edebileceğiniz, spora uygun kıyafetlerle katılım sağlamanızı rica ederiz.',
+    clothing2: 'Ders başlangıcından en az 5 dakika önce hazır olun.',
+    groupReservation: 'Rezervasyon ve İptal',
+    ruleCancelNotify: '<b>Katılamayacağınızı lütfen bize önceden bildirin.</b> Bu sayede yerinizi, o derse katılmak isteyip kontenjan bulamayan başka bir üyemiz için değerlendirebiliriz 🙏',
+    ruleStudioCancelShort: 'Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar.',
+    ruleStudioCancelFree: 'Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar. Böyle bir durumda size en kısa sürede haber verilir.',
+    ruleStudioCancelPaid: "Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar. Böyle bir durumda size en kısa sürede haber verilir ve ödemeniz <b>tam olarak iade edilir</b>.",
+    ruleSpotConfirmedFree: 'Yeriniz, katılımınız onaylandığında kesinleşir.',
+    ruleSpotConfirmedPaid: 'Yeriniz, ödeme dekontu onaylandığında kesinleşir.',
+    ruleNoRefund: 'Katılımcı tarafından yapılan iptal ve devamsızlık durumlarında ödeme iadesi yapılmamaktadır.',
+    groupHealth: 'Sağlık',
+    healthItem: 'Sakatlık, hamilelik veya kronik bir rahatsızlığınız varsa lütfen dersten önce eğitmeninize bilgi verin.',
+    closingNote: 'Bizi tanıyan ya da tanımayan herkes bu etkinliklere katılabilir. Amacımız, kaliteli egzersizi ve sağlıklı yaşamı herkes için daha ulaşılabilir kılmak 🌿',
+    footer: '🌿 New Breath Pilates · Beşiktaş, İstanbul',
+    alertFillFields: 'Lütfen ad soyad ve telefon numaranızı girin.',
+    rejectedTitle: 'Kayıt yapılamadı',
+    rejectedBody: 'Daha önce ücretsiz bir etkinliğimize katılmış olduğunuz için, ne yazık ki bu etkinliğe kayıt olamıyorsunuz. Ücretsiz etkinliklerimiz kişi başı yalnızca bir kez geçerlidir. Ücretli derslerimize her zaman katılabilirsiniz!',
+    seenTitle: '✓ Kaydınızı gördük',
+    seenBody: "Yerinizin kesinleşmesi için lütfen bizden haber bekleyiniz. Yeriniz kesinleştiğinde size WhatsApp üzerinden bilgi vereceğiz. Ayrıca bu sayfadan katılımcı listesini takip ederek yerinizin kesinleştiğini görebilirsiniz.",
+    requestTitle: '✓ Talebiniz alındı',
+    requestBody: "Yerinizin kesinleşmesi için lütfen ödemeyi yapıp dekontu WhatsApp'tan gönderin. Yeriniz kesinleştiğinde size WhatsApp üzerinden ayrıca haber vereceğiz. Ayrıca bu sayfadan katılımcı listesini takip ederek yerinizin kesinleştiğini görebilirsiniz.",
+    ibanLabel: 'IBAN:',
+    accountHolderLabel: 'Hesap Sahibi:',
+    amountLabel: 'Tutar:',
+    waSendReceipt: "WhatsApp'tan Dekont Gönder",
+    genericError: 'Bir hata oluştu, lütfen tekrar deneyin.',
+    waMsg: (dersAdi, meta, ad) => `Merhaba, ${dersAdi} — ${meta} için rezervasyon yaptım (${ad}). Dekontu ekte gönderiyorum.`,
+    dateLocale: 'tr-TR'
+  },
+  en: {
+    subtitle: 'In-Person Class Reservation',
+    loading: 'Loading...',
+    introNoEvent: 'Choose the class you want to join and leave your details.',
+    introMixed: "Choose the class you want to join and leave your details. For paid classes your spot is confirmed once payment is approved; for free events it's confirmed once your registration is approved.",
+    introFree: "Choose the class you want to join and leave your details — once approved, you'll see your name on the attendee list.",
+    introPaid: 'Choose the class you want to join and leave your details — your spot is confirmed once payment is approved.',
+    emptyTitle: 'There is no open group class event right now.',
+    emptySub: 'Follow us on Instagram to hear about new classes.',
+    faceToFace: '📍 These classes take place in person at our studio',
+    mapLink: '📍 Beşiktaş, Istanbul — View on Map',
+    full: 'FULL',
+    approved: 'approved',
+    paidBadge: '💳 Paid',
+    waitingSuffix: ' people waiting',
+    waitingPrefix: '🔥 ',
+    attendees: 'ATTENDEES',
+    free: 'Free',
+    classFull: 'This class is full',
+    reserve: 'Reserve a Spot',
+    feePrefix: '💳 Fee: ',
+    feeSuffix: ' TL / person',
+    namePlaceholder: 'Full Name',
+    phonePlaceholder: 'Phone (05XX XXX XX XX)',
+    send: 'Send',
+    sending: 'Sending...',
+    closedBadge: '⏹ Registration closed · Class has started/ended',
+    historyFolder: n => `📁 Past Events (${n})`,
+    showMore: 'Show More',
+    rulesTitle: '📋 Participation Rules',
+    groupClothing: 'Attire & Preparation',
+    clothing1: 'Please wear comfortable, sport-appropriate clothing to class.',
+    clothing2: 'Please be ready at least 5 minutes before class starts.',
+    groupReservation: 'Reservation & Cancellation',
+    ruleCancelNotify: "<b>Please let us know in advance if you can't attend.</b> This way we can offer your spot to another member on the waiting list 🙏",
+    ruleStudioCancelShort: 'The studio reserves the right to cancel a class if it deems it necessary or if the required conditions are not met.',
+    ruleStudioCancelFree: 'The studio reserves the right to cancel a class if it deems it necessary or if the required conditions are not met. In that case you will be notified as soon as possible.',
+    ruleStudioCancelPaid: 'The studio reserves the right to cancel a class if it deems it necessary or if the required conditions are not met. In that case you will be notified as soon as possible and your payment will be <b>fully refunded</b>.',
+    ruleSpotConfirmedFree: 'Your spot is confirmed once your registration is approved.',
+    ruleSpotConfirmedPaid: 'Your spot is confirmed once your payment receipt is approved.',
+    ruleNoRefund: 'No refunds are given for cancellations or no-shows by the participant.',
+    groupHealth: 'Health',
+    healthItem: 'If you have an injury, are pregnant, or have a chronic condition, please inform your instructor before class.',
+    closingNote: "Everyone is welcome at these events, whether you know us or not. Our goal is to make quality exercise and a healthy lifestyle more accessible to everyone 🌿",
+    footer: '🌿 New Breath Pilates · Beşiktaş, Istanbul',
+    alertFillFields: 'Please enter your full name and phone number.',
+    rejectedTitle: 'Registration unsuccessful',
+    rejectedBody: "Since you've already joined one of our free events before, you unfortunately can't register for this one. Our free events are limited to one per person. You're always welcome to join our paid classes!",
+    seenTitle: "✓ We've received your registration",
+    seenBody: "Please wait for us to confirm your spot. We'll let you know via WhatsApp once it's confirmed. You can also check the attendee list on this page to see when your spot is confirmed.",
+    requestTitle: '✓ Your request has been received',
+    requestBody: "To confirm your spot, please make the payment and send the receipt via WhatsApp. We'll also let you know via WhatsApp once your spot is confirmed. You can check the attendee list on this page too.",
+    ibanLabel: 'IBAN:',
+    accountHolderLabel: 'Account Holder:',
+    amountLabel: 'Amount:',
+    waSendReceipt: 'Send Receipt via WhatsApp',
+    genericError: 'Something went wrong, please try again.',
+    waMsg: (dersAdi, meta, ad) => `Hello, I registered for ${dersAdi} — ${meta} (${ad}). I'm sending the payment receipt.`,
+    dateLocale: 'en-US'
+  }
+};
+function t(key) { return I18N[LANG][key]; }
+
+function applyStaticLang() {
+  const sub = document.getElementById('subtitle-text'); if(sub) sub.textContent = t('subtitle');
+  const loadingEl = document.getElementById('loading-text'); if(loadingEl) loadingEl.textContent = t('loading');
+  const closingEl = document.getElementById('closing-note-text'); if(closingEl) closingEl.textContent = t('closingNote');
+  const footerEl = document.getElementById('footer-text'); if(footerEl) footerEl.textContent = t('footer');
+  const toggleBtn = document.getElementById('lang-toggle'); if(toggleBtn) toggleBtn.textContent = LANG === 'tr' ? 'EN' : 'TR';
+  document.documentElement.lang = LANG;
+}
+window.toggleLang = function() {
+  LANG = LANG === 'tr' ? 'en' : 'tr';
+  localStorage.setItem('nbp_lang', LANG);
+  applyStaticLang();
+  renderDersList();
+};
+
 function formatTrDate(dateStr) {
   try {
     const d = new Date(dateStr+'T00:00:00');
-    return d.toLocaleDateString('tr-TR',{weekday:'long', day:'numeric', month:'long'});
+    return d.toLocaleDateString(t('dateLocale'),{weekday:'long', day:'numeric', month:'long'});
   } catch(e) { return dateStr; }
 }
 
@@ -176,6 +326,8 @@ try {
 } catch(e) {}
 })();
 
+applyStaticLang();
+
 const listEl = document.getElementById('list');
 window._dersCache = {};
 window._rezByDers = {};
@@ -184,45 +336,45 @@ function renderKurallar(hepsiUcretsizMi, etkinlikYok, karisikMi) {
   const introEl = document.getElementById('intro-text');
   if(introEl) {
     introEl.textContent = etkinlikYok
-      ? 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın.'
+      ? t('introNoEvent')
       : karisikMi
-      ? 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın. Ücretli derslerde yeriniz ödeme onaylandığında, ücretsiz etkinliklerde ise kaydınız onaylandığında kesinleşir.'
+      ? t('introMixed')
       : hepsiUcretsizMi
-      ? 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz onaylandığında adınızı katılanlar listesinde görebilirsiniz.'
-      : 'Katılmak istediğiniz dersi seçin, bilgilerinizi bırakın — yeriniz ödeme onaylandığında kesinleşir.';
+      ? t('introFree')
+      : t('introPaid');
   }
   const el = document.getElementById('rules-section');
   if(!el) return;
   const rezervasyonIptalMaddeleri = etkinlikYok ? `
-      <li>Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar.</li>
-      <li><b>Katılamayacağınızı lütfen bize önceden bildirin.</b> Bu sayede yerinizi, o derse katılmak isteyip kontenjan bulamayan başka bir üyemiz için değerlendirebiliriz 🙏</li>
+      <li>${t('ruleStudioCancelShort')}</li>
+      <li>${t('ruleCancelNotify')}</li>
   ` : hepsiUcretsizMi ? `
-      <li>Yeriniz, katılımınız onaylandığında kesinleşir.</li>
-      <li>Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar. Böyle bir durumda size en kısa sürede haber verilir.</li>
-      <li><b>Katılamayacağınızı lütfen bize önceden bildirin.</b> Bu sayede yerinizi, o derse katılmak isteyip kontenjan bulamayan başka bir üyemiz için değerlendirebiliriz 🙏</li>
+      <li>${t('ruleSpotConfirmedFree')}</li>
+      <li>${t('ruleStudioCancelFree')}</li>
+      <li>${t('ruleCancelNotify')}</li>
   ` : `
-      <li>Yeriniz, ödeme dekontu onaylandığında kesinleşir.</li>
-      <li>Stüdyo, uygun görmediği veya gerekli şartların sağlanamadığı durumlarda dersi iptal etme hakkını saklı tutar. Böyle bir durumda size en kısa sürede haber verilir ve ödemeniz <b>tam olarak iade edilir</b>.</li>
-      <li>Katılımcı tarafından yapılan iptal ve devamsızlık durumlarında ödeme iadesi yapılmamaktadır.</li>
-      <li><b>Katılamayacağınızı lütfen bize önceden bildirin.</b> Bu sayede yerinizi, o derse katılmak isteyip kontenjan bulamayan başka bir üyemiz için değerlendirebiliriz 🙏</li>
+      <li>${t('ruleSpotConfirmedPaid')}</li>
+      <li>${t('ruleStudioCancelPaid')}</li>
+      <li>${t('ruleNoRefund')}</li>
+      <li>${t('ruleCancelNotify')}</li>
   `;
   el.innerHTML = `
-  <h2 class="rules-title">📋 Katılım Kuralları</h2>
+  <h2 class="rules-title">${t('rulesTitle')}</h2>
   <div class="rule-group">
-    <h3>Kıyafet ve Hazırlık</h3>
+    <h3>${t('groupClothing')}</h3>
     <ul>
-      <li>Derslere, rahat hareket edebileceğiniz, spora uygun kıyafetlerle katılım sağlamanızı rica ederiz.</li>
-      <li>Ders başlangıcından en az 5 dakika önce hazır olun.</li>
+      <li>${t('clothing1')}</li>
+      <li>${t('clothing2')}</li>
     </ul>
   </div>
   <div class="rule-group">
-    <h3>Rezervasyon ve İptal</h3>
+    <h3>${t('groupReservation')}</h3>
     <ul>${rezervasyonIptalMaddeleri}</ul>
   </div>
   <div class="rule-group">
-    <h3>Sağlık</h3>
+    <h3>${t('groupHealth')}</h3>
     <ul>
-      <li>Sakatlık, hamilelik veya kronik bir rahatsızlığınız varsa lütfen dersten önce eğitmeninize bilgi verin.</li>
+      <li>${t('healthItem')}</li>
     </ul>
   </div>
   `;
@@ -251,7 +403,7 @@ function gecmisKartHTML(d) {
   const onaylananlar = rezList.filter(r => r.durum === 'onaylandi');
   const isimlerHTML = onaylananlar.length
     ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
-         <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--teal-deep);margin-bottom:6px">KATILANLAR</div>
+         <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--teal-deep);margin-bottom:6px">${t('attendees')}</div>
          ${onaylananlar.map(r=>`<div style="font-size:13px;color:var(--ink-soft);padding:2px 0">${maskeAd(r.adSoyad)}</div>`).join('')}
        </div>`
     : '';
@@ -259,7 +411,7 @@ function gecmisKartHTML(d) {
     <div class="gecmis-card">
       <div class="date">${d.dersAdi || 'Mat Pilates'}</div>
       <div class="meta">${formatTrDate(d.tarih)} · ${d.saat} · ${d.egitmenAdi || '—'}</div>
-      <div class="gecmis-closed">⏹ Kayıtlar kapandı · Ders başladı/bitti</div>
+      <div class="gecmis-closed">${t('closedBadge')}</div>
       ${isimlerHTML}
     </div>`;
 }
@@ -269,7 +421,7 @@ function renderGecmisBolumu() {
   const tumGecmis = tumGecmisEtkinlikler();
   if(!tumGecmis.length) { el.innerHTML = ''; return; }
   if(!gecmisAcikMi) {
-    el.innerHTML = `<button class="gecmis-toggle" onclick="gecmisAcikMi=true;renderGecmisBolumu()"><span>📁 Geçmiş Etkinlikler (${tumGecmis.length})</span><span>▾</span></button>`;
+    el.innerHTML = `<button class="gecmis-toggle" onclick="gecmisAcikMi=true;renderGecmisBolumu()"><span>${t('historyFolder')(tumGecmis.length)}</span><span>▾</span></button>`;
     return;
   }
   const simdi = new Date();
@@ -278,9 +430,9 @@ function renderGecmisBolumu() {
   const gosterilecekler = tumGecmis.filter(d => d.tarih >= sinirStr);
   const dahaVarMi = tumGecmis.length > gosterilecekler.length;
   el.innerHTML = `
-    <button class="gecmis-toggle" onclick="gecmisAcikMi=false;renderGecmisBolumu()"><span>📁 Geçmiş Etkinlikler (${tumGecmis.length})</span><span>▴</span></button>
+    <button class="gecmis-toggle" onclick="gecmisAcikMi=false;renderGecmisBolumu()"><span>${t('historyFolder')(tumGecmis.length)}</span><span>▴</span></button>
     <div class="gecmis-list">${gosterilecekler.map(d => gecmisKartHTML(d)).join('')}</div>
-    ${dahaVarMi ? `<button class="gecmis-more" onclick="gecmisAySiniri+=2;renderGecmisBolumu()">Daha Fazla Göster</button>` : ''}
+    ${dahaVarMi ? `<button class="gecmis-more" onclick="gecmisAySiniri+=2;renderGecmisBolumu()">${t('showMore')}</button>` : ''}
   `;
 }
 function renderDersList() {
@@ -295,7 +447,7 @@ function renderDersList() {
   renderGecmisBolumu();
 
   if(!dersler.length) {
-    listEl.innerHTML = '<div class="empty-banner"><div class="eb-title">Şu anda açık bir grup dersi etkinliği bulunmuyor.</div><div class="eb-sub">Yeni dersler için bizi Instagram\'dan takip edebilirsiniz.</div></div>';
+    listEl.innerHTML = `<div class="empty-banner"><div class="eb-title">${t('emptyTitle')}</div><div class="eb-sub">${t('emptySub')}</div></div>`;
     return;
   }
 
@@ -306,7 +458,7 @@ function renderDersList() {
     const bekleyenSayisi = rezList.filter(r => r.durum === 'beklemede').length;
     const isimlerHTML = onaylananlar.length
       ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
-           <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--teal-deep);margin-bottom:6px">KATILANLAR;</div>
+           <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--teal-deep);margin-bottom:6px">${t('attendees')}</div>
            ${onaylananlar.map(r=>`<div style="font-size:13.5px;color:var(--ink-soft);padding:3px 0">${maskeAd(r.adSoyad)}</div>`).join('')}
          </div>`
       : '';
@@ -315,26 +467,26 @@ function renderDersList() {
       <div class="top">
         <div>
           <div class="date">${d.dersAdi || 'Mat Pilates'}</div>
-          <div class="face-to-face-badge">📍 Bu dersler stüdyomuzda, yüz yüze gerçekleştirilir</div>
-          <div class="meta">${formatTrDate(d.tarih)} · ${d.saat} · ${d.egitmenAdi} · ${d.sure||45} dakika</div>
-          <a class="map-link" href="https://www.google.com/maps/search/?api=1&query=New+Breath+Pilates+Be%C5%9Fikta%C5%9F+%C4%B0stanbul" target="_blank" rel="noopener">📍 Beşiktaş, İstanbul — Haritada Gör</a>
+          <div class="face-to-face-badge">${t('faceToFace')}</div>
+          <div class="meta">${formatTrDate(d.tarih)} · ${d.saat} · ${d.egitmenAdi} · ${d.sure||45} ${LANG==='tr'?'dakika':'min'}</div>
+          <a class="map-link" href="https://www.google.com/maps/search/?api=1&query=New+Breath+Pilates+Be%C5%9Fikta%C5%9F+%C4%B0stanbul" target="_blank" rel="noopener">${t('mapLink')}</a>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-          <span class="badge ${dolu?'full':'open'}">${dolu ? 'DOLU' : (d.onayliSayisi||0)+'/'+d.kapasite+' onaylı'}</span>
-          ${d.fiyat>0 ? '<span class="badge paid">💳 Ücretli</span>' : ''}
+          <span class="badge ${dolu?'full':'open'}">${dolu ? t('full') : (d.onayliSayisi||0)+'/'+d.kapasite+' '+t('approved')}</span>
+          ${d.fiyat>0 ? `<span class="badge paid">${t('paidBadge')}</span>` : ''}
         </div>
       </div>
-      ${bekleyenSayisi>0 ? `<div style="font-size:11.5px;color:var(--teal-deep);margin-top:2px">🔥 ${bekleyenSayisi} kişi beklemede</div>` : ''}
+      ${bekleyenSayisi>0 ? `<div style="font-size:11.5px;color:var(--teal-deep);margin-top:2px">${t('waitingPrefix')}${bekleyenSayisi}${t('waitingSuffix')}</div>` : ''}
       ${isimlerHTML}
-      ${d.fiyat===0 ? '<div class="price">Ücretsiz</div>' : ''}
+      ${d.fiyat===0 ? `<div class="price">${t('free')}</div>` : ''}
       ${dolu
-        ? `<button class="btn" disabled>Bu ders dolu</button>`
-        : `<button class="btn btn-primary" onclick="toggleForm('${d.id}')">Rezervasyon Yap</button>
+        ? `<button class="btn" disabled>${t('classFull')}</button>`
+        : `<button class="btn btn-primary" onclick="toggleForm('${d.id}')">${t('reserve')}</button>
            <div class="form" id="form-${d.id}">
-             ${d.fiyat>0 ? '<div class="form-price">💳 Ücret: '+d.fiyat+' TL / kişi</div>' : ''}
-             <input type="text" id="ad-${d.id}" placeholder="Ad Soyad">
-             <input type="tel" id="tel-${d.id}" placeholder="Telefon (05XX XXX XX XX)">
-             <button class="btn btn-primary" onclick="rezervasyonYap('${d.id}')">Gönder</button>
+             ${d.fiyat>0 ? `<div class="form-price">${t('feePrefix')}${d.fiyat}${t('feeSuffix')}</div>` : ''}
+             <input type="text" id="ad-${d.id}" placeholder="${t('namePlaceholder')}">
+             <input type="tel" id="tel-${d.id}" placeholder="${t('phonePlaceholder')}">
+             <button class="btn btn-primary" onclick="rezervasyonYap('${d.id}')">${t('send')}</button>
            </div>
            <div class="success" id="success-${d.id}" style="display:none"></div>`
       }
@@ -382,20 +534,20 @@ window.rezervasyonYap = async function(dersId) {
   const telEl = document.getElementById('tel-'+dersId);
   const ad = adEl.value.trim();
   const tel = telEl.value.trim();
-  if(!ad || !tel) { alert('Lütfen ad soyad ve telefon numaranızı girin.'); return; }
+  if(!ad || !tel) { alert(t('alertFillFields')); return; }
   const dersBilgi = window._dersCache[dersId];
   if(dersBilgi && dersBilgi.fiyat === 0 && dahaOnceUcretsizeKatilmisMi(tel)) {
     const successEl = document.getElementById('success-'+dersId);
     document.getElementById('form-'+dersId).style.display = 'none';
     successEl.innerHTML = `
-      <h3 style="color:#b91c1c">Kayıt yapılamadı</h3>
-      <p style="font-size:13.5px;color:var(--ink-soft)">Daha önce ücretsiz bir etkinliğimize katılmış olduğunuz için, ne yazık ki bu etkinliğe kayıt olamıyorsunuz. Ücretsiz etkinliklerimiz kişi başı yalnızca bir kez geçerlidir. Ücretli derslerimize her zaman katılabilirsiniz!</p>
+      <h3 style="color:#b91c1c">${t('rejectedTitle')}</h3>
+      <p style="font-size:13.5px;color:var(--ink-soft)">${t('rejectedBody')}</p>
     `;
     successEl.style.display = 'block';
     return;
   }
   const btn = document.querySelector(`#form-${dersId} button.btn-primary`);
-  if(btn) { btn.disabled = true; btn.textContent = 'Gönderiliyor...'; }
+  if(btn) { btn.disabled = true; btn.textContent = t('sending'); }
   try {
     await addDoc(REZ_COL, {
       dersId: dersId,
@@ -412,30 +564,30 @@ window.rezervasyonYap = async function(dersId) {
     const ucretsiz = dersBilgi && dersBilgi.fiyat === 0;
     if(ucretsiz) {
       successEl.innerHTML = `
-        <h3>✓ Kaydınızı gördük</h3>
-        <p style="font-size:13.5px;color:var(--ink-soft)">Yerinizin kesinleşmesi için lütfen bizden haber bekleyiniz. Yeriniz kesinleştiğinde size WhatsApp üzerinden bilgi vereceğiz. Ayrıca bu sayfadan katılımcı listesini takip ederek yerinizin kesinleştiğini görebilirsiniz.</p>
+        <h3>${t('seenTitle')}</h3>
+        <p style="font-size:13.5px;color:var(--ink-soft)">${t('seenBody')}</p>
       `;
       successEl.style.display = 'block';
       return;
     }
-    const waMsg = encodeURIComponent(`Merhaba, ${dersAdiText} — ${metaText} için rezervasyon yaptım (${ad}). Dekontu ekte gönderiyorum.`);
+    const waMsg = encodeURIComponent(t('waMsg')(dersAdiText, metaText, ad));
 const waDigits = (ayarlar.whatsappNo||'').replace(/\D/g,'');
 const waPhone = waDigits.startsWith('0') ? '90'+waDigits.slice(1) : (waDigits.startsWith('90') ? waDigits : '90'+waDigits);
 successEl.innerHTML = `
-      <h3>✓ Talebiniz alındı</h3>
-      <p style="font-size:13.5px;color:var(--ink-soft)">Yerinizin kesinleşmesi için lütfen ödemeyi yapıp dekontu WhatsApp'tan gönderin. Yeriniz kesinleştiğinde size WhatsApp üzerinden ayrıca haber vereceğiz. Ayrıca bu sayfadan katılımcı listesini takip ederek yerinizin kesinleştiğini görebilirsiniz.</p>
+      <h3>${t('requestTitle')}</h3>
+      <p style="font-size:13.5px;color:var(--ink-soft)">${t('requestBody')}</p>
       <div class="info">
-        <div><b>IBAN:</b> ${ayarlar.iban||'—'}</div>
-        <div><b>Hesap Sahibi:</b> ${ayarlar.ibanAdi||'—'}</div>
-        <div><b>Tutar:</b> ${dersBilgi.fiyat} TL / kişi</div>
+        <div><b>${t('ibanLabel')}</b> ${ayarlar.iban||'—'}</div>
+        <div><b>${t('accountHolderLabel')}</b> ${ayarlar.ibanAdi||'—'}</div>
+        <div><b>${t('amountLabel')}</b> ${dersBilgi.fiyat} TL / ${LANG==='tr'?'kişi':'person'}</div>
       </div>
-      ${ayarlar.whatsappNo ? `<a class="wa-link" href="https://wa.me/${waPhone}?text=${waMsg}" target="_blank">WhatsApp'tan Dekont Gönder</a>` : ''}
+      ${ayarlar.whatsappNo ? `<a class="wa-link" href="https://wa.me/${waPhone}?text=${waMsg}" target="_blank">${t('waSendReceipt')}</a>` : ''}
     `;
     successEl.style.display = 'block';
   } catch(e) {
     console.error(e);
-    alert('Bir hata oluştu, lütfen tekrar deneyin.');
-    if(btn) { btn.disabled = false; btn.textContent = 'Gönder'; }
+    alert(t('genericError'));
+    if(btn) { btn.disabled = false; btn.textContent = t('send'); }
   }
 };
 </script>
