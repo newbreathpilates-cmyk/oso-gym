@@ -3519,7 +3519,7 @@ document.getElementById('topbar-actions').innerHTML=`
 <input class="search-input" id="member-search" placeholder="İsim veya telefon..." oninput="filterMembersTable()" style="width:160px">
 <select style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;font-family:inherit" id="member-filter" onchange="filterMembersTable()">
 <option value="">Tümü (A-Z)</option>
-<option value="aktif">Aktif</option>
+<option value="aktif" selected>Aktif</option>
 <option value="son-10-gun">Paket kullanım/üyelik süresi bitmek üzere son 15 gün</option>
 <option value="suresi-doldu">Paket kullanım süresi bitti</option>
 <option value="dersleri-biten">Paket/Dersler bitti</option>
@@ -5171,13 +5171,23 @@ toast('Üye silindi.');
 // ══════════════════════════════════════
 // TRAINERS
 // ══════════════════════════════════════
+window._trainerFilter = window._trainerFilter || 'aktif';
 function renderTrainers() {
-document.getElementById('topbar-actions').innerHTML=`<button class="btn btn-primary" onclick="openTrainerModal()"><i class="ti ti-plus"></i> Eğitmen Ekle</button>`;
+document.getElementById('topbar-actions').innerHTML=`
+<div class="flex gap-8" style="flex-wrap:wrap">
+<select style="padding:7px 10px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;font-family:inherit" id="trainer-filter" onchange="window._trainerFilter=this.value;renderTrainers()">
+<option value="aktif" ${window._trainerFilter==='aktif'?'selected':''}>Aktif</option>
+<option value="" ${window._trainerFilter===''?'selected':''}>Tümü (A-Z)</option>
+<option value="pasif" ${window._trainerFilter==='pasif'?'selected':''}>Ayrıldı/Pasif</option>
+</select>
+<button class="btn btn-primary" onclick="openTrainerModal()"><i class="ti ti-plus"></i> Eğitmen Ekle</button>
+</div>`;
 if(!S.trainers.length){
 document.getElementById('page-content').innerHTML=`<div style="text-align:center;padding:60px;color:var(--text3)"><i class="ti ti-users" style="font-size:40px;display:block;margin-bottom:12px"></i><div style="font-size:14px">Henüz eğitmen eklenmedi</div></div>`;
 return;
 }
-const cards = S.trainers.map(t=>{
+const _filteredTrainers = S.trainers.filter(t => window._trainerFilter==='' ? true : window._trainerFilter==='aktif' ? t.status!=='pasif' : t.status==='pasif');
+const cards = _filteredTrainers.map(t=>{
 const c = tc(t.color);
 const totalEvents = S.events.filter(e=>e.trainerId===t.id&&e.completed).length;
 const completedEvents = S.events.filter(e=>e.trainerId===t.id&&e.completed).length;
@@ -5240,6 +5250,10 @@ ${!t.pct?`<div style="padding:6px 10px;background:#fef3c7;border-radius:var(--ra
 </div>
 </div>`;
 }).join('');
+if(!_filteredTrainers.length){
+document.getElementById('page-content').innerHTML=`<div style="text-align:center;padding:60px;color:var(--text3)"><i class="ti ti-users" style="font-size:40px;display:block;margin-bottom:12px"></i><div style="font-size:14px">Bu filtreye uyan eğitmen bulunamadı.</div></div>`;
+return;
+}
 document.getElementById('page-content').innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${cards}</div>`;
 }
 function openTrainerModal(id) {
