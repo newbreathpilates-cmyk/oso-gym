@@ -2059,7 +2059,7 @@ const picker = `<input type="month" id="online-gelir-month-picker" value="${mont
 if(!tumDersler.length) return `
 <div class="card" style="margin-top:14px">
 <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-<span>💰 Online Ders Geliri</span>${picker}
+<span>💰 Grup Ders Geliri</span>${picker}
 </div>
 <div style="text-align:center;padding:16px;color:var(--text3);font-size:12.5px">${ayMetni} için online ders bulunmuyor.</div>
 </div>`;
@@ -2084,7 +2084,7 @@ return {ad, ...satirlar[ad], oran, hakedis};
 return `
 <div class="card" style="margin-top:14px">
 <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-<span>💰 Online Ders Geliri</span>${picker}
+<span>💰 Grup Ders Geliri</span>${picker}
 </div>
 <div style="font-size:11px;font-weight:400;color:var(--text3);margin:-6px 0 10px">${ayMetni} · Toplam gelir: <b style="color:var(--green)">₺${toplamGelir.toLocaleString('tr-TR')}</b></div>
 ${rows.map(r=>`
@@ -5884,18 +5884,27 @@ setTimeout(renderTrainerMonthlyLessons, 50);
 function renderTrainerMonthlyLessons() {
 var el = document.getElementById('trainer-monthly-list');
 if(!el) return;
+if(typeof matKurulumYap==='function') matKurulumYap();
 var sel = document.getElementById('trainer-month-filter') ? document.getElementById('trainer-month-filter').value : localDate().slice(0,7);
 var trainerId = currentUser.trainerId;
+var trainerObj = S.trainers.find(function(t){return t.id===trainerId;});
+var trainerName = trainerObj ? trainerObj.name : '';
 var evs = S.events.filter(function(e){return e.trainerId===trainerId && e.date && e.date.startsWith(sel);})
 .sort(function(a,b){return a.date>b.date?1:a.date<b.date?-1:a.startTime>b.startTime?1:-1;});
-if(!evs.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Bu ay ders yok</div>';return;}
+var grupDersleri = (window._matDersler||[]).filter(function(d){return d.egitmenAdi===trainerName && d.tarih && d.tarih.startsWith(sel);});
+var grupSayisi = grupDersleri.length;
+if(!evs.length && !grupSayisi){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Bu ay ders yok</div>';return;}
 var completedCount = evs.filter(function(e){return e.completed;}).length;
+var toplamSayisi = evs.length + grupSayisi;
 // Sadece özet kartlar
 var html = '<div style="display:flex;gap:12px;margin-bottom:12px">'+
-'<div style="flex:1;background:#f0fdf8;border-radius:10px;padding:10px;text-align:center"><div style="font-size:24px;font-weight:700;color:#059669">'+evs.length+'</div><div style="font-size:10px;color:#065f46">TOPLAM</div></div>'+
+'<div style="flex:1;background:#f0fdf8;border-radius:10px;padding:10px;text-align:center"><div style="font-size:24px;font-weight:700;color:#059669">'+toplamSayisi+'</div><div style="font-size:10px;color:#065f46">TOPLAM</div></div>'+
 '<div style="flex:1;background:#f0fdf8;border-radius:10px;padding:10px;text-align:center"><div style="font-size:24px;font-weight:700;color:#059669">'+completedCount+'</div><div style="font-size:10px;color:#065f46">TAMAMLANDI</div></div>'+
 '<div style="flex:1;background:#f9fafb;border-radius:10px;padding:10px;text-align:center"><div style="font-size:24px;font-weight:700;color:#6b7280">'+(evs.length-completedCount)+'</div><div style="font-size:10px;color:#6b7280">PLANLANDI</div></div>'+
 '</div>';
+if(grupSayisi>0) {
+html += '<div style="display:flex;align-items:center;gap:8px;background:#fef9c3;border-radius:10px;padding:8px 12px;margin-bottom:12px"><i class="ti ti-yoga" style="color:#92400e;font-size:16px"></i><span style="font-size:12.5px;color:#92400e"><b>'+grupSayisi+'</b> grup dersi verdin bu ay</span></div>';
+}
 // Detay toggle butonu
 html += '<button onclick="toggleMonthlyDetail()" id="monthly-detail-btn" style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:center;gap:6px">'+
 '<i class="ti ti-list" style="font-size:14px"></i> Detayı Göster ▼</button>';
