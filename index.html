@@ -958,7 +958,7 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 </div>
 <div style="border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:12px;background:var(--bg);margin-top:10px">
 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:6px"><i class="ti ti-video" style="font-size:12px;vertical-align:-1px"></i> Online Ders Hakediş Yüzdesi (%)</div>
-<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Sadece Online Sınıflar üzerinden verilen derslerde geçerli. Normal derslerin yüzdesinden bağımsızdır.</div>
+<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Sadece Grup Dersleri üzerinden verilen derslerde geçerli. Normal derslerin yüzdesinden bağımsızdır.</div>
 <div class="form-group" style="margin-bottom:0">
 <label class="form-label">Online Ders Yüzdesi</label>
 <div style="display:flex;align-items:center;gap:10px">
@@ -1874,7 +1874,7 @@ const ownerNav = `
 <div class="nav-section">Genel</div>
 <button class="nav-item" data-page="dashboard" onclick="navigateTo('dashboard')"><i class="ti ti-layout-dashboard"></i> Panel</button>
 <button class="nav-item" data-page="calendar" onclick="navigateTo('calendar')"><i class="ti ti-calendar-event"></i> Takvim</button>
-<button class="nav-item" data-page="mat-dersleri" onclick="navigateTo('mat-dersleri')"><i class="ti ti-yoga"></i> Online Sınıflar</button>
+<button class="nav-item" data-page="mat-dersleri" onclick="navigateTo('mat-dersleri')"><i class="ti ti-yoga"></i> Grup Dersleri</button>
 <div class="nav-section">Yönetim</div>
 <button class="nav-item" data-page="members" onclick="navigateTo('members')"><i class="ti ti-users"></i> Üyeler</button>
 <button class="nav-item" data-page="trainers" onclick="navigateTo('trainers')"><i class="ti ti-user-check"></i> Eğitmenler</button>
@@ -1917,7 +1917,7 @@ currentPage = page;
 document.querySelectorAll('.nav-item[data-page]').forEach(el => {
 el.classList.toggle('active', el.dataset.page === page);
 });
-const titles = { dashboard:'Panel', calendar:'Takvim', members:'Üyeler', trainers:'Eğitmenler', payments:'Ödemeler', giderler:'Giderler', finansal:'Finansal Özet', hakedis:'Hakediş', 'paket-fiyatlari':'Paket Fiyatları', export:'Dışa Aktar', 'trainer-portal':'Derslerim', 'attendance-report':'Üye İstatistikleri', 'mat-dersleri':'Online Sınıflar' };
+const titles = { dashboard:'Panel', calendar:'Takvim', members:'Üyeler', trainers:'Eğitmenler', payments:'Ödemeler', giderler:'Giderler', finansal:'Finansal Özet', hakedis:'Hakediş', 'paket-fiyatlari':'Paket Fiyatları', export:'Dışa Aktar', 'trainer-portal':'Derslerim', 'attendance-report':'Üye İstatistikleri', 'mat-dersleri':'Grup Dersleri' };
 document.getElementById('topbar-title').textContent = titles[page] || page;
 document.getElementById('topbar-actions').innerHTML = '';
 const pages = { dashboard: renderDashboard, calendar: renderCalendar, members: renderMembers, trainers: renderTrainers, payments: renderPayments, giderler: renderGiderler, finansal: renderFinansal, hakedis: renderHakedis, 'paket-fiyatlari': renderPaketFiyatlari, export: renderExport, 'trainer-portal': renderTrainerPortal, 'attendance-report': renderAttendanceReport, 'mat-dersleri': renderMatDersleri };
