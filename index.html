@@ -4790,12 +4790,16 @@ endDate==='Sınırsız'?'<div style="margin-top:6px;font-size:22px;font-weight:7
 '</div>'+
 // PAKET BİTİŞ UYARISI
 (days<0||m.status==='Süresi Doldu'||m.status==='Dersleri Bitti'?function(){
-// Son ders tarihini bul
+// Dersler bitti ise (süre dolmadan) son ders tarihini göster; süre dolduysa paketin gerçek bitiş tarihini göster
+const isSessionsFinished = m.status==='Dersleri Bitti';
+let banDate = endDate;
+if(isSessionsFinished) {
 const completedEvs = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed&&e.date>=m.start);
-const lastLesson = completedEvs.length ? completedEvs.sort((a,b)=>b.date>a.date?1:-1)[0].date : endDate;
+banDate = completedEvs.length ? completedEvs.sort((a,b)=>b.date>a.date?1:-1)[0].date : endDate;
+}
 return '<div style="margin-bottom:12px;padding:14px 16px;background:#dc2626;border-radius:8px;text-align:center">'+
 '<div style="font-size:24px;font-weight:900;color:white;letter-spacing:0.5px">🔴 PAKET YENİLEME GEREKLİ</div>'+
-'<div style="font-size:20px;color:white;margin-top:6px;line-height:1.6">Paketiniz <strong>'+lastLesson+'</strong> tarihinde sona ermiştir.<br>Bir sonraki randevunuzda paket yenilemesi yapınız.</div>'+
+'<div style="font-size:20px;color:white;margin-top:6px;line-height:1.6">Paketiniz <strong>'+banDate+'</strong> tarihinde sona ermiştir.<br>Bir sonraki randevunuzda paket yenilemesi yapınız.</div>'+
 '</div>';
 }():'')+
 ((m.paketGecmisi&&m.paketGecmisi.length)?'<div class="section">'+
