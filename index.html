@@ -3684,10 +3684,11 @@ const pct=t===0||t===999?0:Math.min(100,Math.round(u/t*100));
 const cls=pct>=90?'danger':pct>=70?'warn':'';
 const endDate = m.start&&pkg ? getEnd(m) : '—';
 const remColor = remaining===null?'var(--text)':remaining===0?'#b91c1c':remaining<=2?'#dc2626':remaining<=4?'#d97706':'#059669';
+const remBadge = (m.status==='Süresi Doldu'&&remaining>0) ? `<span style="color:#b91c1c;font-weight:700">(Süresi geçti: ${remaining})</span>` : `<span style="color:${remColor};font-weight:700">/${remaining!==null?remaining:'∞'}</span>`;
 return `<tr onclick="openMemberView(${m.id})" style="cursor:pointer">
 <td><div class="flex items-center gap-8"><div class="avatar" style="background:${abg(m.name)};color:${atcl(m.name)}">${ini(m.name,m.surname)}</div><div><div style="font-weight:600">${m.name} ${m.surname}</div><div style="font-size:10px;color:var(--text3)">${m.email||''}</div></div></div></td>
 <td>${m.phone}</td>
-<td style="font-size:12px">${pkg?`${pkg} <span style="color:${remColor};font-weight:700">/${remaining!==null?remaining:'∞'}</span>`:'<span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Paket Yok</span>'}</td>
+<td style="font-size:12px">${pkg?`${pkg} ${remBadge}`:'<span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Paket Yok</span>'}</td>
 <td style="font-size:12px">${!pkg?'<span style="color:#b91c1c;font-size:11px">—</span>':t===0?'<span style="color:var(--text3)">—</span>':t===999?u+' ders':u+'/'+t}${t>0&&t<999?'<div class="progress-bar" style="width:60px"><div class="progress-fill '+cls+'" style="width:'+pct+'%"></div></div>':''}</td>
 <td style="font-size:12px">${endDate}</td>
 <td><span class="badge ${m.status==='Aktif'?'badge-active':m.status==='Süresi Doldu'||m.status==='Dersleri Bitti'||m.status==='Ara Verdi/Ayrıldı'?'badge-expired':'badge-paused'}">${m.status||'Aktif'}</span></td>
@@ -3715,7 +3716,8 @@ const endDate = m.start&&pkg ? getEnd(m) : '—';
 const remColor = remaining===null?'var(--text)':remaining===0?'#b91c1c':remaining<=2?'#dc2626':remaining<=4?'#d97706':'#059669';
 const memberEndDate = m.start&&m.package ? getEnd(m) : '—';
 const memberDaysLeft = m.start&&m.package ? daysLeft(m) : 0;
-const pkgText = pkg ? `${pkg} <span style="color:${remColor};font-weight:700;font-size:13px">/${remaining!==null?remaining:'∞'}</span>` : '<span style="background:#fee2e2;color:#b91c1c;padding:2px 6px;border-radius:8px;font-size:11px;font-weight:600">Paket Yok</span>';
+const remBadgeMobile = (m.status==='Süresi Doldu'&&remaining>0) ? `<span style="color:#b91c1c;font-weight:700;font-size:13px">(Süresi geçti: ${remaining})</span>` : `<span style="color:${remColor};font-weight:700;font-size:13px">/${remaining!==null?remaining:'∞'}</span>`;
+const pkgText = pkg ? `${pkg} ${remBadgeMobile}` : '<span style="background:#fee2e2;color:#b91c1c;padding:2px 6px;border-radius:8px;font-size:11px;font-weight:600">Paket Yok</span>';
 return `<div style="padding:12px;border-bottom:1px solid var(--border);cursor:pointer" onclick="openMemberView(${m.id})">
 <div style="display:flex;align-items:center;justify-content:space-between">
 <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
@@ -3781,6 +3783,7 @@ const pkg = m.package||'';
 const t = pkgSessions(pkg), u = m.used||0;
 const remaining = t>0&&t<999 ? Math.max(0,t-u) : null;
 const remColor = remaining===null?'var(--green)':remaining===0?'#b91c1c':remaining<=2?'#dc2626':remaining<=4?'#d97706':'#059669';
+const remLabel = (m.status==='Süresi Doldu'&&remaining>0) ? 'SÜRESİ GEÇTİ' : 'KALAN';
 const endDate = m.start&&pkg ? getEnd(m) : '—';
 const days = pkg&&m.start ? daysLeft(m) : null;
 const el = document.createElement('div');
@@ -3805,7 +3808,7 @@ ${pkg?`<div style="background:#eff6ff;border-radius:10px;padding:12px;margin-bot
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
 <div><div style="font-size:20px;font-weight:800;color:#2563EB">${t===999?'∞':t}</div><div style="font-size:9px;color:#6b7280">TOPLAM</div></div>
 <div><div style="font-size:20px;font-weight:800;color:#2563EB">${u}</div><div style="font-size:9px;color:#6b7280">YAPILAN</div></div>
-<div><div style="font-size:20px;font-weight:800;color:${remColor}">${remaining!==null?remaining:'∞'}</div><div style="font-size:9px;color:#6b7280">KALAN</div></div>
+<div><div style="font-size:20px;font-weight:800;color:${remColor}">${remaining!==null?remaining:'∞'}</div><div style="font-size:9px;color:#6b7280">${remLabel}</div></div>
 </div>
 <div style="margin-top:8px;font-size:11px;color:#1e3a8a">Bitiş: <b>${endDate}</b>${days!==null&&days>=0?' · <span style="color:#d97706">'+days+' gün kaldı</span>':days!==null&&days<0?' · <span style="color:#dc2626">Süresi doldu</span>':''}</div>
 </div>`:''}
