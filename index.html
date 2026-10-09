@@ -995,25 +995,31 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 <div class="modal-overlay" id="mat-ders-modal">
 <div class="modal" style="width:440px">
 <div class="modal-header">
-<div class="modal-title" id="mat-ders-modal-title">Mat Dersi Ekle</div>
+<div class="modal-title" id="mat-ders-modal-title">Grup Dersi Ekle</div>
 <button class="btn btn-icon" onclick="closeModal('mat-ders-modal');if(currentPage!=='mat-dersleri')navigateTo('mat-dersleri')"><i class="ti ti-x"></i></button>
 </div>
 <div class="modal-body">
 <input type="hidden" id="md-id">
-<div class="form-group"><label class="form-label">Ders Adı</label><input type="text" class="form-input" id="md-dersadi" placeholder="örn. Mat Pilates, Power Pilates, Reformer Pilates..."></div>
-<div class="form-row">
-<div class="form-group"><label class="form-label">Tarih</label><input type="date" class="form-input" id="md-tarih"></div>
-<div class="form-group"><label class="form-label">Saat</label><input type="time" class="form-input" id="md-saat"></div>
+<div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:10px 12px;margin-bottom:12px">
+<div class="form-group" style="margin-bottom:0"><label class="form-label">Ders Adı</label><input type="text" class="form-input" id="md-dersadi" placeholder="örn. Mat Pilates, Power Pilates, Reformer Pilates..."></div>
 </div>
-<div class="form-group"><label class="form-label">Süre (dk)</label>
+<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;margin-bottom:12px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div class="form-group" style="margin-bottom:0;min-width:0"><label class="form-label">Tarih</label><input type="date" class="form-input" id="md-tarih" style="padding:8px 6px;font-size:13px;width:100%;box-sizing:border-box"></div>
+<div class="form-group" style="margin-bottom:0;min-width:0"><label class="form-label">Saat</label><input type="time" class="form-input" id="md-saat" style="padding:8px 6px;font-size:13px;width:100%;box-sizing:border-box"></div>
+</div>
+<div class="form-group" style="margin-bottom:0;margin-top:10px"><label class="form-label">Süre (dk)</label>
 <div class="mat-stepper">
 <button type="button" class="mat-stepper-btn" onclick="matStepperChange('md-sure',-5,5)"><i class="ti ti-minus"></i></button>
 <input type="number" class="mat-stepper-value" id="md-sure" value="45" min="5" readonly>
 <button type="button" class="mat-stepper-btn" onclick="matStepperChange('md-sure',5,5)"><i class="ti ti-plus"></i></button>
 </div>
 </div>
-<div class="form-group"><label class="form-label">Eğitmen</label>
+</div>
+<div style="background:#fdf2f8;border:1px solid #fbcfe8;border-radius:10px;padding:10px 12px;margin-bottom:12px">
+<div class="form-group" style="margin-bottom:0"><label class="form-label">Eğitmen</label>
 <select class="form-select" id="md-egitmen"></select>
+</div>
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Kapasite</label>
@@ -1031,10 +1037,12 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 </div>
 </div>
 </div>
-<div class="form-group"><label class="form-label">Kişi Başı Fiyat (TL)</label>
+<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:10px 12px;margin-bottom:12px">
+<div class="form-group" style="margin-bottom:0"><label class="form-label">Kişi Başı Fiyat (TL)</label>
 <div style="display:flex;gap:8px;align-items:center">
 <input type="number" class="form-input" id="md-fiyat" value="500" min="0">
 <button type="button" class="btn" style="white-space:nowrap;flex-shrink:0" onclick="document.getElementById('md-fiyat').value=0">Ücretsiz Yap</button>
+</div>
 </div>
 </div>
 </div>
@@ -7125,7 +7133,7 @@ function openMatDersModal(id) {
 const sel = document.getElementById('md-egitmen');
 sel.innerHTML = S.trainers.filter(t=>t.status!=='pasif').map(t=>`<option value="${t.name.replace(/"/g,'&quot;')}">${t.name}</option>`).join('');
 document.getElementById('md-id').value = id || '';
-document.getElementById('mat-ders-modal-title').textContent = id ? 'Online Dersi Düzenle' : 'Online Dersi Ekle';
+document.getElementById('mat-ders-modal-title').textContent = id ? 'Grup Dersi Düzenle' : 'Grup Dersi Ekle';
 if(id) {
 const d = window._matDersler.find(x=>x.id===id);
 if(d) {
