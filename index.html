@@ -1379,6 +1379,10 @@ await updateDoc(dersRef, { onayliSayisi: Math.max(0, (dersSnap.data().onayliSayi
 }
 }
 };
+window.matRezUcretsizToggle = async function(rezId, ucretsiz) {
+const rezRef = doc(db, 'matRezervasyonlar', rezId);
+await updateDoc(rezRef, { ucretsiz: !!ucretsiz });
+};
 window.matAyarlarKaydet = async function(ayarlar) {
 await setDoc(MAT_AYAR_REF, ayarlar);
 };
@@ -2066,8 +2070,10 @@ if(!tumDersler.length) return `
 const satirlar = {};
 let toplamGelir = 0;
 tumDersler.forEach(d=>{
-const onayliSayisi = (window._matRezervasyonlar||[]).filter(r=>r.dersId===d.id && r.durum==='onaylandi').length;
-const gelir = onayliSayisi * (d.fiyat||0);
+const onayliRezler = (window._matRezervasyonlar||[]).filter(r=>r.dersId===d.id && r.durum==='onaylandi');
+const onayliSayisi = onayliRezler.length;
+const ucretliSayisi = onayliRezler.filter(r=>!r.ucretsiz).length;
+const gelir = ucretliSayisi * (d.fiyat||0);
 const egitmenAdi = d.egitmenAdi || '—';
 if(!satirlar[egitmenAdi]) satirlar[egitmenAdi] = {dersSayisi:0, katilimci:0, gelir:0};
 satirlar[egitmenAdi].dersSayisi += 1;
@@ -2107,7 +2113,7 @@ ${!r.oran?`<div style="margin-top:6px;padding:5px 10px;background:#fef3c7;border
 </div>
 `).join('')}
 <div style="margin-top:10px;font-size:10px;color:var(--text3);line-height:1.5">
-ℹ️ Gelir: onaylı katılımcı sayısı × ders ücreti. Hakediş: gelir × eğitmenin online ders yüzdesi. Üyelik/paket sisteminden tamamen ayrıdır.
+ℹ️ Gelir: ücretli onaylı katılımcı sayısı × ders ücreti ("Ücretsiz Yap" ile işaretlenen misafirler gelire dahil edilmez). Hakediş: gelir × eğitmenin online ders yüzdesi. Üyelik/paket sisteminden tamamen ayrıdır.
 </div>
 </div>`;
 }
@@ -7050,13 +7056,17 @@ const rDurumBadge = r.durum==='onaylandi'
 : r.durum==='reddedildi' ? '<span style="color:#991b1b;font-weight:700;font-size:11px">✗ Reddedildi</span>'
 : '<span style="color:#d97706;font-weight:700;font-size:11px">⏳ Beklemede · '+siraNo+'. sırada</span>';
 const kayitZamani = r.kayitTarihi ? new Date(r.kayitTarihi).toLocaleString('tr-TR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+const ucretsizBadge = r.ucretsiz ? '<span style="background:#fef3c7;color:#92400e;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px">🎁 Ücretsiz</span>' : '';
 return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)">
 <div>
-<div style="font-weight:600;font-size:13px">${r.adSoyad}</div>
+<div style="font-weight:600;font-size:13px">${r.adSoyad}${ucretsizBadge}</div>
 <div style="font-size:11px;color:var(--text3)">${r.telefon} · ${rDurumBadge}</div>
 ${kayitZamani?`<div style="font-size:10px;color:var(--text3);margin-top:1px">🕐 Kayıt: ${kayitZamani}</div>`:''}
 </div>
 <div style="display:flex;gap:6px">
+${d.fiyat>0 ? (r.ucretsiz
+? `<button class="btn" style="padding:4px 10px;font-size:11px;background:#f3f4f6;color:#374151" onclick="matRezUcretsizDegistir('${r.id}',false)">Ücretli Yap</button>`
+: `<button class="btn" style="padding:4px 10px;font-size:11px;background:#fef3c7;color:#92400e" onclick="matRezUcretsizDegistir('${r.id}',true)">Ücretsiz Yap</button>`) : ''}
 ${r.durum!=='onaylandi' ? `<button class="btn" style="padding:4px 10px;font-size:11px;background:#d1fae5;color:#065f46" onclick="matRezDurumDegistir('${r.id}','${d.id}','onaylandi')">Onayla</button>` : ''}
 ${r.durum!=='reddedildi' ? `<button class="btn" style="padding:4px 10px;font-size:11px;background:#fee2e2;color:#991b1b" onclick="matRezDurumDegistir('${r.id}','${d.id}','reddedildi')">Reddet</button>` : ''}
 </div>
@@ -7209,6 +7219,11 @@ const waPhone = phone.startsWith('0') ? '90'+phone.slice(1) : phone;
 window.open('https://wa.me/'+waPhone+'?text='+encodeURIComponent(msg), '_blank');
 }
 }
+}).catch(function(e){ console.error(e); toast('İşlem başarısız: '+(e&&e.message?e.message:'bilinmeyen hata'),'error'); });
+}
+function matRezUcretsizDegistir(rezId, yeniDeger) {
+window.matRezUcretsizToggle(rezId, yeniDeger).then(function(){
+toast(yeniDeger?'Bu katılımcı ücretsiz olarak işaretlendi — gelir hesabına dahil edilmeyecek.':'Bu katılımcı tekrar ücretli olarak işaretlendi.','success');
 }).catch(function(e){ console.error(e); toast('İşlem başarısız: '+(e&&e.message?e.message:'bilinmeyen hata'),'error'); });
 }
 function formatTrDateKisa(dateStr) {
