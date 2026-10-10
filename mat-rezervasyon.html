@@ -406,6 +406,9 @@ function tumGecmisEtkinlikler() {
 }
 let gecmisAcikMi = false;
 let gecmisAySiniri = 2; // kaç ay geriye kadar gösterilsin
+// Script type="module" olduğu için inline onclick'ler yalnızca window'a bağlı fonksiyonları görebilir
+window.gecmisAc = function(acik) { gecmisAcikMi = acik; renderGecmisBolumu(); };
+window.gecmisDahaFazla = function() { gecmisAySiniri += 2; renderGecmisBolumu(); };
 function gecmisKartHTML(d) {
   const rezList = window._rezByDers[d.id] || [];
   const onaylananlar = rezList.filter(r => r.durum === 'onaylandi');
@@ -429,18 +432,20 @@ function renderGecmisBolumu() {
   const tumGecmis = tumGecmisEtkinlikler();
   if(!tumGecmis.length) { el.innerHTML = ''; return; }
   if(!gecmisAcikMi) {
-    el.innerHTML = `<button class="gecmis-toggle" onclick="gecmisAcikMi=true;renderGecmisBolumu()"><span>${t('historyFolder')(tumGecmis.length)}</span><span>▾</span></button>`;
+    el.innerHTML = `<button class="gecmis-toggle" onclick="gecmisAc(true)"><span>${t('historyFolder')(tumGecmis.length)}</span><span>▾</span></button>`;
     return;
   }
   const simdi = new Date();
   const sinirTarih = new Date(simdi.getFullYear(), simdi.getMonth()-gecmisAySiniri, simdi.getDate());
   const sinirStr = toYMD(sinirTarih);
-  const gosterilecekler = tumGecmis.filter(d => d.tarih >= sinirStr);
+  let gosterilecekler = tumGecmis.filter(d => d.tarih >= sinirStr);
+  // Son aylarda hiç ders yoksa klasör boş açılmasın — en yeni birkaç dersi göster
+  if(!gosterilecekler.length) gosterilecekler = tumGecmis.slice(0, 5);
   const dahaVarMi = tumGecmis.length > gosterilecekler.length;
   el.innerHTML = `
-    <button class="gecmis-toggle" onclick="gecmisAcikMi=false;renderGecmisBolumu()"><span>${t('historyFolder')(tumGecmis.length)}</span><span>▴</span></button>
+    <button class="gecmis-toggle" onclick="gecmisAc(false)"><span>${t('historyFolder')(tumGecmis.length)}</span><span>▴</span></button>
     <div class="gecmis-list">${gosterilecekler.map(d => gecmisKartHTML(d)).join('')}</div>
-    ${dahaVarMi ? `<button class="gecmis-more" onclick="gecmisAySiniri+=2;renderGecmisBolumu()">${t('showMore')}</button>` : ''}
+    ${dahaVarMi ? `<button class="gecmis-more" onclick="gecmisDahaFazla()">${t('showMore')}</button>` : ''}
   `;
 }
 function renderDersList() {
