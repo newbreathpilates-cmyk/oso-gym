@@ -198,6 +198,10 @@ const I18N = {
     closingNote: 'Bizi tanıyan ya da tanımayan herkes bu etkinliklere katılabilir. Amacımız, kaliteli egzersizi ve sağlıklı yaşamı herkes için daha ulaşılabilir kılmak 🌿',
     footer: '🌿 New Breath Pilates · Beşiktaş, İstanbul',
     alertFillFields: 'Lütfen ad soyad ve telefon numaranızı girin.',
+    alreadyRegTitlePending: '✓ Zaten kayıt oldunuz',
+    alreadyRegBodyPending: 'Bu derse daha önce kayıt talebiniz alınmış ve onay bekliyor. Yeriniz kesinleştiğinde size WhatsApp üzerinden haber vereceğiz.',
+    alreadyRegTitleApproved: '✓ Zaten kayıtlısınız',
+    alreadyRegBodyApproved: 'Bu derse kaydınız zaten onaylanmış. Katılımcı listesinden adınızı görebilirsiniz.',
     rejectedTitle: 'Kayıt yapılamadı',
     rejectedBody: 'Daha önce ücretsiz bir etkinliğimize katılmış olduğunuz için, ne yazık ki bu etkinliğe kayıt olamıyorsunuz. Ücretsiz etkinliklerimiz kişi başı yalnızca bir kez geçerlidir. Ücretli derslerimize her zaman katılabilirsiniz!',
     seenTitle: '✓ Kaydınızı gördük',
@@ -258,6 +262,10 @@ const I18N = {
     closingNote: "Everyone is welcome at these events, whether you know us or not. Our goal is to make quality exercise and a healthy lifestyle more accessible to everyone 🌿",
     footer: '🌿 New Breath Pilates · Beşiktaş, Istanbul',
     alertFillFields: 'Please enter your full name and phone number.',
+    alreadyRegTitlePending: '✓ You\'re already registered',
+    alreadyRegBodyPending: 'Your request for this class was already received and is pending approval. We\'ll let you know via WhatsApp once your spot is confirmed.',
+    alreadyRegTitleApproved: '✓ You\'re already registered',
+    alreadyRegBodyApproved: 'Your spot in this class is already confirmed. You can see your name in the attendee list.',
     rejectedTitle: 'Registration unsuccessful',
     rejectedBody: "Since you've already joined one of our free events before, you unfortunately can't register for this one. Our free events are limited to one per person. You're always welcome to join our paid classes!",
     seenTitle: "✓ We've received your registration",
@@ -536,6 +544,23 @@ window.rezervasyonYap = async function(dersId) {
   const tel = telEl.value.trim();
   if(!ad || !tel) { alert(t('alertFillFields')); return; }
   const dersBilgi = window._dersCache[dersId];
+  const temizTel = tel.replace(/\D/g,'');
+  const mevcutRez = ((window._rezByDers[dersId])||[]).find(r =>
+    (r.durum === 'beklemede' || r.durum === 'onaylandi') &&
+    (r.telefon||'').replace(/\D/g,'') === temizTel
+  );
+  if(mevcutRez) {
+    const successEl = document.getElementById('success-'+dersId);
+    document.getElementById('form-'+dersId).style.display = 'none';
+    const basliks = mevcutRez.durum === 'onaylandi' ? t('alreadyRegTitleApproved') : t('alreadyRegTitlePending');
+    const govde = mevcutRez.durum === 'onaylandi' ? t('alreadyRegBodyApproved') : t('alreadyRegBodyPending');
+    successEl.innerHTML = `
+      <h3>${basliks}</h3>
+      <p style="font-size:13.5px;color:var(--ink-soft)">${govde}</p>
+    `;
+    successEl.style.display = 'block';
+    return;
+  }
   if(dersBilgi && dersBilgi.fiyat === 0 && dahaOnceUcretsizeKatilmisMi(tel)) {
     const successEl = document.getElementById('success-'+dersId);
     document.getElementById('form-'+dersId).style.display = 'none';
