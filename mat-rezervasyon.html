@@ -193,6 +193,7 @@ const I18N = {
     ruleSpotConfirmedFree: 'Yeriniz, katılımınız onaylandığında kesinleşir.',
     ruleSpotConfirmedPaid: 'Yeriniz, ödeme dekontu onaylandığında kesinleşir.',
     ruleNoRefund: 'Katılımcı tarafından yapılan iptal ve devamsızlık durumlarında ödeme iadesi yapılmamaktadır.',
+    ruleNoReschedule: 'Grup derslerinde kontenjan sınırlı olduğundan, ödemesi yapılan dersler yalnızca kayıtlı olduğunuz tarih ve saat için geçerlidir; başka bir güne ertelenemez.',
     groupHealth: 'Sağlık',
     healthItem: 'Sakatlık, hamilelik veya kronik bir rahatsızlığınız varsa lütfen dersten önce eğitmeninize bilgi verin.',
     closingNote: 'Bizi tanıyan ya da tanımayan herkes bu etkinliklere katılabilir. Amacımız, kaliteli egzersizi ve sağlıklı yaşamı herkes için daha ulaşılabilir kılmak 🌿',
@@ -257,6 +258,7 @@ const I18N = {
     ruleSpotConfirmedFree: 'Your spot is confirmed once your registration is approved.',
     ruleSpotConfirmedPaid: 'Your spot is confirmed once your payment receipt is approved.',
     ruleNoRefund: 'No refunds are given for cancellations or no-shows by the participant.',
+    ruleNoReschedule: 'As group class capacity is limited, paid classes are valid only for the date and time you registered for and cannot be rescheduled to another day.',
     groupHealth: 'Health',
     healthItem: 'If you have an injury, are pregnant, or have a chronic condition, please inform your instructor before class.',
     closingNote: "Everyone is welcome at these events, whether you know us or not. Our goal is to make quality exercise and a healthy lifestyle more accessible to everyone 🌿",
@@ -364,6 +366,7 @@ function renderKurallar(hepsiUcretsizMi, etkinlikYok, karisikMi) {
       <li>${t('ruleSpotConfirmedPaid')}</li>
       <li>${t('ruleStudioCancelPaid')}</li>
       <li>${t('ruleNoRefund')}</li>
+      <li>${t('ruleNoReschedule')}</li>
       <li>${t('ruleCancelNotify')}</li>
   `;
   el.innerHTML = `
