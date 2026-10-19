@@ -1563,7 +1563,7 @@ const grid = document.getElementById('trainer-cards-grid');
 if(!grid) return;
 const colors = ['#7C3AED','#0891B2','#D97706','#DB2777','#059669','#2563EB'];
 const bgs = ['#f3f0ff','#e0f7fa','#fff8e1','#fce7f3','#d1fae5','#eff6ff'];
-grid.innerHTML = S.trainers.map(t => {
+grid.innerHTML = S.trainers.filter(t=>t.status!=='pasif').map(t => {
 const col = colors[(t.color-1)%colors.length];
 const bg = bgs[(t.color-1)%bgs.length];
 const initials = t.name.split(' ').map(w=>w[0]).join('').slice(0,2);
@@ -1997,7 +1997,7 @@ return { netDersSaat, bosZamanSaat, calisilanGun, tamZamanliOran, trStandartAyli
 function renderTrainerPerformanceCard(monthStr) {
 if(!currentUser || currentUser.role!=='owner') return '';
 monthStr = monthStr || new Date().toISOString().slice(0,7);
-const rows = S.trainers.filter(t=>t.status!=='pasif').map(t=>{
+const rows = S.trainers.map(t=>{
 const perf = calcTrainerPerformance(t.id, monthStr);
 return {trainer:t, ...perf};
 }).sort((a,b)=>b.netDersSaat-a.netDersSaat);
@@ -2662,7 +2662,7 @@ function renderTrainerFilterForTrainer() {
 const el = document.getElementById('trainer-filter-row');
 if(!el) return;
 el.innerHTML = `<span style="font-size:11px;color:var(--text3);font-weight:600">Eğitmen:</span>` +
-S.trainers.filter(t=>t.status!=='pasif').map(t => {
+S.trainers.map(t => {
 const c = tc(t.color);
 const on = visibleTrainers.has(t.id);
 return `<div class="trainer-chip ${on?'':'off'}" style="background:${c.bg};border-color:${c.border};color:${c.text}" onclick="toggleTrainer(${t.id})">
@@ -2674,7 +2674,7 @@ function renderTrainerFilter() {
 const el = document.getElementById('trainer-filter-row');
 if(!el) return;
 el.innerHTML = `<span style="font-size:11px;color:var(--text3);font-weight:600">Eğitmen:</span>` +
-S.trainers.filter(t=>t.status!=='pasif').map(t => {
+S.trainers.map(t => {
 const c = tc(t.color);
 const on = visibleTrainers.has(t.id);
 return `<div class="trainer-chip ${on?'':'off'}" style="background:${c.bg};border-color:${c.border};color:${c.text}" onclick="toggleTrainer(${t.id})">
@@ -5281,7 +5281,7 @@ toast('Üye silindi.');
 // ══════════════════════════════════════
 // TRAINERS
 // ══════════════════════════════════════
-window._trainerFilter = window._trainerFilter || 'aktif';
+window._trainerFilter = (window._trainerFilter!==undefined) ? window._trainerFilter : '';
 function renderTrainers() {
 document.getElementById('topbar-actions').innerHTML=`
 <div class="flex gap-8" style="flex-wrap:wrap">
@@ -7310,7 +7310,7 @@ el.value = yeni;
 }
 function openMatDersModal(id) {
 const sel = document.getElementById('md-egitmen');
-sel.innerHTML = S.trainers.filter(t=>t.status!=='pasif').map(t=>`<option value="${t.name.replace(/"/g,'&quot;')}">${t.name}</option>`).join('');
+sel.innerHTML = S.trainers.map(t=>`<option value="${t.name.replace(/"/g,'&quot;')}">${t.name}</option>`).join('');
 document.getElementById('md-id').value = id || '';
 document.getElementById('mat-ders-modal-title').textContent = id ? 'Grup Dersi Düzenle' : 'Grup Dersi Ekle';
 if(id) {
