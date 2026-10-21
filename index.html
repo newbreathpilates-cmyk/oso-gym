@@ -4548,18 +4548,20 @@ const limit = isFemale ? 88 : 102;
 const atRisk = bel >= limit;
 const borderline = isFemale ? bel >= 80 : bel >= 94;
 belRiskEl.style.display = '';
+const belRef = '<div style="font-weight:400;margin-top:4px;padding-top:4px;border-top:1px solid currentColor;opacity:0.85">Kadın: &lt;80 cm Normal · 80–87 cm Sınırda · ≥88 cm Yüksek Risk<br>Erkek: &lt;94 cm Normal · 94–101 cm Sınırda · ≥102 cm Yüksek Risk</div>';
+const cins = isFemale ? 'Kadın' : 'Erkek';
 if(atRisk) {
-belRiskEl.textContent = `⚠️ Bel çevresi yüksek risk — ${isFemale?'Kadın ≥88 cm':'Erkek ≥102 cm'} (IDF kriteri)`;
+belRiskEl.innerHTML = `⚠️ Bel çevresi yüksek risk — ${bel} cm (${cins} ≥${isFemale?88:102} cm)` + belRef;
 belRiskEl.style.color = '#DC2626';
 belRiskEl.style.background = '#fee2e2';
 belRiskEl.style.borderColor = '#fecaca';
 } else if(borderline) {
-belRiskEl.textContent = `⚠️ Sınırda — ${isFemale?'Kadın 80-87 cm':'Erkek 94-101 cm'} arası dikkat gerektiriyor`;
+belRiskEl.innerHTML = `⚠️ Bel çevresi sınırda — ${bel} cm (${cins} ${isFemale?'80–87':'94–101'} cm)` + belRef;
 belRiskEl.style.color = '#92400e';
 belRiskEl.style.background = '#fef3c7';
 belRiskEl.style.borderColor = '#fde68a';
 } else {
-belRiskEl.textContent = `✓ Bel çevresi normal sınırda (${isFemale?'<80 cm':'<94 cm'})`;
+belRiskEl.innerHTML = `✓ Bel çevresi normal — ${bel} cm (${cins} <${isFemale?80:94} cm)` + belRef;
 belRiskEl.style.color = '#065f46';
 belRiskEl.style.background = '#d1fae5';
 belRiskEl.style.borderColor = '#a7f3d0';
