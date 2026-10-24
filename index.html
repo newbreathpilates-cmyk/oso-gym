@@ -3163,9 +3163,14 @@ function switchView(v){calView=v;renderCalendar();}
 // ══════════════════════════════════════
 // EVENT MODAL
 // ══════════════════════════════════════
-function populateEventTrainers() {
+// Pasif eğitmenler seçim listelerinde gösterilmez. Tek istisna: düzenlenen kayıt zaten o eğitmene aitse
+// listeye eklenir, yoksa kayıt kaydedilirken fark ettirmeden başka eğitmene geçerdi.
+function secilebilirEgitmenler(mevcut) {
+return S.trainers.filter(t=>t.status!=='pasif' || (mevcut!=null && mevcut!=='' && (t.id===mevcut || t.name===mevcut)));
+}
+function populateEventTrainers(mevcutTrainerId) {
 const sel=document.getElementById('ev-trainer');
-sel.innerHTML='<option value="">— Eğitmen Seçin (Opsiyonel) —</option>'+S.trainers.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+sel.innerHTML='<option value="">— Eğitmen Seçin (Opsiyonel) —</option>'+secilebilirEgitmenler(mevcutTrainerId).map(t=>`<option value="${t.id}">${t.name}${t.status==='pasif'?' (ayrıldı)':''}</option>`).join('');
 }
 function populateEventMembers() {
 const sel=document.getElementById('ev-member-add');
@@ -3292,7 +3297,7 @@ sel.innerHTML = t ? `<option value="${t.id}">${t.name}</option>` : '';
 sel.disabled = true;
 } else {
 sel.disabled = false;
-sel.innerHTML = S.trainers.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+sel.innerHTML = secilebilirEgitmenler().map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
 }
 document.getElementById('un-date').value = localDate();
 document.getElementById('un-start').value = '09:00';
@@ -3402,7 +3407,7 @@ document.getElementById('ev-guest-name').value=ev.guestName||'';
 document.getElementById('ev-olcum').checked=ev.olcumAlinacak||false;
 document.getElementById('ev-teyit').checked=ev.teyitGerekli||false;
 toggleGuestField();
-populateEventTrainers();
+populateEventTrainers(ev.trainerId);
 document.getElementById('ev-trainer').value=ev.trainerId;
 populateEventMembers();renderEventMembersList();
 openModal('event-modal');
@@ -7318,7 +7323,8 @@ el.value = yeni;
 }
 function openMatDersModal(id) {
 const sel = document.getElementById('md-egitmen');
-sel.innerHTML = S.trainers.map(t=>`<option value="${t.name.replace(/"/g,'&quot;')}">${t.name}</option>`).join('');
+const mevcutDers = id ? (window._matDersler||[]).find(x=>x.id===id) : null;
+sel.innerHTML = secilebilirEgitmenler(mevcutDers ? mevcutDers.egitmenAdi : null).map(t=>`<option value="${t.name.replace(/"/g,'&quot;')}">${t.name}${t.status==='pasif'?' (ayrıldı)':''}</option>`).join('');
 document.getElementById('md-id').value = id || '';
 document.getElementById('mat-ders-modal-title').textContent = id ? 'Grup Dersi Düzenle' : 'Grup Dersi Ekle';
 if(id) {
