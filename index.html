@@ -2472,7 +2472,7 @@ if(!bu && !sonraki) return '';
 return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin-top:4px;background:#fee2e2;border-radius:6px;cursor:pointer" onclick="navigateTo('calendar')">
 <span style="font-size:12.5px;color:#991b1b;font-weight:600">⚠️ Eğitmen yok</span>
 <span style="font-size:12px;color:#991b1b">Bu hafta ${bu} · Önümüzdeki ${sonraki}</span>
-</div>`;
+</div>${(()=>{const bosSayi=S.events.filter(e=>egitmeniSilinmisMi(e)&&bosRandevuMu(e)).length;return bosSayi?`<button onclick="egitmensizBosRandevulariTemizle()" style="width:100%;margin-top:6px;padding:8px;border:1px solid #fecaca;background:white;color:#991b1b;border-radius:6px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">🗑 Paketsiz / boş ${bosSayi} randevuyu sil</button>`:'';})()}`;
 })()}
 </div>`;
 // Önümüzdeki Hafta kartı — ayrı blok kaldırıldı, yukarıya taşındı
@@ -3122,6 +3122,31 @@ _nowLineInterval = setInterval(updateNowLinePosition, 60000);
 // Randevunun eğitmeni sistemden silinmişse true (eğitmen kaydı yok ama trainerId duruyor)
 function egitmeniSilinmisMi(ev) {
 return !!ev.trainerId && !S.trainers.some(t=>t.id===ev.trainerId);
+}
+// Üyenin kullanılabilir (aktif, dersi kalmış) paketi var mı?
+function uyeninPaketiVarMi(mid) {
+const m = S.members.find(x=>x.id===mid);
+if(!m || !m.package || m.status!=='Aktif') return false;
+const total = pkgSessions(m.package);
+if(!total) return false;
+if(total>=999) return true;
+return total - (m.used||0) > 0;
+}
+// "Boş" randevu: tamamlanmamış, misafiri yok ve ya hiç üyesi yok ya da üyelerinin hiçbirinin paketi yok
+function bosRandevuMu(ev) {
+if(ev.completed || ev.guestName) return false;
+const uyeler = ev.members||[];
+return !uyeler.length || uyeler.every(mid=>!uyeninPaketiVarMi(mid));
+}
+function egitmensizBosRandevulariTemizle() {
+const silinecek = S.events.filter(e=>egitmeniSilinmisMi(e) && bosRandevuMu(e));
+if(!silinecek.length) { toast('Silinecek boş randevu yok.','success'); return; }
+if(!confirm('Eğitmeni silinmiş '+silinecek.length+' boş randevu silinecek (üyesi olmayan ya da üyesinin paketi olmayan).\n\nPaketli üyelerin randevuları kalacak. Devam edilsin mi?')) return;
+const ids = new Set(silinecek.map(e=>e.id));
+S.events = S.events.filter(e=>!ids.has(e.id));
+save();
+toast(silinecek.length+' boş randevu silindi ✓','success');
+navigateTo(typeof currentPage!=='undefined' && currentPage ? currentPage : 'dashboard');
 }
 const EGITMENSIZ_RENK = {bg:'#fee2e2', border:'#dc2626', text:'#991b1b', dot:'#dc2626'};
 function getFilteredEvents() {
@@ -5462,18 +5487,22 @@ toast('Eğitmen kaydedildi.','success');
 }
 function deleteTrainer(id){
 const t=S.trainers.find(x=>x.id===id);
-const randevuSayisi=S.events.filter(ev=>ev.trainerId===id).length;
-const bekleyen=S.events.filter(ev=>ev.trainerId===id && !ev.completed && ev.date>=localDate()).length;
+const egitmenRandevulari=S.events.filter(ev=>ev.trainerId===id);
+const bosRandevular=egitmenRandevulari.filter(bosRandevuMu);
+const kalacaklar=egitmenRandevulari.filter(ev=>!ev.completed && !bosRandevuMu(ev));
 let silMesaji='Bu eğitmeni silmek istediğinizden emin misiniz?';
-if(randevuSayisi) silMesaji+='\n\nBu eğitmenin '+randevuSayisi+' randevusu var'+(bekleyen?' ('+bekleyen+' tanesi yaklaşan)':'')+'. Randevular silinmez; takvimde kırmızı "⚠️ Eğitmen yok" olarak görünür, onlara yeni eğitmen atamanız gerekir.\n\nEğitmen ayrıldıysa silmek yerine "Pasif" yapmanız önerilir.';
+if(bosRandevular.length) silMesaji+='\n\n• '+bosRandevular.length+' boş randevu (üyesi olmayan ya da üyesinin paketi olmayan) SİLİNECEK.';
+if(kalacaklar.length) silMesaji+='\n\n• '+kalacaklar.length+' randevu paketli üyelere ait; silinmez, takvimde kırmızı "⚠️ Eğitmen yok" olarak görünür. Bunlara yeni eğitmen atayın.';
+if(egitmenRandevulari.length) silMesaji+='\n\nEğitmen ayrıldıysa silmek yerine "Pasif" yapmanız önerilir.';
 if(!confirm(silMesaji)) return;
+if(bosRandevular.length) { const bosIds=new Set(bosRandevular.map(e=>e.id)); S.events=S.events.filter(e=>!bosIds.has(e.id)); }
 const name=t?t.name:'Bu eğitmen';
 // Randevuları koru ama eğitmen adını sakla
 S.events.forEach(ev=>{ if(ev.trainerId===id) ev._deletedTrainerName = name; });
 S.trainers=S.trainers.filter(t=>t.id!==id);
 visibleTrainers=new Set(S.trainers.map(t=>t.id));
 save();renderTrainers();
-toast(name+' silindi. Randevuları korundu.');
+toast(name+' silindi.'+(bosRandevular.length?' '+bosRandevular.length+' boş randevu silindi.':'')+(kalacaklar.length?' '+kalacaklar.length+' randevuya yeni eğitmen atayın.':''));
 }
 // ══════════════════════════════════════
 // PAYMENTS
