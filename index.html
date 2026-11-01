@@ -6710,7 +6710,14 @@ ${odendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:3p
 ${S.sabitGiderler.length > 0 ? `
 <div class="card" style="margin-top:12px">
 <div class="card-title">🔄 Sabit Giderler (Her Ay)</div>
-${S.sabitGiderler.map(g=>{
+${(()=>{
+// Seçili ayda kaldırılmış (pasif) giderler listede gizlenir; geçmiş aylarda görünmeye devam eder
+const ay = window._giderAy || new Date().toISOString().slice(0,7);
+const kaldirilanlar = S.sabitGiderler.filter(g=>!isSabitGiderAktifForAy(g, ay));
+window._sabitKaldirilanSayisi = kaldirilanlar.length;
+return '';
+})()}
+${S.sabitGiderler.filter(g=>window._sabitPasifGoster || isSabitGiderAktifForAy(g, window._giderAy || new Date().toISOString().slice(0,7))).map(g=>{
 const selAyStr = window._giderAy || new Date().toISOString().slice(0,7);
 const isAktif = isSabitGiderAktifForAy(g, selAyStr);
 const odKey = 'od_' + selAyStr;
@@ -6734,6 +6741,7 @@ ${isOdendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:
 </div>
 </div>`;
 }).join('')}
+${window._sabitKaldirilanSayisi?`<button onclick="window._sabitPasifGoster=!window._sabitPasifGoster;renderGiderler()" style="width:100%;margin-top:8px;padding:7px;background:none;border:1px dashed var(--border2);border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;font-size:11.5px;color:var(--text3)">${window._sabitPasifGoster?'Kaldırılanları gizle ▴':'Kaldırılanları göster ('+window._sabitKaldirilanSayisi+') ▾'}</button>`:''}
 <div style="display:flex;justify-content:space-between;padding-top:8px;font-weight:700">
 <span>Toplam Sabit Gider</span>
 <span style="color:#b91c1c">₺${sabitToplam.toLocaleString('tr-TR')}</span>
