@@ -1997,7 +1997,7 @@ return { netDersSaat, bosZamanSaat, calisilanGun, tamZamanliOran, trStandartAyli
 function renderTrainerPerformanceCard(monthStr) {
 if(!currentUser || currentUser.role!=='owner') return '';
 monthStr = monthStr || new Date().toISOString().slice(0,7);
-const rows = S.trainers.map(t=>{
+const rows = S.trainers.filter(t=>!pasifEgitmenGizlensinMi(t, monthStr)).map(t=>{
 const perf = calcTrainerPerformance(t.id, monthStr);
 return {trainer:t, ...perf};
 }).sort((a,b)=>b.netDersSaat-a.netDersSaat);
@@ -3118,6 +3118,16 @@ let _nowLineInterval = null;
 function startNowLineTimer() {
 if(_nowLineInterval) clearInterval(_nowLineInterval);
 _nowLineInterval = setInterval(updateNowLinePosition, 60000);
+}
+// Pasif eğitmen, seçili ayda hiç dersi (bireysel randevu ya da grup dersi) ve o aya ait hakediş ödemesi yoksa gizlenir.
+// Dersi varsa görünmeye devam eder — böylece hiçbir hakediş gözden kaçmaz.
+function pasifEgitmenGizlensinMi(t, ay) {
+if(!t || t.status!=='pasif') return false;
+ay = (ay||'').slice(0,7);
+const randevuVar = (S.events||[]).some(e=>e.trainerId===t.id && e.date && e.date.startsWith(ay));
+const grupVar = (window._matDersler||[]).some(d=>d.egitmenAdi===t.name && d.tarih && d.tarih.startsWith(ay) && !d.gerceklesmedi);
+const odemeVar = (S.hakedisPayments||[]).some(p=>p.trainerId===t.id && p.month===ay);
+return !randevuVar && !grupVar && !odemeVar;
 }
 // Randevunun eğitmeni sistemden silinmişse true (eğitmen kaydı yok ama trainerId duruyor)
 function egitmeniSilinmisMi(ev) {
@@ -6279,7 +6289,7 @@ return sum+(p.amount/lessons);
 const ayGrupDersleri = (window._matDersler||[]).filter(d=>d.tarih&&d.tarih.startsWith(selMonth)&&matDersDurumu(d)==='tamamlandi');
 const ayGrupGelir = ayGrupDersleri.reduce((a,d)=>a+matDersGelirHesapla(d).gelir,0);
 const ayDersCount = S.events.filter(e=>e.date&&e.date.startsWith(selMonth)&&e.completed).length + ayGrupDersleri.length;
-const rows = S.trainers.map(t => {
+const rows = S.trainers.filter(t=>!pasifEgitmenGizlensinMi(t, selMonth)).map(t => {
 const {total, ciro, detail, lessonCount, grupDersSayisi} = calcTrainerHakedis(t.id, selMonth);
 const paid = (S.hakedisPayments||[]).find(p=>p.trainerId===t.id&&p.month===selMonth);
 // Ödeme yapıldıktan sonra onaylanan grup dersleri varsa aradaki fark ödenmemiş görünsün
