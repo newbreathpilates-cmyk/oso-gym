@@ -1298,19 +1298,17 @@ window._firebaseData = data;
 window._firebaseReady = true;
 if(window._onFirebaseReady) window._onFirebaseReady();
 // Gerçek zamanlı dinleyici — başka kullanıcılar değişiklik yapınca otomatik güncelle
-let isFirstSnapshot = true;
+// Not: S ana scriptte "let" ile tanımlı; window.S ile erişilemez. Bu yüzden güncelleme
+// ana scriptteki window.uzaktanVeriUygula() üzerinden yapılır. Eskiden bu dinleyici hiç çalışmıyordu
+// ve açık kalan bir cihaz kayıt yaptığında diğer cihazların değişikliklerinin üzerine yazıyordu.
 onSnapshot(DOC_REF, (snap) => {
-if(isFirstSnapshot) { isFirstSnapshot = false; return; }
 if(!snap.exists()) return;
+// Bu cihazın kendi kaydının yankısı — zaten elimizde, tekrar uygulama
+if(snap.metadata && snap.metadata.hasPendingWrites) return;
 try {
 const newData = JSON.parse(snap.data().data);
 if(!newData) return;
-if(window.S) {
-window.S = newData;
-if(window.currentPage && window.navigateTo) {
-window.navigateTo(window.currentPage);
-}
-}
+if(window.uzaktanVeriUygula) window.uzaktanVeriUygula(newData);
 } catch(e) {
 console.error('Gerçek zamanlı güncelleme hatası:', e);
 }
@@ -1507,6 +1505,31 @@ return parsed;
 } catch(e){}
 return defaultState();
 }
+// Başka bir cihazdan gelen güncel veriyi uygula (kaydetmeden — kayıt döngüsü olmasın)
+window.uzaktanVeriUygula = function(data) {
+if(!data || !Array.isArray(data.trainers)) return;
+const yeniJson = JSON.stringify(data);
+if(yeniJson === JSON.stringify(S)) return; // değişiklik yok
+if(!data.paketFiyatlari) data.paketFiyatlari = defaultState().paketFiyatlari;
+if(!data.giderler) data.giderler = [];
+try { updateMemberStatuses(data); } catch(e) {}
+S = data;
+try { localStorage.setItem('pilates_v3', JSON.stringify(S)); } catch(e){}
+if(currentUser) {
+if(currentUser.role==='trainer') {
+const t = S.trainers.find(x=>x.id===currentUser.trainerId);
+if(!t || t.status==='pasif') { toast('Hesabınız devre dışı bırakıldı.','error'); setTimeout(function(){ try{ sessionStorage.removeItem('nbp_user'); }catch(e){} location.reload(); }, 1500); return; }
+} else {
+// Yeni eklenen eğitmenler takvimde görünür olsun
+S.trainers.forEach(t=>visibleTrainers.add(t.id));
+}
+// Açık bir pencere (modal) varken sayfayı yeniden çizme; kapatılınca zaten yenilenir
+const acikModal = document.querySelector('.modal-overlay.open, .modal.open, .modal-backdrop.show');
+if(!acikModal) navigateTo(currentPage);
+} else {
+populateTrainerSelect();
+}
+};
 function save() {
 // Firebase'e kaydet (birincil)
 if(window.firebaseSave) window.firebaseSave(S);
