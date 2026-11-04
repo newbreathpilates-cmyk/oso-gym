@@ -945,6 +945,10 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 </select>
 </div>
 </div>
+<label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;margin:4px 0 10px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);cursor:pointer">
+<input type="checkbox" id="tr-gizli" style="margin-top:2px;width:18px;height:18px;flex-shrink:0">
+<span><span style="font-weight:600;font-size:13px">🔒 Randevularını diğer eğitmenlerden gizle</span><br><span style="font-size:11px;color:var(--text3)">Bu eğitmenin randevuları, müsait olmadığı saatler ve grup dersleri diğer eğitmenlerin ekranında hiç görünmez. Sadece işletme sahibi ve eğitmenin kendisi görür.</span></span>
+</label>
 <div style="border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:12px;background:var(--bg);margin-top:4px">
 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:6px"><i class="ti ti-wallet" style="font-size:12px;vertical-align:-1px"></i> Hakediş Yüzdesi (%)</div>
 <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Tüm ders türleri için geçerli. Ders başına düşen tutar (paket fiyatı ÷ ders sayısı) üzerinden hesaplanır.</div>
@@ -2700,7 +2704,7 @@ function renderTrainerFilterForTrainer() {
 const el = document.getElementById('trainer-filter-row');
 if(!el) return;
 el.innerHTML = `<span style="font-size:11px;color:var(--text3);font-weight:600">Eğitmen:</span>` +
-S.trainers.filter(t=>t.status!=='pasif').map(t => {
+S.trainers.filter(t=>t.status!=='pasif' && !egitmenGizliMi(t.id)).map(t => {
 const c = tc(t.color);
 const on = visibleTrainers.has(t.id);
 return `<div class="trainer-chip ${on?'':'off'}" style="background:${c.bg};border-color:${c.border};color:${c.text}" onclick="toggleTrainer(${t.id})">
@@ -2803,7 +2807,7 @@ groups.forEach(grp=>{grp.sort((a,b)=>a.start-b.start);grp.forEach((s,i)=>{s.col=
 return slots;
 }
 const slots=getEventSlots(dayEvs);
-const dayUnav=(S.unavailableBlocks||[]).filter(b=>b.date===ds && visibleTrainers.has(b.trainerId));
+const dayUnav=(S.unavailableBlocks||[]).filter(b=>b.date===ds && visibleTrainers.has(b.trainerId) && !egitmenGizliMi(b.trainerId));
 const unavHtml = dayUnav.map(b=>{
 const [sh,sm]=b.startTime.split(':').map(Number);
 const [eh,em]=b.endTime.split(':').map(Number);
@@ -2821,6 +2825,7 @@ const dayMatDersler = (window._matDersler||[]).filter(md=>md.tarih===ds);
 const matHtml = dayMatDersler.map(md=>{
 const trn = S.trainers.find(t=>t.name===md.egitmenAdi);
 if(trn && !visibleTrainers.has(trn.id)) return '';
+if(egitmenGizliMi(md.egitmenAdi)) return '';
 const [sh,sm]=(md.saat||'09:00').split(':').map(Number);
 const mstart=(sh-6)*60+sm;
 const mheight=Math.max(md.sure||45, 45);
@@ -2934,7 +2939,7 @@ grp.forEach((s,i)=>{s.col=i;s.total=grp.length;});
 return slots;
 }
 const slots=getEventSlots(dayEvs);
-const dayUnav=(S.unavailableBlocks||[]).filter(b=>b.date===ds && visibleTrainers.has(b.trainerId));
+const dayUnav=(S.unavailableBlocks||[]).filter(b=>b.date===ds && visibleTrainers.has(b.trainerId) && !egitmenGizliMi(b.trainerId));
 const unavHtml = dayUnav.map(b=>{
 const [sh,sm]=b.startTime.split(':').map(Number);
 const [eh,em]=b.endTime.split(':').map(Number);
@@ -2952,6 +2957,7 @@ const dayMatDersler = (window._matDersler||[]).filter(md=>md.tarih===ds);
 const matHtml = dayMatDersler.map(md=>{
 const trn = S.trainers.find(t=>t.name===md.egitmenAdi);
 if(trn && !visibleTrainers.has(trn.id)) return '';
+if(egitmenGizliMi(md.egitmenAdi)) return '';
 const [sh,sm]=(md.saat||'09:00').split(':').map(Number);
 const mstart=(sh-6)*60+sm;
 const mheight=Math.max(md.sure||45, 45);
@@ -3079,7 +3085,7 @@ return;
 }
 const memberIds = new Set(matchedMembers.map(m=>m.id));
 // Randevuları bul
-let events = S.events.filter(e=>(e.members||[]).some(mid=>memberIds.has(mid)));
+let events = gorunurRandevular(S.events.filter(e=>(e.members||[]).some(mid=>memberIds.has(mid))));
 if(selectedMonth) events = events.filter(e=>e.date && e.date.startsWith(selectedMonth));
 events = events.sort((a,b)=>b.date>a.date?1:-1);
 if(!events.length) {
@@ -3152,6 +3158,18 @@ const grupVar = (window._matDersler||[]).some(d=>d.egitmenAdi===t.name && d.tari
 const odemeVar = (S.hakedisPayments||[]).some(p=>p.trainerId===t.id && p.month===ay);
 return !randevuVar && !grupVar && !odemeVar;
 }
+// Gizlilik: "randevulariGizli" işaretli eğitmenin randevuları, diğer EĞİTMENLERE hiç gösterilmez.
+// İşletme sahibi ve eğitmenin kendisi görür. (trainerId ya da eğitmen adı verilebilir)
+function egitmenGizliMi(trainerIdVeyaAd) {
+if(!currentUser || currentUser.role!=='trainer' || trainerIdVeyaAd==null || trainerIdVeyaAd==='') return false;
+const t = S.trainers.find(x=>x.id===trainerIdVeyaAd || x.name===trainerIdVeyaAd);
+if(!t || t.id===currentUser.trainerId) return false;
+return !!t.randevulariGizli;
+}
+function gorunurRandevular(liste) {
+if(!currentUser || currentUser.role!=='trainer') return liste;
+return liste.filter(e=>!egitmenGizliMi(e.trainerId));
+}
 // Randevunun eğitmeni sistemden silinmişse true (eğitmen kaydı yok ama trainerId duruyor)
 function egitmeniSilinmisMi(ev) {
 return !!ev.trainerId && !S.trainers.some(t=>t.id===ev.trainerId);
@@ -3187,6 +3205,7 @@ let evs = S.events;
 // Hem işletme sahibi hem eğitmen görünür eğitmenlere göre filtreler
 const isOwnerView = currentUser && currentUser.role!=='trainer';
 evs = evs.filter(e=>!e.trainerId || visibleTrainers.has(e.trainerId) || (isOwnerView && egitmeniSilinmisMi(e)));
+evs = gorunurRandevular(evs);
 return evs;
 }
 function renderMonthView() {
@@ -3208,7 +3227,7 @@ let html=`<div class="month-cal">
 ${cells.map(cell=>{
 const ds=localDate(cell.date);
 const dayEvs=evs.filter(e=>e.date===ds);
-const dayMat=(window._matDersler||[]).filter(md=>md.tarih===ds);
+const dayMat=(window._matDersler||[]).filter(md=>md.tarih===ds && !egitmenGizliMi(md.egitmenAdi));
 const isToday=ds===todayStr;
 return `<div class="month-cell ${cell.other?'other-month':''}" onclick="openNewEventOnDay('${ds}',event)">
 <div class="month-date ${isToday?'today':''}">${cell.date.getDate()}</div>
@@ -3438,6 +3457,7 @@ const totalMins = Math.max(0, Math.floor(relY));
 const clickedAbsMin = 6*60 + totalMins;
 const touchedDers = (window._matDersler||[]).find(function(md){
 if(md.tarih !== dateStr) return false;
+if(egitmenGizliMi(md.egitmenAdi)) return false;
 const parts = (md.saat||'0:0').split(':').map(Number);
 const start = parts[0]*60+parts[1];
 const end = start + (md.sure||45);
@@ -3943,7 +3963,7 @@ else if(window.statsPeriod==='6month') dateFrom.setMonth(now.getMonth()-6);
 else if(window.statsPeriod==='year') dateFrom.setFullYear(now.getFullYear()-1);
 const fromStr = localDate(dateFrom);
 // Tamamlanan randevuları filtrele
-const completedEvs = S.events.filter(e => e.completed && e.date >= fromStr);
+const completedEvs = gorunurRandevular(S.events.filter(e => e.completed && e.date >= fromStr));
 // Üye istatistikleri
 const stats = {};
 completedEvs.forEach(ev => {
@@ -4792,7 +4812,7 @@ const gecmis = (m.olcumGecmis||[]).sort((a,b)=>a.tarih>b.tarih?1:-1);
 const s = m.saglik||{};
 const sLabels = ['Kalp/Tansiyon/Damar','Nefes Darlığı/Astım','Diyabet','Omurga/Bel Fıtığı','Eklem/Kemik Hastalığı','Son 6 Ay Ameliyat','Hamilelik/Doğum Sonrası','Düzenli İlaç'];
 const sIds = ['sh1','sh2','sh3','sh4','sh5','sh6','sh7','sh8'];
-const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed&&(!m.start||e.date>=m.start)).sort((a,b)=>b.date>a.date?1:-1);
+const memberEvents = gorunurRandevular(S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed&&(!m.start||e.date>=m.start))).sort((a,b)=>b.date>a.date?1:-1);
 function diffHTML(curr, prev, unit) {
 if(!curr||!prev) return '';
 const d = (parseFloat(curr)-parseFloat(prev)).toFixed(1);
@@ -5121,7 +5141,7 @@ const o = m.olcumler||{};
 const s = m.saglik||{};
 const sHealthIds = ['sh1','sh2','sh3','sh4','sh5','sh6','sh7','sh8'];
 const sHealthLabels = ['Kalp/Tansiyon/Damar','Nefes Darlığı/Astım/Akciğer','Diyabet','Omurga/Boyun/Bel Fıtığı','Eklem/Kıkırdak/Kemik','Son 6 Ay Ameliyat/Yaralanma','Hamilelik/Doğum Sonrası','Düzenli İlaç Kullanımı'];
-const memberEvents = S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed&&(!m.start||e.date>=m.start)).sort((a,b)=>a.date>b.date?1:-1);
+const memberEvents = gorunurRandevular(S.events.filter(e=>(e.members||[]).includes(m.id)&&e.completed&&(!m.start||e.date>=m.start))).sort((a,b)=>a.date>b.date?1:-1);
 const bmi = o.boy&&o.kilo ? (parseFloat(o.kilo)/Math.pow(parseFloat(o.boy)/100,2)).toFixed(1) : '—';
 const whr = o.bel&&o.kalca ? (parseFloat(o.bel)/parseFloat(o.kalca)).toFixed(2) : '—';
 const whtr = o.bel&&o.boy ? (parseFloat(o.bel)/parseFloat(o.boy)).toFixed(2) : '—';
@@ -5467,6 +5487,7 @@ document.getElementById('tr-phone').value=t.phone||'';
 document.getElementById('tr-color').value=t.color;
 document.getElementById('tr-rate-pct').value=(t.pct)||'';
 document.getElementById('tr-online-pct').value=(t.onlinePct)||'';
+document.getElementById('tr-gizli').checked=!!t.randevulariGizli;
 document.getElementById('tr-pin').value='';
 document.getElementById('tr-status').value=t.status||'aktif';
 document.getElementById('tr-dob').value=t.dob||'';
@@ -5482,6 +5503,7 @@ document.getElementById('tr-emergency-phone').value=t.emergencyPhone||'';
 document.getElementById('tr-color').value='1';
 document.getElementById('tr-rate-pct').value='';
 document.getElementById('tr-online-pct').value='';
+document.getElementById('tr-gizli').checked=false;
 document.getElementById('tr-pin').value='';
 document.getElementById('tr-status').value='aktif';
 }
@@ -5498,6 +5520,7 @@ phone:document.getElementById('tr-phone').value.trim(),
 color:parseInt(document.getElementById('tr-color').value),
 pct:parseFloat(document.getElementById('tr-rate-pct').value)||0,
 onlinePct:parseFloat(document.getElementById('tr-online-pct').value)||0,
+randevulariGizli:document.getElementById('tr-gizli').checked,
 status:statusVal,
 dob:document.getElementById('tr-dob').value,
 tc:document.getElementById('tr-tc').value.trim(),
