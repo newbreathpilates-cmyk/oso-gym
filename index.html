@@ -431,6 +431,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.04-2</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -1905,7 +1906,7 @@ document.getElementById('sidebar-avatar').style.background = c ? c.bg : '#e1f5ee
 document.getElementById('sidebar-avatar').style.color = c ? c.text : '#065f46';
 document.getElementById('sidebar-avatar').textContent = trainer ? trainer.name.split(' ').map(w=>w[0]).join('').slice(0,2) : 'İS';
 document.getElementById('sidebar-name').textContent = trainer ? trainer.name : 'İşletme Sahibi';
-document.getElementById('sidebar-role').textContent = trainer ? 'Eğitmen' : 'Tam Yetki';
+document.getElementById('sidebar-role').textContent = (trainer ? 'Eğitmen' : 'Tam Yetki') + ' · v2026.11.04-2';
 // PIN değiştir butonu sadece işletme sahibine görünsün
 const pinBtn = document.getElementById('pin-change-btn');
 if(pinBtn) pinBtn.style.display = trainer ? 'none' : '';
