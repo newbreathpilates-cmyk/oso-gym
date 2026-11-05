@@ -2089,6 +2089,56 @@ temp.innerHTML = cardHtml.trim();
 wrapper.replaceWith(temp.firstElementChild);
 }
 }
+// Panel: önümüzdeki 3 günün randevu ön bilgisi (grup dersleri dahil değil).
+// Dersi olmayan Pazar atlanır, yerine bir sonraki gün gösterilir.
+function renderOnumuzdekiGunlerCard() {
+if(!currentUser || currentUser.role!=='owner') return '';
+const gunler = [];
+const d = new Date(); d.setHours(12,0,0,0);
+for(let i=0; i<10 && gunler.length<3; i++) {
+d.setDate(d.getDate()+1);
+const ds = localDate(d);
+const evs = (S.events||[]).filter(e=>e.date===ds).sort((a,b)=>(a.startTime||'')>(b.startTime||'')?1:-1);
+if(d.getDay()===0 && !evs.length) continue; // dersi olmayan Pazar
+gunler.push({ds, tarih:new Date(d), evs});
+}
+const satirlar = gunler.map((g,idx)=>{
+const gunAdi = g.tarih.toLocaleDateString('tr-TR',{weekday:'long'});
+const tarihMetni = g.tarih.toLocaleDateString('tr-TR',{day:'numeric',month:'long'});
+const baslik = (idx===0 && gunler[0].ds===localDate(new Date(Date.now()+86400000)) ? 'Yarın · ' : '') + gunAdi.charAt(0).toUpperCase()+gunAdi.slice(1) + ' ' + tarihMetni;
+const sayilar = {};
+g.evs.forEach(e=>{
+const t = S.trainers.find(x=>x.id===e.trainerId);
+const ad = t ? t.name.split(' ')[0] : (e.trainerId ? '⚠️ Eğitmen yok' : 'Eğitmensiz');
+sayilar[ad] = (sayilar[ad]||0)+1;
+});
+const dagilim = Object.keys(sayilar).map(ad=>ad+' '+sayilar[ad]).join(' · ');
+const teyit = g.evs.filter(e=>e.teyitGerekli && !e.completed).length;
+const ilkSaat = g.evs.length ? g.evs[0].startTime : '', sonSaat = g.evs.length ? g.evs[g.evs.length-1].startTime : '';
+const saatAraligi = !g.evs.length ? '' : (ilkSaat===sonSaat ? ilkSaat : ilkSaat+' – '+sonSaat);
+return `<div onclick="onumuzdekiGuneGit('${g.ds}')" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
+<div style="min-width:0">
+<div style="font-weight:600;font-size:13px">${baslik}</div>
+<div style="font-size:11px;color:var(--text3);margin-top:2px">${g.evs.length ? (dagilim+(saatAraligi?' · '+saatAraligi:'')) : 'Randevu yok'}${teyit?` · <span style="color:#a16207;font-weight:600">❓ ${teyit} teyit bekliyor</span>`:''}</div>
+</div>
+<div style="text-align:right;flex-shrink:0">
+<div style="font-size:20px;font-weight:800;color:${g.evs.length?'var(--green)':'var(--text3)'};line-height:1">${g.evs.length}</div>
+<div style="font-size:9px;color:var(--text3)">randevu</div>
+</div>
+</div>`;
+}).join('');
+return `<div class="card">
+<div class="card-title">📅 Önümüzdeki Günler</div>
+${satirlar}
+<div style="font-size:10px;color:var(--text3);margin-top:8px">Grup dersleri dahil değildir. Güne dokununca takvim açılır.</div>
+</div>`;
+}
+function onumuzdekiGuneGit(ds) {
+const pzt = d => { const x = new Date(d); x.setHours(12,0,0,0); const g = (x.getDay()+6)%7; x.setDate(x.getDate()-g); return x; };
+const fark = Math.round((pzt(ds+'T12:00:00') - pzt(new Date())) / (7*86400000));
+calView = 'week'; calWeekOffset = fark;
+navigateTo('calendar');
+}
 function renderOnlineGelirCard(monthStr) {
 if(!currentUser || currentUser.role!=='owner') return '';
 if(typeof matKurulumYap==='function') matKurulumYap();
@@ -2534,6 +2584,7 @@ ${birthdayMembers.map(m=>`
 
 document.getElementById('page-content').innerHTML += `
 <div class="two-col">
+<div style="display:flex;flex-direction:column;gap:14px;min-width:0">
 <div class="card">
 <div class="card-title">Bugünkü Dersler <span style="font-size:11px;font-weight:400;color:var(--text3)">${new Date().toLocaleDateString('tr-TR')}</span><span style="font-size:12px;font-weight:600;color:#059669;margin-left:8px">✅ ${todayEvents.filter(e=>e.completed).length}/${todayEvents.length}</span></div>
 ${todayEvents.length ? todayEvents.sort((a,b)=>a.startTime>b.startTime?1:-1).map(ev=>{
@@ -2550,6 +2601,8 @@ return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;borde
 <div style="width:10px;height:10px;border-radius:50%;background:${c.dot}"></div>
 </div>`;
 }).join('') : '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px"><i class="ti ti-calendar-off" style="font-size:24px;display:block;margin-bottom:6px"></i>Bugün ders yok</div>'}
+</div>
+${renderOnumuzdekiGunlerCard()}
 </div>
 <div style="display:flex;flex-direction:column;gap:14px">
 <div class="card">
