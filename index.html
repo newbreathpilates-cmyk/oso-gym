@@ -3901,6 +3901,31 @@ el.innerHTML = `
 el.addEventListener('click', function(e){ if(e.target===el) el.remove(); });
 document.body.appendChild(el);
 }
+// Üyelik özeti: mevcut kayıtlardan hesaplanır (eski üyeler için de çalışır)
+function uyelikBilgileri(m) {
+const odemeler = (S.payments||[]).filter(p=>p.memberId===m.id && p.date);
+const paketBaslangiclari = [...(m.paketGecmisi||[]).map(p=>p.start||p.date), m.start].filter(Boolean);
+const ilkKayit = [...odemeler.map(p=>p.date), ...paketBaslangiclari].sort()[0] || null;
+const dersler = gorunurRandevular(S.events.filter(e=>e.completed && (e.members||[]).includes(m.id) && e.date)).map(e=>e.date).sort();
+const ilkDers = dersler[0] || null;
+const sonDers = dersler.length ? dersler[dersler.length-1] : null;
+const paketSayisi = Math.max(odemeler.length, (m.paketGecmisi||[]).length + (m.package?1:0));
+const baslangic = [ilkKayit, ilkDers, m.kayitTarihi].filter(Boolean).sort()[0] || null;
+let sure = '';
+if(baslangic) {
+const b = new Date(baslangic+'T00:00:00'), n = new Date();
+let ay = (n.getFullYear()-b.getFullYear())*12 + (n.getMonth()-b.getMonth());
+if(n.getDate() < b.getDate()) ay--;
+if(ay < 1) { const gun = Math.max(0, Math.floor((n-b)/86400000)); sure = gun+' gün'; }
+else { const yil = Math.floor(ay/12), kalanAy = ay%12; sure = [yil?yil+' yıl':'', kalanAy?kalanAy+' ay':''].filter(Boolean).join(' '); }
+}
+return { ilkKayit, ilkDers, sonDers, toplamDers: dersler.length, paketSayisi, sure, sistemeEklendi: m.kayitTarihi||null };
+}
+function trTarih(ds) {
+if(!ds) return '—';
+const d = new Date(ds+'T00:00:00');
+return isNaN(d) ? ds : d.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
+}
 function openMemberView(id) {
 const m = S.members.find(x=>x.id===parseInt(id));
 if(!m) return;
@@ -3937,6 +3962,17 @@ ${pkg?`<div style="background:#eff6ff;border-radius:10px;padding:12px;margin-bot
 </div>
 <div style="margin-top:8px;font-size:11px;color:#1e3a8a">Bitiş: <b>${endDate}</b>${days!==null&&days>=0?' · <span style="color:#d97706">'+days+' gün kaldı</span>':days!==null&&days<0?' · <span style="color:#dc2626">Süresi doldu</span>':''}</div>
 </div>`:''}
+${(()=>{const ub=uyelikBilgileri(m);return `<div style="background:#f0fdf8;border:1px solid #a7f3d0;border-radius:10px;padding:12px;margin-bottom:12px">
+<div style="font-size:12px;color:#065f46;font-weight:700;margin-bottom:8px">🗓️ Üyelik Bilgileri</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;font-size:12px">
+<div><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">İLK KAYIT (İLK PAKET)</div><div style="font-weight:700;color:#064e3b">${trTarih(ub.ilkKayit)}</div></div>
+<div><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">İLK DERS</div><div style="font-weight:700;color:#064e3b">${ub.ilkDers?trTarih(ub.ilkDers):'Henüz ders yok'}</div></div>
+<div><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">ÜYELİK SÜRESİ</div><div style="font-weight:700;color:#064e3b">${ub.sure||'—'}</div></div>
+<div><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">TOPLAM</div><div style="font-weight:700;color:#064e3b">${ub.paketSayisi} paket · ${ub.toplamDers} ders</div></div>
+${ub.sonDers?`<div><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">SON DERS</div><div style="font-weight:700;color:#064e3b">${trTarih(ub.sonDers)}</div></div>`:''}
+${ub.sistemeEklendi?`<div><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">SİSTEME EKLENDİ</div><div style="font-weight:700;color:#064e3b">${trTarih(ub.sistemeEklendi)}</div></div>`:''}
+</div>
+</div>`;})()}
 ${m.phone?`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><i class="ti ti-phone" style="color:var(--green)"></i><span>${m.phone}</span></div>`:''}
 ${m.email?`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><i class="ti ti-mail" style="color:var(--green)"></i><span style="font-size:12px">${m.email}</span></div>`:''}
 ${m.kanGrubu?`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><i class="ti ti-droplet" style="color:#dc2626"></i><span>Kan Grubu: <b style="color:#dc2626">${m.kanGrubu}</b></span></div>`:''}
@@ -4772,7 +4808,7 @@ d.olcumGecmis = [...d.olcumGecmis, yeniOlcum];
 S.members[i]={...existing,...d};
 }
 } else {
-d.id=S.nextId++;d.used=0;d.package='';d.start='';
+d.id=S.nextId++;d.used=0;d.package='';d.start='';d.kayitTarihi=localDate();
 d.olcumGecmis = yeniOlcum ? [yeniOlcum] : [];
 S.members.push(d);
 }
