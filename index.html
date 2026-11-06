@@ -1672,6 +1672,59 @@ return true;
 } catch(e) {}
 return false;
 }
+// Seçili günün ders cirosunu ders ders gösterir (Bugünkü Ders Cirosu ile birebir aynı hesap)
+function gunlukCiroDetay() {
+const gun = (document.getElementById('dash-day-picker')||{}).value || localDate();
+const evs = S.events.filter(e=>e.date===gun && e.completed).sort((a,b)=>(a.startTime||'')>(b.startTime||'')?1:-1);
+let toplam = 0;
+const satirlar = [];
+evs.forEach(ev=>{
+const tr = S.trainers.find(t=>t.id===ev.trainerId);
+const uyeler = ev.members||[];
+if(!uyeler.length) { satirlar.push({saat:ev.startTime, egitmen:tr?tr.name:'—', uye:ev.guestName?ev.guestName+' (misafir)':'Üye yok', paket:ev.type, tutar:0, not:'Üye yok → ciroya eklenmez', uyeSayisi:0}); return; }
+uyeler.forEach(mid=>{
+const m = S.members.find(x=>x.id===mid);
+const ad = m ? m.name+' '+m.surname : 'Silinmiş üye';
+const r = {saat:ev.startTime, egitmen:tr?tr.name:'—', uye:ad, paket:'', tutar:0, not:'', uyeSayisi:uyeler.length};
+if(!m) { r.not='Üye kaydı yok'; satirlar.push(r); return; }
+const p = getPaymentForEventDate(mid, ev.date);
+if(!p) { r.not='Ödeme kaydı yok → 0'; satirlar.push(r); return; }
+const ders = getLessonsFromPayment(p)||1;
+r.paket = (p.package||'Özel')+' · ₺'+Number(p.amount||0).toLocaleString('tr-TR')+' ('+p.date+')';
+if(!ders || ders>=999) { r.not='Sınırsız paket → 0'; satirlar.push(r); return; }
+if(!dersUcretiGecerliMi(p, ev.date)) { r.not='Paket süresi dolmuş → 0'; satirlar.push(r); return; }
+r.tutar = p.amount/ders;
+r.not = '₺'+Number(p.amount||0).toLocaleString('tr-TR')+' ÷ '+ders+' ders';
+toplam += r.tutar;
+satirlar.push(r);
+});
+});
+const ov = document.createElement('div');
+ov.id = 'ciro-detay-overlay';
+ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+ov.onclick = e=>{ if(e.target===ov) ov.remove(); };
+const gunMetni = new Date(gun+'T12:00:00').toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric',weekday:'long'});
+ov.innerHTML = `<div style="background:white;border-radius:16px 16px 0 0;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;padding:18px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+<div style="font-weight:700;font-size:15px">📋 Ders Cirosu Detayı</div>
+<button onclick="document.getElementById('ciro-detay-overlay').remove()" style="border:none;background:none;font-size:20px;cursor:pointer;color:var(--text3)">✕</button>
+</div>
+<div style="font-size:12px;color:var(--text3);margin-bottom:12px">${gunMetni} · ${evs.length} ders · ${satirlar.length} satır</div>
+${satirlar.length ? satirlar.map(r=>`<div style="padding:9px 0;border-bottom:1px solid var(--border)">
+<div style="display:flex;justify-content:space-between;gap:10px">
+<div style="font-weight:600;font-size:13px">${r.saat||''} · ${r.uye}${r.uyeSayisi>1?` <span style="background:#fef3c7;color:#92400e;font-size:10px;padding:1px 6px;border-radius:8px">${r.uyeSayisi} kişilik ders</span>`:''}</div>
+<div style="font-weight:700;font-size:13px;color:${r.tutar?'#065f46':'#9ca3af'};white-space:nowrap">₺${Math.round(r.tutar).toLocaleString('tr-TR')}</div>
+</div>
+<div style="font-size:11px;color:var(--text3);margin-top:2px">${r.egitmen}${r.paket?' · '+r.paket:''}</div>
+<div style="font-size:11px;color:${r.tutar?'var(--text2)':'#b45309'};margin-top:1px">${r.not}</div>
+</div>`).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Bu gün tamamlanan ders yok.</div>'}
+<div style="display:flex;justify-content:space-between;padding-top:12px;font-weight:800;font-size:15px">
+<span>Toplam</span><span style="color:#065f46">₺${Math.round(toplam).toLocaleString('tr-TR')}</span>
+</div>
+<div style="font-size:10.5px;color:var(--text3);margin-top:8px;line-height:1.5">Her üyenin dersi, o tarihte geçerli olan paket ödemesinin tutarı ÷ paketteki ders sayısı ile hesaplanır. İki kişilik bir derste iki üyenin ücreti ayrı ayrı eklenir.</div>
+</div>`;
+document.body.appendChild(ov);
+}
 function updateDashDay() {
 const picker = document.getElementById('dash-day-picker');
 if(!picker) return;
@@ -2453,6 +2506,7 @@ document.getElementById('page-content').innerHTML = `
 <input type="date" id="dash-day-picker" value="${todayStr}" onchange="updateDashDay()" style="width:100%;margin:4px 0;padding:3px 6px;border:1px solid #a7f3d0;border-radius:6px;font-size:11px;color:#065f46;background:white">
 <div class="stat-value" style="color:#0a5c41" id="today-rev">••••••</div>
 <div class="stat-sub" style="color:#1D9E75" id="today-count">${todayCompletedCount} ders tamamlandı</div>
+<button onclick="gunlukCiroDetay()" style="margin-top:6px;width:100%;padding:5px;border:1px solid #a7f3d0;background:white;color:#065f46;border-radius:6px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer">📋 Detay</button>
 </div>
 </div>
 <div class="card" style="margin-top:14px;border-color:#bfdbfe;background:#eff6ff">
