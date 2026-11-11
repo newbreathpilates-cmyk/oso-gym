@@ -5551,74 +5551,134 @@ document.getElementById('page-content').innerHTML=`<div style="text-align:center
 return;
 }
 const _filteredTrainers = S.trainers.filter(t => window._trainerFilter==='' ? true : window._trainerFilter==='aktif' ? t.status!=='pasif' : t.status==='pasif');
+const thisMonth = localDate().slice(0,7);
 const cards = _filteredTrainers.map(t=>{
 const c = tc(t.color);
-const totalEvents = S.events.filter(e=>e.trainerId===t.id&&e.completed).length;
-const completedEvents = S.events.filter(e=>e.trainerId===t.id&&e.completed).length;
-const thisMonth = new Date().toISOString().slice(0,7);
-const monthEvents = S.events.filter(e=>e.trainerId===t.id&&e.date&&e.date.startsWith(thisMonth)&&e.completed).length;
+const ozet = egitmenOzet(t, thisMonth);
 const initials = t.name.split(' ').map(w=>w[0]).join('').slice(0,2);
-return `<div style="background:white;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
-<div style="background:${c.bg};padding:20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid ${c.light}">
-<div style="width:52px;height:52px;border-radius:12px;background:${c.dot};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;font-weight:700;color:white">${initials}</div>
+const pasif = t.status==='pasif';
+return `<div class="egitmen-kart" onclick="openTrainerView(${t.id})" style="background:white;border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;${pasif?'opacity:0.6;':''}transition:box-shadow .15s,transform .15s">
+<div style="width:46px;height:46px;border-radius:50%;background:${c.bg};border:2px solid ${c.dot};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;font-weight:700;color:${c.dot}">${initials}</div>
 <div style="flex:1;min-width:0">
-<div style="font-size:16px;font-weight:700;color:${c.text}">${t.name}</div>
-<div style="font-size:12px;color:${c.text};opacity:0.7;margin-top:2px">${t.spec||'Uzmanlık belirtilmemiş'}</div>
+<div style="display:flex;align-items:center;gap:6px;min-width:0">
+<span style="font-size:14.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</span>
+${pasif?'<span style="background:#f3f4f6;color:#6b7280;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:10px;flex-shrink:0">Pasif</span>':''}
+${t.randevulariGizli?'<span title="Randevuları diğer eğitmenlerden gizli" style="font-size:11px;flex-shrink:0">🔒</span>':''}
 </div>
-<div style="display:flex;gap:6px">
-<button class="btn btn-sm btn-icon" style="background:white;border-color:${c.border}" onclick="openTrainerModal(${t.id})"><i class="ti ti-edit" style="color:${c.dot}"></i></button>
-<button class="btn btn-sm btn-icon btn-danger" onclick="deleteTrainer(${t.id})"><i class="ti ti-trash"></i></button>
-</div>
-</div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border)">
-<div style="padding:12px 14px;text-align:center;border-right:1px solid var(--border)">
-<div style="font-size:20px;font-weight:700;color:var(--text)">${monthEvents}</div>
-<div style="font-size:10px;color:var(--text3);margin-top:2px">Bu Ay Ders</div>
-</div>
-<div style="padding:12px 14px;text-align:center;border-right:1px solid var(--border)">
-<div style="font-size:20px;font-weight:700;color:var(--green)">₺${Math.round((() => {
-const evs = S.events.filter(e=>e.trainerId===t.id&&e.date&&e.date.startsWith(thisMonth)&&e.completed);
-const pct = (t.pct||0)/100;
-return evs.reduce((total,ev)=>{
-return total+(ev.members||[]).reduce((sum,mid)=>{
-const m=S.members.find(x=>x.id===mid);if(!m)return sum;
-const p=getPaymentForEventDate(mid, ev.date);
-if(!p)return sum;
-const lessons=getLessonsFromPayment(p)||1;
-if(!lessons||lessons>=999)return sum;
-if(!dersUcretiGecerliMi(p, ev.date)) return sum;
-return sum+(p.amount/lessons)*pct;
-},0);
-},0);
-})()).toLocaleString('tr-TR')}</div>
-<div style="font-size:10px;color:var(--text3);margin-top:2px">Bu Ay Hakediş</div>
-</div>
-<div style="padding:12px 14px;text-align:center">
-<div style="font-size:20px;font-weight:700;color:var(--text)">${completedEvents}</div>
-<div style="font-size:10px;color:var(--text3);margin-top:2px">Toplam Ders</div>
+<div style="font-size:11.5px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.spec||'Uzmanlık belirtilmemiş'}</div>
+<div style="display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap">
+<span style="font-size:11px;color:var(--text2);background:var(--bg);padding:2px 8px;border-radius:10px">Bu ay <b>${ozet.ayDers}</b> ders</span>
+<span style="font-size:11px;color:#065f46;background:#ecfdf5;padding:2px 8px;border-radius:10px">₺${Math.round(ozet.ayHakedis).toLocaleString('tr-TR')}</span>
+${t.pct?`<span style="font-size:11px;color:${c.dot};background:${c.bg};padding:2px 8px;border-radius:10px;font-weight:600">%${t.pct}</span>`:'<span style="font-size:11px;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:10px">Oran yok</span>'}
 </div>
 </div>
-<div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
-${t.phone?`<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)"><i class="ti ti-phone" style="font-size:14px;color:var(--text3)"></i>${t.phone}</div>`:''}
-<div style="display:flex;align-items:center;justify-content:space-between">
-<div style="display:flex;align-items:center;gap:8px">
-<div style="width:12px;height:12px;border-radius:50%;background:${c.dot};flex-shrink:0"></div>
-<span style="font-size:12px;color:var(--text2)">Takvim rengi</span>
-</div>
-<div style="display:flex;align-items:center;gap:6px">
-<span style="font-size:12px;color:var(--text2)">Hakediş oranı:</span>
-<span style="font-size:13px;font-weight:700;color:${c.dot};background:${c.bg};padding:2px 10px;border-radius:20px">%${t.pct||0}</span>
-</div>
-</div>
-${!t.pct?`<div style="padding:6px 10px;background:#fef3c7;border-radius:var(--radius-sm);font-size:11px;color:#92400e;display:flex;align-items:center;gap:6px"><i class="ti ti-alert-triangle" style="font-size:12px"></i> Hakediş oranı tanımlanmamış</div>`:''}
-</div>
+<i class="ti ti-chevron-right" style="color:var(--text3);font-size:18px;flex-shrink:0"></i>
 </div>`;
 }).join('');
 if(!_filteredTrainers.length){
-document.getElementById('page-content').innerHTML=`<div style="text-align:center;padding:60px;color:var(--text3)"><i class="ti ti-users" style="font-size:40px;display:block;margin-bottom:12px"></i><div style="font-size:14px">Bu filtreye uyan eğitmen bulunamadı.</div></div>`;
+document.getElementById('page-content').innerHTML=`<div style="text-align:center;padding:60px;color:var(--text3)"><i class="ti ti-users" style="font-size:40px;display:block;margin-bottom:12px"></i><div style="font-size:14px">Bu filtrede eğitmen yok</div></div>`;
 return;
 }
-document.getElementById('page-content').innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${cards}</div>`;
+document.getElementById('page-content').innerHTML=`<style>.egitmen-kart:hover{box-shadow:0 4px 14px rgba(0,0,0,0.06);transform:translateY(-1px)}</style>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">${cards}</div>
+<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:12px">Detay için eğitmene dokunun</div>`;
+}
+// Eğitmenin aylık/toplam özeti (Hakediş sayfasıyla aynı hesap — grup dersleri dahil)
+function egitmenOzet(t, ay) {
+const h = calcTrainerHakedis(t.id, ay);
+const toplamDers = S.events.filter(e=>e.trainerId===t.id && e.completed).length;
+let calismaSuresi = '';
+if(t.startDate) {
+const b = new Date(t.startDate+'T00:00:00'), n = new Date();
+let a = (n.getFullYear()-b.getFullYear())*12 + (n.getMonth()-b.getMonth());
+if(n.getDate() < b.getDate()) a--;
+if(a < 1) calismaSuresi = Math.max(0, Math.floor((n-b)/86400000))+' gün';
+else calismaSuresi = [Math.floor(a/12)?Math.floor(a/12)+' yıl':'', a%12?(a%12)+' ay':''].filter(Boolean).join(' ');
+}
+return { ayDers: h.lessonCount, ayHakedis: h.total, ayCiro: h.ciro, toplamDers, calismaSuresi };
+}
+function openTrainerView(id) {
+const t = S.trainers.find(x=>x.id===id);
+if(!t) return;
+document.getElementById('trainer-view-overlay')?.remove();
+const c = tc(t.color);
+const ozet = egitmenOzet(t, localDate().slice(0,7));
+const initials = t.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+const telRakam = (t.phone||'').replace(/\D/g,'');
+const waNo = telRakam ? (telRakam.startsWith('90') ? telRakam : telRakam.startsWith('0') ? '9'+telRakam : '90'+telRakam) : '';
+const esc = v => String(v||'').replace(/</g,'&lt;');
+let yas = '', dogumGunuYakin = '';
+if(t.dob) {
+const d = new Date(t.dob+'T00:00:00'), n = new Date();
+const bugun = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+let y = n.getFullYear()-d.getFullYear(); if(n.getMonth()<d.getMonth() || (n.getMonth()===d.getMonth() && n.getDate()<d.getDate())) y--;
+yas = y+' yaş';
+const bu = new Date(n.getFullYear(), d.getMonth(), d.getDate()); if(bu < bugun) bu.setFullYear(n.getFullYear()+1);
+const kalan = Math.round((bu - bugun)/86400000);
+if(kalan===0) dogumGunuYakin = '🎉 Bugün doğum günü!'; else if(kalan<=7) dogumGunuYakin = '🎂 '+kalan+' gün sonra doğum günü';
+}
+const satir = (ikon, etiket, deger, ek='') => deger ? `<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+<i class="ti ti-${ikon}" style="font-size:16px;color:var(--text3);margin-top:1px;flex-shrink:0"></i>
+<div style="flex:1;min-width:0"><div style="font-size:10px;color:var(--text3);letter-spacing:0.3px">${etiket}</div><div style="font-size:13px;color:var(--text);word-break:break-word">${deger}</div>${ek}</div>
+</div>` : '';
+const eksikler = [['phone','Telefon'],['email','E-posta'],['dob','Doğum tarihi'],['startDate','İşe başlama'],['emergencyPhone','Acil durum kişisi']].filter(([k])=>!t[k]).map(([,l])=>l);
+const aksiyon = (href, ikon, metin, renk) => `<a href="${href}" target="_blank" rel="noopener" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border:1px solid var(--border);border-radius:12px;text-decoration:none;color:${renk};font-size:11px;font-weight:600;background:white"><i class="ti ti-${ikon}" style="font-size:19px"></i>${metin}</a>`;
+const el = document.createElement('div');
+el.className = 'modal-overlay';
+el.style.display = 'flex';
+el.id = 'trainer-view-overlay';
+el.onclick = e => { if(e.target===el) el.remove(); };
+el.innerHTML = `<div class="modal" style="max-height:88dvh;overflow-y:auto;padding:0">
+<div style="background:${c.bg};padding:18px 16px 16px;position:relative">
+<button class="btn btn-icon" style="position:absolute;top:12px;right:12px;background:white" onclick="document.getElementById('trainer-view-overlay').remove()"><i class="ti ti-x"></i></button>
+<div style="display:flex;align-items:center;gap:12px;padding-right:40px">
+<div style="width:56px;height:56px;border-radius:50%;background:${c.dot};display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;color:white;flex-shrink:0">${initials}</div>
+<div style="min-width:0">
+<div style="font-size:17px;font-weight:800;color:${c.text}">${esc(t.name)}</div>
+<div style="font-size:12px;color:${c.text};opacity:0.75">${esc(t.spec)||'Uzmanlık belirtilmemiş'}</div>
+<div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+<span style="background:${t.status==='pasif'?'#f3f4f6':'#d1fae5'};color:${t.status==='pasif'?'#6b7280':'#065f46'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">${t.status==='pasif'?'Pasif':'Aktif'}</span>
+${t.randevulariGizli?'<span style="background:white;color:#374151;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px">🔒 Randevuları gizli</span>':''}
+${ozet.calismaSuresi?`<span style="background:white;color:#374151;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px">⏱ ${ozet.calismaSuresi}</span>`:''}
+</div>
+</div>
+</div>
+</div>
+<div style="padding:14px 16px">
+${(telRakam||t.email)?`<div style="display:flex;gap:8px;margin-bottom:14px">
+${telRakam?aksiyon('tel:'+telRakam,'phone','Ara','#2563eb'):''}
+${waNo?aksiyon('https://wa.me/'+waNo,'brand-whatsapp','WhatsApp','#16a34a'):''}
+${t.email?aksiyon('mailto:'+encodeURIComponent(t.email),'mail','E-posta','#7c3aed'):''}
+</div>`:''}
+<div style="display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:8px;margin-bottom:14px">
+<div style="background:var(--bg);border-radius:12px;padding:10px 4px;text-align:center"><div style="font-size:19px;font-weight:800">${ozet.ayDers}</div><div style="font-size:9.5px;color:var(--text3)">BU AY DERS</div></div>
+<div style="background:#ecfdf5;border-radius:12px;padding:10px 4px;text-align:center"><div style="font-size:19px;font-weight:800;color:#065f46">₺${Math.round(ozet.ayHakedis).toLocaleString('tr-TR')}</div><div style="font-size:9.5px;color:#047857">BU AY HAKEDİŞ</div></div>
+<div style="background:var(--bg);border-radius:12px;padding:10px 4px;text-align:center"><div style="font-size:19px;font-weight:800">${ozet.toplamDers}</div><div style="font-size:9.5px;color:var(--text3)">TOPLAM DERS</div></div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:14px">
+<div style="flex:1;border:1px solid var(--border);border-radius:12px;padding:9px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:var(--text3)">Bireysel oran</span><b style="color:${t.pct?c.dot:'#b45309'}">${t.pct?'%'+t.pct:'—'}</b></div>
+<div style="flex:1;border:1px solid var(--border);border-radius:12px;padding:9px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:var(--text3)">Grup oranı</span><b style="color:${t.onlinePct?c.dot:'#9ca3af'}">${t.onlinePct?'%'+t.onlinePct:'—'}</b></div>
+</div>
+<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.5px;margin-bottom:2px">KİŞİSEL BİLGİLER</div>
+${satir('phone','Telefon',esc(t.phone))}
+${satir('mail','E-posta',esc(t.email))}
+${satir('cake','Doğum tarihi',t.dob?trTarih(t.dob)+(yas?' · '+yas:''):'', dogumGunuYakin?`<div style="font-size:11px;color:#db2777;font-weight:600;margin-top:2px">${dogumGunuYakin}</div>`:'')}
+${satir('briefcase','İşe başlama',t.startDate?trTarih(t.startDate):'')}
+${satir('id','TC Kimlik No',t.tc?`<span id="tv-tc" data-tc="${esc(t.tc)}">•••••••${esc(String(t.tc).slice(-4))}</span> <button onclick="const s=document.getElementById('tv-tc');s.textContent=s.dataset.tc;this.remove()" style="border:none;background:none;color:#2563eb;font-size:11px;cursor:pointer;padding:0 4px">göster</button>`:'')}
+${satir('map-pin','Adres',esc(t.address))}
+${t.emergencyName||t.emergencyPhone?`<div style="margin-top:12px;background:#fef2f2;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+<div style="min-width:0"><div style="font-size:10px;color:#991b1b;font-weight:700;letter-spacing:0.3px">🚨 ACİL DURUM KİŞİSİ</div><div style="font-size:13px;color:#7f1d1d;font-weight:600">${esc(t.emergencyName)||'—'}${t.emergencyRel?' <span style="font-weight:400">('+esc(t.emergencyRel)+')</span>':''}</div><div style="font-size:12px;color:#991b1b">${esc(t.emergencyPhone)}</div></div>
+${t.emergencyPhone?`<a href="tel:${String(t.emergencyPhone).replace(/\D/g,'')}" style="background:#dc2626;color:white;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;text-decoration:none;flex-shrink:0"><i class="ti ti-phone"></i> Ara</a>`:''}
+</div>`:''}
+${eksikler.length?`<div onclick="document.getElementById('trainer-view-overlay').remove();openTrainerModal(${t.id})" style="margin-top:12px;padding:9px 12px;background:#fffbeb;border:1px dashed #fcd34d;border-radius:12px;font-size:11.5px;color:#92400e;cursor:pointer">✏️ Eksik bilgiler: ${eksikler.join(', ')} — tamamlamak için dokunun</div>`:''}
+</div>
+<div style="padding:12px 16px 16px;border-top:1px solid var(--border);display:flex;gap:8px">
+<button class="btn btn-primary" style="flex:1" onclick="document.getElementById('trainer-view-overlay').remove();openTrainerModal(${t.id})"><i class="ti ti-edit"></i> Düzenle</button>
+<button class="btn" style="flex:1" onclick="document.getElementById('trainer-view-overlay').remove();window._hakedisMonth=localDate().slice(0,7);navigateTo('hakedis')"><i class="ti ti-wallet"></i> Hakediş</button>
+<button class="btn btn-icon btn-danger" title="Sil" onclick="document.getElementById('trainer-view-overlay').remove();deleteTrainer(${t.id})"><i class="ti ti-trash"></i></button>
+</div>
+</div>`;
+document.body.appendChild(el);
 }
 function openTrainerModal(id) {
 document.getElementById('tr-id').value=id||'';
