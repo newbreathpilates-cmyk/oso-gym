@@ -3564,7 +3564,9 @@ document.getElementById('ev-olcum').checked=false;
 document.getElementById('ev-teyit').checked=false;
 document.getElementById('ev-capacity').value='1';
 evTypeSecenekHazirla(null);
-document.getElementById('ev-type').value='';
+document.getElementById('ev-type').value='Pilates';
+if(document.getElementById('ev-guest-name')) document.getElementById('ev-guest-name').value='';
+toggleGuestField();
 populateEventTrainers();
 // Eğitmen girişinde kendi adını otomatik seç
 if(currentUser.role==='trainer') {
@@ -3622,6 +3624,7 @@ if(el) el.disabled = !isOwnEvent;
 });
 evTypeSecenekHazirla(ev.type);
 document.getElementById('ev-type').value=ev.type;
+toggleGuestField();
 document.getElementById('ev-date').value=ev.date;
 document.getElementById('ev-start').value=ev.startTime;
 document.getElementById('ev-duration').value=ev.duration||45;
