@@ -523,7 +523,8 @@ font-size: 28px;
 <option value="Pilates">Pilates</option>
 <option value="Fonksiyonel">Fonksiyonel</option>
 <option value="Online Ders">Online Ders</option>
-<option value="Deneme / Tanışma">Deneme / Tanışma</option>
+<option value="Demo Ders">⭐ Demo Ders</option>
+<option value="Tanışma Randevusu">🤝 Tanışma Randevusu</option>
 </select>
 </div>
 <div class="form-group">
@@ -2954,22 +2955,24 @@ ${slots.map(({ev,start,col,total})=>{
 const tr=S.trainers.find(t=>t.id===ev.trainerId);
 const c=tr?tc(tr.color):(ev.trainerId?EGITMENSIZ_RENK:TC[1]);
 const dur=ev.duration||45;
-const isDeneme=ev.type==='Deneme / Tanışma';
+const isDeneme=misafirTuruMu(ev.type);
+const ozelRenk=ozelTurRenk(ev.type);
 const memberNames=isDeneme&&ev.guestName?ev.guestName:(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name:null;}).filter(Boolean).join(', ');
 const height=Math.max(dur,45);
 const isCompleted=ev.completed===true;
 const isGecIptal=isCompleted&&ev.gecIptal===true;
 const isTeyit=!isCompleted&&ev.teyitGerekli===true;
-const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isTeyit?'#ca8a04':isDeneme?'#fff7ed':c.bg;
-const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isTeyit?'#a16207':isDeneme?'#f97316':c.border;
-const evColor=isCompleted||isTeyit?'#ffffff':isDeneme?'#9a3412':c.text;
+const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isTeyit?'#ca8a04':ozelRenk?ozelRenk.bg:c.bg;
+const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isTeyit?'#a16207':ozelRenk?ozelRenk.border:c.border;
+const evColor=isCompleted||isTeyit?'#ffffff':ozelRenk?ozelRenk.text:c.text;
+const ozelCizgi=(!isCompleted&&!isTeyit&&ozelRenk&&ozelRenk.cizgi)?`outline:1.5px dashed ${ozelRenk.border};outline-offset:-2px;`:'';
 const widthPct=total>1?(100/total-1):94;
 const leftPct=total>1?(col*(100/total)+0.5):3;
 const isOwnEvent = currentUser.role !== 'trainer' || ev.trainerId === currentUser.trainerId;
-return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:3px 5px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}cursor:pointer" onclick="openEditEvent(${ev.id},event)">
+return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:3px 5px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}${ozelCizgi}cursor:pointer" onclick="openEditEvent(${ev.id},event)">
 <div style="display:flex;justify-content:space-between;align-items:flex-start;height:100%;overflow:hidden">
 <div style="flex:1;min-width:0;overflow:hidden">
-<div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${egitmeniSilinmisMi(ev)?'⚠️ Eğitmen yok · ':''}${ev.type}${isGecIptal?' ⏰':isCompleted?' ✓':isTeyit?' ❓':''}</div>
+<div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${egitmeniSilinmisMi(ev)?'⚠️ Eğitmen yok · ':''}${ozelRenk?ozelRenk.ikon:''}${ev.type}${isGecIptal?' ⏰':isCompleted?' ✓':isTeyit?' ❓':''}</div>
 <div style="font-size:10px;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.startTime}${tr?' · '+tr.name.split(' ')[0]:''}</div>
 <div style="font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${memberNames}</div>
 </div>
@@ -3086,22 +3089,24 @@ ${slots.map(({ev,start,col,total})=>{
 const tr=S.trainers.find(t=>t.id===ev.trainerId);
 const c=tr?tc(tr.color):(ev.trainerId?EGITMENSIZ_RENK:TC[1]);
 const dur=ev.duration||45;
-const isDeneme=ev.type==='Deneme / Tanışma';
+const isDeneme=misafirTuruMu(ev.type);
+const ozelRenk=ozelTurRenk(ev.type);
 const memberNames=isDeneme&&ev.guestName?ev.guestName:(ev.members||[]).map(mid=>{const m=S.members.find(x=>x.id===mid);return m?m.name:null;}).filter(Boolean).join(', ');
 const height=Math.max(dur,45);
 const isCompleted=ev.completed===true;
 const isGecIptal=isCompleted&&ev.gecIptal===true;
 const isTeyit=!isCompleted&&ev.teyitGerekli===true;
-const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isTeyit?'#ca8a04':isDeneme?'#fff7ed':c.bg;
-const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isTeyit?'#a16207':isDeneme?'#f97316':c.border;
-const evColor=isCompleted||isTeyit?'#ffffff':isDeneme?'#9a3412':c.text;
+const evBg=isGecIptal?'#ea580c':isCompleted?'#059669':isTeyit?'#ca8a04':ozelRenk?ozelRenk.bg:c.bg;
+const evBorder=isGecIptal?'#c2410c':isCompleted?'#047857':isTeyit?'#a16207':ozelRenk?ozelRenk.border:c.border;
+const evColor=isCompleted||isTeyit?'#ffffff':ozelRenk?ozelRenk.text:c.text;
+const ozelCizgi=(!isCompleted&&!isTeyit&&ozelRenk&&ozelRenk.cizgi)?`outline:1.5px dashed ${ozelRenk.border};outline-offset:-2px;`:'';
 const widthPct=total>1?(100/total-1):94;
 const leftPct=total>1?(col*(100/total)+0.5):3;
 const isOwnEvent = currentUser.role !== 'trainer' || ev.trainerId === currentUser.trainerId;
-return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:2px 3px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}cursor:pointer" onclick="openEditEvent(${ev.id},event)">
+return `<div class="cal-event" style="top:${start}px;height:${height}px;background:${evBg};border-left-color:${evBorder};color:${evColor};left:${leftPct}%;width:${widthPct}%;right:auto;padding:2px 3px;position:absolute;${!isOwnEvent?'opacity:0.75;':''}${ozelCizgi}cursor:pointer" onclick="openEditEvent(${ev.id},event)">
 <div style="display:flex;justify-content:space-between;align-items:flex-start;height:100%;overflow:hidden">
 <div style="flex:1;min-width:0;overflow:hidden">
-<div style="font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${egitmeniSilinmisMi(ev)?'⚠️ Eğitmen yok · ':''}${ev.type}${isGecIptal?' ⏰':isCompleted?' ✓':isTeyit?' ❓':''}</div>
+<div style="font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${egitmeniSilinmisMi(ev)?'⚠️ Eğitmen yok · ':''}${ozelRenk?ozelRenk.ikon:''}${ev.type}${isGecIptal?' ⏰':isCompleted?' ✓':isTeyit?' ❓':''}</div>
 <div style="font-size:8px;opacity:0.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${ev.startTime}</div>
 <div style="font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">${memberNames}</div>
 </div>
@@ -3341,8 +3346,8 @@ return `<div class="month-cell ${cell.other?'other-month':''}" onclick="openNewE
 <div class="month-date ${isToday?'today':''}">${cell.date.getDate()}</div>
 ${dayEvs.slice(0,3).map(ev=>{
 const tr=S.trainers.find(t=>t.id===ev.trainerId);
-const c=tr?tc(tr.color):(ev.trainerId?EGITMENSIZ_RENK:TC[1]);
-return `<div class="month-event" style="background:${c.bg};border-left-color:${c.border};color:${c.text}" onclick="openEditEvent(${ev.id},event)">${egitmeniSilinmisMi(ev)?'⚠️ ':''}${ev.startTime} ${ev.type}</div>`;
+const c=ozelTurRenk(ev.type)||(tr?tc(tr.color):(ev.trainerId?EGITMENSIZ_RENK:TC[1]));
+return `<div class="month-event" style="background:${c.bg};border-left-color:${c.border};color:${c.text}" onclick="openEditEvent(${ev.id},event)">${egitmeniSilinmisMi(ev)?'⚠️ ':''}${c.ikon||''}${ev.startTime} ${ev.type}</div>`;
 }).join('')}
 ${dayEvs.length>3?`<div style="font-size:10px;color:var(--text3);margin-top:2px">+${dayEvs.length-3} daha</div>`:''}
 ${dayMat.map(md=>{
@@ -3446,11 +3451,27 @@ const v = Math.max(0, parseInt(val)||0);
 document.getElementById(id).value = v;
 document.getElementById(id+'-val').textContent = v;
 }
+// Misafir adı alınan (paketten düşmeyen) randevu türleri. "Deneme / Tanışma" eski kayıtlar için korunur.
+const MISAFIR_TURLERI = ['Demo Ders','Tanışma Randevusu','Deneme / Tanışma'];
+function misafirTuruMu(tur) { return MISAFIR_TURLERI.includes(tur); }
+// Takvimde ayırt edici renkler (eğitmen renklerinden bağımsız)
+function ozelTurRenk(tur) {
+if(tur==='Demo Ders') return {bg:'#ffe4e6', border:'#e11d48', text:'#9f1239', ikon:'⭐ ', cizgi:true};
+if(tur==='Tanışma Randevusu') return {bg:'#ccfbf1', border:'#0d9488', text:'#115e59', ikon:'🤝 ', cizgi:true};
+if(tur==='Deneme / Tanışma') return {bg:'#fff7ed', border:'#f97316', text:'#9a3412', ikon:'', cizgi:false};
+return null;
+}
+// Düzenlenen eski kaydın türü listede yoksa (ör. "Deneme / Tanışma") geçici olarak ekle; yeni kayıtta kaldır
+function evTypeSecenekHazirla(tur) {
+const sel = document.getElementById('ev-type'); if(!sel) return;
+sel.querySelectorAll('option[data-eski]').forEach(o=>o.remove());
+if(tur && ![...sel.options].some(o=>o.value===tur)) { const o=document.createElement('option'); o.value=tur; o.textContent=tur; o.dataset.eski='1'; sel.appendChild(o); }
+}
 function toggleGuestField() {
 const type = document.getElementById('ev-type')?.value;
 const group = document.getElementById('guest-name-group');
 const memberGroup = document.querySelector('[id="ev-member-add"]')?.closest('.form-group');
-if(group) group.style.display = type==='Deneme / Tanışma' ? '' : 'none';
+if(group) group.style.display = misafirTuruMu(type) ? '' : 'none';
 }
 function openUnavailableDetail(id) {
 const b = (S.unavailableBlocks||[]).find(x=>x.id===id);
@@ -3542,6 +3563,7 @@ document.getElementById('ev-note').value='';
 document.getElementById('ev-olcum').checked=false;
 document.getElementById('ev-teyit').checked=false;
 document.getElementById('ev-capacity').value='1';
+evTypeSecenekHazirla(null);
 document.getElementById('ev-type').value='';
 populateEventTrainers();
 // Eğitmen girişinde kendi adını otomatik seç
@@ -3598,6 +3620,7 @@ if(saveBtn) saveBtn.style.display = isOwnEvent ? '' : 'none';
 const el = document.getElementById(fid);
 if(el) el.disabled = !isOwnEvent;
 });
+evTypeSecenekHazirla(ev.type);
 document.getElementById('ev-type').value=ev.type;
 document.getElementById('ev-date').value=ev.date;
 document.getElementById('ev-start').value=ev.startTime;
@@ -3709,7 +3732,7 @@ const specialCount=0;
 const singleDropCount=0;
 if(!date||!startTime){toast('Tarih ve saat zorunludur.','error');return;}
 // Deneme/Tanışma randevusunda eğitmen zorunlu değil
-const isDenemeType = type === 'Deneme / Tanışma';
+const isDenemeType = misafirTuruMu(type);
 if(!trainerId && !isDenemeType){toast('Eğitmen seçimi zorunludur.','error');return;}
 // Müsait olmama bloğu kontrolü
 const evStart = (parseInt(startTime.split(':')[0])-6)*60 + parseInt(startTime.split(':')[1]);
