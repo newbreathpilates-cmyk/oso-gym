@@ -1255,7 +1255,7 @@ Bu işlem geri alınamaz. Üyeye ait tüm veriler silinecek.
 <div class="toast" id="toast"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, updateDoc, query, where, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, updateDoc, query, where, orderBy, deleteDoc, runTransaction, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const firebaseConfig = {
 apiKey: "AIzaSyBJn872wAkBGgvlbqpXWa3_pBA2Zbsyz-A",
@@ -1268,15 +1268,36 @@ appId: "1:653274291080:web:defa1fdaf91039cfe3783d"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const DOC_REF = doc(db, 'osogym', 'state');
-// Firebase'e kaydet
-window.firebaseSave = async function(state) {
+// ── GÜVENLİ KAYIT ──
+// Eskiden her cihaz kendi kopyasının TAMAMINI buluta yazıyordu; eski kopyası olan bir cihaz başka
+// cihazlarda yapılan saatlerce işi siliyordu. Artık kayıt bir işlem (transaction) içinde yapılır:
+// buluttaki güncel veri okunur, ana scriptteki birleştirme fonksiyonu bu cihazın yaptığı
+// değişiklikleri onun üzerine işler ve sonuç yazılır. Aynı anda yazan iki cihaz birbirini ezemez.
+window.firebaseIslem = async function(birlestir) {
+return await runTransaction(db, async (tx) => {
+const snap = await tx.get(DOC_REF);
+const uzak = snap.exists() ? JSON.parse(snap.data().data) : null;
+const yeni = birlestir(uzak);
+tx.set(DOC_REF, { data: JSON.stringify(yeni), rev: yeni._rev || 0, guncelleme: new Date().toISOString() });
+return yeni;
+});
+};
+// Eski kod uyumluluğu: doğrudan tam yazma yok, güvenli kayda yönlendir
+window.firebaseSave = async function(state) { if(window.guvenliKaydet) window.guvenliKaydet(); };
+// ── SAATLİK BULUT YEDEĞİ (14 gün saklanır) ──
+const YEDEK_COL = collection(db, 'osogymYedek');
+window.firebaseYedekle = async function(state) {
 try {
-await setDoc(DOC_REF, { data: JSON.stringify(state) });
-} catch(e) {
-console.error('Firebase kayıt hatası:', e);
-// Fallback: localStorage
-localStorage.setItem('pilates_v3', JSON.stringify(state));
-}
+const n = new Date();
+const id = n.toISOString().slice(0,13).replace('T','_'); // 2026-11-14_10 (UTC saat)
+await setDoc(doc(db, 'osogymYedek', id), { data: JSON.stringify(state), zaman: n.toISOString(), rev: state._rev||0, olaySayisi: (state.events||[]).length });
+const eski = new Date(n.getTime() - 14*86400000).toISOString().slice(0,13).replace('T','_');
+try { await deleteDoc(doc(db, 'osogymYedek', eski)); } catch(e) {}
+} catch(e) { console.error('Yedek alınamadı:', e); }
+};
+window.firebaseYedekListesi = async function() {
+const snap = await getDocs(query(YEDEK_COL, orderBy('zaman','desc'), limit(400)));
+return snap.docs.map(d=>({ id:d.id, ...d.data() }));
 };
 // Firebase'den yükle
 window.firebaseLoad = async function() {
@@ -1288,11 +1309,8 @@ return JSON.parse(snap.data().data);
 } catch(e) {
 console.error('Firebase yükleme hatası:', e);
 }
-// Fallback: localStorage
-try {
-const d = localStorage.getItem('pilates_v3');
-if(d) return JSON.parse(d);
-} catch(e) {}
+// Bulut okunamadı: yerel kopyayı bulut verisi gibi KULLANMA. Uygulama yerel kopyayla açık kalır,
+// gerçek zamanlı dinleyici bağlantı gelince güncel veriyi getirir ve yerel değişiklikler birleştirilir.
 return null;
 };
 // Sistem hazır olduğunda Firebase'den yükle ve başlat
@@ -1486,7 +1504,7 @@ if(!data.paketFiyatlari) data.paketFiyatlari = defaultState().paketFiyatlari;
 if(!data.giderler) data.giderler = [];
 const result = updateMemberStatuses(data);
 if(result.changed) {
-setTimeout(function(){ if(window.firebaseSave) window.firebaseSave(data); }, 1000);
+setTimeout(function(){ if(window.guvenliKaydet) window.guvenliKaydet(); }, 1000);
 }
 return data;
 }
@@ -1511,22 +1529,147 @@ return parsed;
 } catch(e){}
 return defaultState();
 }
-// Başka bir cihazdan gelen güncel veriyi uygula (kaydetmeden — kayıt döngüsü olmasın)
-window.uzaktanVeriUygula = function(data) {
-if(!data || !Array.isArray(data.trainers)) return;
-const yeniJson = JSON.stringify(data);
-if(yeniJson === JSON.stringify(S)) return; // değişiklik yok
-if(!data.paketFiyatlari) data.paketFiyatlari = defaultState().paketFiyatlari;
-if(!data.giderler) data.giderler = [];
-try { updateMemberStatuses(data); } catch(e) {}
-S = data;
-try { localStorage.setItem('pilates_v3', JSON.stringify(S)); } catch(e){}
+// ══════════════════════════════════════
+// GÜVENLİ SENKRONİZASYON
+// _taban: bu cihazın buluttan en son bildiği hal (JSON). Cihazın yaptığı değişiklikler = S ile _taban
+// arasındaki fark. Kayıtta bu fark buluttaki güncel verinin ÜZERİNE işlenir; böylece eski kopyası olan
+// bir cihaz başka cihazların işini silemez.
+// ══════════════════════════════════════
+let _taban = null;
+function tabanAyarla(veri) { try { _taban = JSON.stringify(veri); } catch(e) { _taban = null; } }
+function _kopya(v) { return v===undefined ? undefined : JSON.parse(JSON.stringify(v)); }
+function _idDizisiMi(a) { return Array.isArray(a) && a.length>0 && a.every(x=>x && typeof x==='object' && x.id!==undefined && x.id!==null); }
+function _enBuyukId(veri) {
+let m = 0;
+Object.keys(veri||{}).forEach(k=>{ const a=veri[k]; if(Array.isArray(a)) a.forEach(x=>{ if(x && typeof x.id==='number' && x.id>m) m=x.id; }); });
+return m;
+}
+// Üç yönlü birleştirme: taban (ortak geçmiş), yerel (bu cihaz), uzak (bulut)
+function ucYonluBirlestir(taban, yerel, uzak) {
+taban = taban || {}; yerel = yerel || {}; uzak = uzak || {};
+const sonuc = _kopya(uzak);
+let sonrakiId = Math.max(uzak.nextId||0, yerel.nextId||0, _enBuyukId(uzak)+1, _enBuyukId(yerel)+1);
+const uyeIdDegisim = {}; // çakışma nedeniyle yeni id verilen üyeler: eskiId -> yeniId
+const anahtarlar = [...new Set([...Object.keys(yerel), ...Object.keys(uzak)])]
+.filter(k=>k!=='_rev' && k!=='nextId')
+.sort((a,b)=> (a==='members'?-1:0) - (b==='members'?-1:0)); // üyeler önce (referans düzeltmesi için)
+const referansDuzelt = (k, x) => {
+if(k==='events' && Array.isArray(x.members)) x.members = x.members.map(id=>uyeIdDegisim[id]!==undefined?uyeIdDegisim[id]:id);
+if((k==='payments'||k==='olcumler') && x.memberId!==undefined && uyeIdDegisim[x.memberId]!==undefined) x.memberId = uyeIdDegisim[x.memberId];
+return x;
+};
+anahtarlar.forEach(k=>{
+const tv = taban[k], yv = yerel[k], uv = uzak[k];
+if(JSON.stringify(yv) === JSON.stringify(tv)) return; // bu cihaz bu alanı değiştirmemiş → bulut kazanır
+const diziMi = (Array.isArray(yv)||yv===undefined) && (Array.isArray(uv)||uv===undefined) && (Array.isArray(tv)||tv===undefined);
+const idli = diziMi && [tv,yv,uv].filter(a=>Array.isArray(a)&&a.length).every(_idDizisiMi);
+if(!idli) { sonuc[k] = _kopya(yv); return; } // tek değerli alan: bu cihazın değişikliği kazanır
+const tMap = new Map((tv||[]).map(x=>[x.id,x]));
+const yMap = new Map((yv||[]).map(x=>[x.id,x]));
+let liste = _kopya(uv||[]);
+const uMap = new Map(liste.map((x,i)=>[x.id,i]));
+// 1) Bu cihazda silinenler
+const silinen = new Set([...tMap.keys()].filter(id=>!yMap.has(id)));
+// 2) Eklenen / değiştirilenler
+(yv||[]).forEach(y=>{
+const t = tMap.get(y.id);
+if(!t) { // bu cihazda eklenmiş
+let yeni = referansDuzelt(k, _kopya(y));
+if(uMap.has(y.id) && JSON.stringify(liste[uMap.get(y.id)])!==JSON.stringify(y)) {
+// başka cihaz aynı id ile başka bir kayıt eklemiş → yeni id ver
+const yeniId = sonrakiId++;
+if(k==='members') uyeIdDegisim[y.id] = yeniId;
+yeni.id = yeniId;
+liste.push(yeni);
+} else if(!uMap.has(y.id)) { liste.push(yeni); }
+} else if(JSON.stringify(t)!==JSON.stringify(y)) { // bu cihazda değiştirilmiş
+const yeni = referansDuzelt(k, _kopya(y));
+if(uMap.has(y.id)) liste[uMap.get(y.id)] = yeni; else liste.push(yeni);
+}
+});
+liste = liste.filter(x=>!silinen.has(x.id));
+sonuc[k] = liste;
+});
+sonuc.nextId = Math.max(sonrakiId, _enBuyukId(sonuc)+1);
+return sonuc;
+}
+// Eski sürüm bir cihazın (_rev yazmayan) tam üzerine yazmasına karşı: tabanda olup bulutta olmayan
+// kayıtları geri ekle (o cihaz bu kayıtları hiç görmemişti, silmiş değildi)
+function eskiSurumOnar(uzak, taban) {
+if(!uzak || !taban) return uzak;
+const sonuc = _kopya(uzak);
+let eklenen = 0;
+['events','members','payments','unavailableBlocks','giderler','sabitGiderler','hakedisPayments','trainers'].forEach(k=>{
+if(!_idDizisiMi(taban[k])) return;
+const var_ = new Set((sonuc[k]||[]).map(x=>x.id));
+taban[k].forEach(x=>{ if(!var_.has(x.id)) { (sonuc[k]=sonuc[k]||[]).push(_kopya(x)); eklenen++; } });
+});
+sonuc.nextId = Math.max(sonuc.nextId||0, taban.nextId||0, _enBuyukId(sonuc)+1);
+if(eklenen) console.warn('Eski sürüm üzerine yazması onarıldı, geri eklenen kayıt:', eklenen);
+return sonuc;
+}
+function _yerelSakla() { try { localStorage.setItem('pilates_v3', JSON.stringify(S)); } catch(e){} }
+let _kayitCalisiyor = false, _kayitTekrar = false, _kayitZamanlayici = null, _cevrimdisiUyari = false;
+let _sonYedekSaati = null;
+function guvenliKaydet() {
+_yerelSakla();
+if(!window.firebaseIslem) { clearTimeout(_kayitZamanlayici); _kayitZamanlayici = setTimeout(guvenliKaydet, 1000); return; } // bağlantı katmanı henüz hazır değil
+if(_kayitCalisiyor) { _kayitTekrar = true; return; }
+_kayitCalisiyor = true;
+const gonderilen = JSON.stringify(S);
+const tabanObj = _taban ? JSON.parse(_taban) : null;
+window.firebaseIslem(function(uzak){
+if(!uzak) { const ilk = JSON.parse(gonderilen); ilk._rev = 1; return ilk; }
+const uzakRev = uzak._rev || 0;
+const tabanRev = tabanObj ? (tabanObj._rev||0) : -1;
+let sonuc;
+if(_taban && JSON.stringify(uzak) === _taban) {
+sonuc = JSON.parse(gonderilen); // araya başka kayıt girmemiş
+} else {
+let temel = uzak;
+// Bulut, bizim bildiğimizden daha eski bir sürümle (eski uygulama sürümü açık kalan bir cihaz) ezilmiş
+if(tabanObj && tabanObj._rev && (uzak._rev === undefined || uzak._rev <= tabanObj._rev)) temel = eskiSurumOnar(uzak, tabanObj);
+sonuc = ucYonluBirlestir(tabanObj, JSON.parse(gonderilen), temel);
+}
+sonuc._rev = Math.max(uzakRev, tabanRev) + 1;
+return sonuc;
+}).then(function(yazilan){
+_cevrimdisiUyari = false;
+tabanAyarla(yazilan);
+const simdiki = JSON.stringify(S);
+if(simdiki === gonderilen) {
+// birleştirme başka cihazların değişikliklerini getirdiyse ekranı güncelle
+if(JSON.stringify(yazilan) !== gonderilen) { S = yazilan; _yerelSakla(); _ekraniYenile(); }
+else { S._rev = yazilan._rev; }
+} else {
+// kayıt sürerken yeni değişiklik yapılmış: onları da birleştirip tekrar kaydet
+S = ucYonluBirlestir(JSON.parse(gonderilen), JSON.parse(simdiki), yazilan);
+S._rev = yazilan._rev;
+_kayitTekrar = true;
+}
+// saatlik bulut yedeği
+const saat = new Date().toISOString().slice(0,13);
+if(saat !== _sonYedekSaati && window.firebaseYedekle) { _sonYedekSaati = saat; window.firebaseYedekle(yazilan); }
+}).catch(function(e){
+console.error('Kayıt yapılamadı, tekrar denenecek:', e);
+if(!_cevrimdisiUyari) { _cevrimdisiUyari = true; try { toast('⚠️ Bağlantı yok — değişiklik bu cihazda bekliyor, bağlantı gelince otomatik kaydedilecek.','error'); } catch(_){} }
+clearTimeout(_kayitZamanlayici);
+_kayitZamanlayici = setTimeout(guvenliKaydet, 5000);
+}).finally(function(){
+_kayitCalisiyor = false;
+if(_kayitTekrar) { _kayitTekrar = false; setTimeout(guvenliKaydet, 50); }
+});
+}
+window.guvenliKaydet = guvenliKaydet;
+window.addEventListener('online', function(){ if(_taban !== null && JSON.stringify(S) !== _taban) guvenliKaydet(); });
+// Bekleyen (kaydedilmemiş) yerel değişiklik var mı?
+function bekleyenDegisiklikVar() { return _taban !== null && JSON.stringify(S) !== _taban; }
+function _ekraniYenile() {
 if(currentUser) {
 if(currentUser.role==='trainer') {
 const t = S.trainers.find(x=>x.id===currentUser.trainerId);
 if(!t || t.status==='pasif') { toast('Hesabınız devre dışı bırakıldı.','error'); setTimeout(function(){ try{ sessionStorage.removeItem('nbp_user'); }catch(e){} location.reload(); }, 1500); return; }
 } else {
-// Yeni eklenen eğitmenler takvimde görünür olsun
 S.trainers.forEach(t=>visibleTrainers.add(t.id));
 }
 // Açık bir pencere (modal) varken sayfayı yeniden çizme; kapatılınca zaten yenilenir
@@ -1535,13 +1678,146 @@ if(!acikModal) navigateTo(currentPage);
 } else {
 populateTrainerSelect();
 }
+}
+// Başka bir cihazdan gelen güncel veriyi uygula
+window.uzaktanVeriUygula = function(data) {
+if(!data || !Array.isArray(data.trainers)) return;
+const tabanObj = _taban ? JSON.parse(_taban) : null;
+if(_taban && JSON.stringify(data)===_taban) return; // zaten biliyoruz
+if(!data.paketFiyatlari) data.paketFiyatlari = defaultState().paketFiyatlari;
+if(!data.giderler) data.giderler = [];
+try { updateMemberStatuses(data); } catch(e) {}
+const eskiSurumYazdi = !!(tabanObj && tabanObj._rev && (data._rev === undefined || data._rev <= tabanObj._rev));
+if(bekleyenDegisiklikVar() || eskiSurumYazdi) {
+// Bu cihazda henüz kaydedilmemiş değişiklik var (ya da eski sürüm bir cihaz üzerine yazdı):
+// kaybetmemek için birleştir ve kaydet
+const temel = eskiSurumYazdi ? eskiSurumOnar(data, tabanObj) : data;
+S = ucYonluBirlestir(tabanObj, S, temel);
+S._rev = data._rev||0;
+tabanAyarla(data);
+guvenliKaydet();
+} else {
+if(JSON.stringify(data) === JSON.stringify(S)) { tabanAyarla(data); return; }
+S = data;
+tabanAyarla(data);
+_yerelSakla();
+}
+_ekraniYenile();
 };
 function save() {
-// Firebase'e kaydet (birincil)
-if(window.firebaseSave) window.firebaseSave(S);
-// localStorage'a yedekle
-try { localStorage.setItem('pilates_v3', JSON.stringify(S)); } catch(e){}
+guvenliKaydet();
 }
+// ── CİHAZDAKİ KOPYADAN KURTARMA ──
+// Uygulama açılırken bu cihazın hafızasındaki son kopya saklanır. Bulut verisi gelince, o kopyada olup
+// bulutta olmayan kayıtlar (ör. üzerine yazılarak kaybolan randevular) bulunur ve geri eklemek önerilir.
+let _acilistakiYerelKopya = null;
+try { _acilistakiYerelKopya = localStorage.getItem('pilates_v3'); } catch(e) {}
+const KURTARMA_ALANLARI = [['events','randevu'],['members','üye'],['payments','ödeme'],['unavailableBlocks','müsait değil kaydı'],['giderler','gider'],['hakedisPayments','hakediş ödemesi']];
+function kurtarmaAdaylariniBul(yerelJson, bulut) {
+if(!yerelJson || !bulut) return null;
+let yerel; try { yerel = JSON.parse(yerelJson); } catch(e) { return null; }
+const sonuc = {}; let toplam = 0;
+KURTARMA_ALANLARI.forEach(([k])=>{
+if(!Array.isArray(yerel[k])) return;
+const bulutIdleri = new Set((bulut[k]||[]).map(x=>x.id));
+const eksik = yerel[k].filter(x=>x && x.id!==undefined && !bulutIdleri.has(x.id));
+if(eksik.length) { sonuc[k] = eksik; toplam += eksik.length; }
+});
+return toplam ? { kayitlar: sonuc, toplam, yerel } : null;
+}
+function kurtarmaKontrol() {
+if(!currentUser || currentUser.role!=='owner') return;
+let kayitli = null; try { kayitli = localStorage.getItem('pilates_v3_kurtarma'); } catch(e) {}
+const aday = kurtarmaAdaylariniBul(kayitli, S);
+if(!aday) { try { localStorage.removeItem('pilates_v3_kurtarma'); } catch(e){} return; }
+document.getElementById('kurtarma-bant')?.remove();
+const bant = document.createElement('div');
+bant.id = 'kurtarma-bant';
+bant.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:9998;background:#1e3a8a;color:white;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.25);display:flex;gap:10px;align-items:center;font-size:13px';
+bant.innerHTML = `<div style="flex:1">🛟 <b>Bu cihazda bulutta olmayan ${aday.toplam} kayıt bulundu.</b><br><span style="opacity:0.85;font-size:12px">Kaybolan randevular olabilir. İnceleyip geri ekleyebilirsiniz.</span></div><button onclick="kurtarmaPenceresi()" style="background:white;color:#1e3a8a;border:none;border-radius:10px;padding:8px 12px;font-weight:700;font-family:inherit;cursor:pointer">İncele</button>`;
+document.body.appendChild(bant);
+}
+function kurtarmaPenceresi() {
+let kayitli = null; try { kayitli = localStorage.getItem('pilates_v3_kurtarma'); } catch(e) {}
+const aday = kurtarmaAdaylariniBul(kayitli, S);
+if(!aday) { toast('Geri eklenecek kayıt kalmadı.','success'); document.getElementById('kurtarma-bant')?.remove(); return; }
+const uyeAdi = (id) => { const m = (aday.yerel.members||[]).find(x=>x.id===id) || S.members.find(x=>x.id===id); return m ? m.name+' '+m.surname : '?'; };
+const egitmenAdi = (id) => { const t = S.trainers.find(x=>x.id===id); return t ? t.name.split(' ')[0] : '—'; };
+const satirlar = [];
+(aday.kayitlar.events||[]).slice().sort((a,b)=>((a.date||'')+(a.startTime||''))>((b.date||'')+(b.startTime||''))?1:-1).forEach(e=>{
+satirlar.push(`<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px"><b>${e.date||''} ${e.startTime||''}</b> · ${e.type||''} · ${egitmenAdi(e.trainerId)} · ${(e.members||[]).map(uyeAdi).join(', ')||e.guestName||'—'}${e.completed?' · ✓':''}</div>`);
+});
+const ozet = KURTARMA_ALANLARI.filter(([k])=>aday.kayitlar[k]).map(([k,ad])=>aday.kayitlar[k].length+' '+ad).join(', ');
+const el = document.createElement('div');
+el.id = 'kurtarma-overlay'; el.className = 'modal-overlay'; el.style.display = 'flex'; el.style.zIndex = '10001';
+el.innerHTML = `<div class="modal" style="max-height:88dvh;overflow-y:auto">
+<div class="modal-header"><div class="modal-title">🛟 Kayıt Kurtarma</div><button class="btn btn-icon" onclick="document.getElementById('kurtarma-overlay').remove()"><i class="ti ti-x"></i></button></div>
+<div class="modal-body">
+<div style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.6">Bu cihazın hafızasında olup bulutta bulunmayan kayıtlar: <b>${ozet}</b>.<br>Bunlar başka bir cihaz tarafından üzerine yazılarak kaybolmuş olabilir. Bilerek sildiğiniz kayıtlar da bu listede görünebilir; kontrol edip karar verin.</div>
+${satirlar.length?`<div style="font-size:11px;font-weight:700;color:var(--text3);margin:6px 0 2px">RANDEVULAR</div>${satirlar.join('')}`:''}
+</div>
+<div class="modal-footer" style="display:flex;gap:8px">
+<button class="btn btn-primary" style="flex:1" onclick="kurtarmaUygula()">Hepsini geri ekle</button>
+<button class="btn" onclick="kurtarmaYoksay()">Yok say</button>
+</div>
+</div>`;
+document.body.appendChild(el);
+}
+function kurtarmaUygula() {
+let kayitli = null; try { kayitli = localStorage.getItem('pilates_v3_kurtarma'); } catch(e) {}
+const aday = kurtarmaAdaylariniBul(kayitli, S);
+if(!aday) return;
+// Geri eklemeyi "bu cihazda eklenmiş" gibi yap: birleştirme id çakışmalarını çözer
+const yerelHal = _kopya(S);
+Object.keys(aday.kayitlar).forEach(k=>{ yerelHal[k] = [...(yerelHal[k]||[]), ...aday.kayitlar[k]]; });
+S = ucYonluBirlestir(S, yerelHal, S);
+try { localStorage.removeItem('pilates_v3_kurtarma'); } catch(e){}
+document.getElementById('kurtarma-overlay')?.remove();
+document.getElementById('kurtarma-bant')?.remove();
+save();
+toast(aday.toplam+' kayıt geri eklendi ✓','success');
+navigateTo(currentPage);
+}
+async function bulutYedekleriniGoster() {
+const kutu = document.getElementById('bulut-yedek-listesi');
+if(!kutu) return;
+kutu.innerHTML = '<div style="font-size:12px;color:var(--text3)">Yükleniyor…</div>';
+try {
+const liste = await window.firebaseYedekListesi();
+window._bulutYedekleri = liste;
+if(!liste.length) { kutu.innerHTML = '<div style="font-size:12px;color:var(--text3)">Henüz bulut yedeği yok. İlk yedek bir sonraki kayıtta alınacak.</div>'; return; }
+kutu.innerHTML = liste.map((y,i)=>{
+const z = new Date(y.zaman);
+const metin = z.toLocaleDateString('tr-TR',{day:'numeric',month:'long',weekday:'short'})+' · '+z.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+<div><div style="font-size:13px;font-weight:600">${metin}</div><div style="font-size:11px;color:var(--text3)">${y.olaySayisi!=null?y.olaySayisi+' randevu':''}</div></div>
+<button class="btn" style="padding:5px 10px;font-size:12px" onclick="bulutYedeginiYukle(${i})">Geri yükle</button>
+</div>`;}).join('');
+} catch(e) { kutu.innerHTML = '<div style="font-size:12px;color:#b91c1c">Yedekler alınamadı: '+(e&&e.message?e.message:'bağlantı hatası')+'</div>'; }
+}
+function bulutYedeginiYukle(i) {
+const y = (window._bulutYedekleri||[])[i];
+if(!y) return;
+const z = new Date(y.zaman).toLocaleString('tr-TR');
+if(!confirm('Tüm veriler '+z+' tarihli yedekteki haline döndürülecek. Bu saatten sonra yapılan değişiklikler kaybolur.\n\nÖnce şu anki halin de bir yedeği alınacak. Devam edilsin mi?')) return;
+let veri; try { veri = JSON.parse(y.data); } catch(e) { toast('Yedek okunamadı.','error'); return; }
+// Geri yüklemeden önce mevcut halin yedeğini al
+if(window.firebaseYedekle) window.firebaseYedekle(JSON.parse(JSON.stringify(S)));
+const rev = S._rev;
+S = veri; S._rev = rev;
+save();
+toast('Yedek geri yüklendi ✓','success');
+navigateTo(currentPage);
+}
+function kurtarmaYoksay() {
+if(!confirm('Bu kayıtlar geri eklenmeyecek ve bu uyarı bir daha gösterilmeyecek. Emin misiniz?')) return;
+try { localStorage.removeItem('pilates_v3_kurtarma'); } catch(e){}
+document.getElementById('kurtarma-overlay')?.remove();
+document.getElementById('kurtarma-bant')?.remove();
+}
+
+// Başlangıç tabanı: buluttan veri gelene kadar bu cihazın yerel kopyası
+tabanAyarla(S);
 // ══════════════════════════════════════
 // TRAINER COLOR SYSTEM
 // ══════════════════════════════════════
@@ -1657,6 +1933,7 @@ visibleTrainers = new Set(S.trainers.map(t=>t.id));
 }
 if(currentUser.role === 'owner') navigateTo('dashboard');
 else navigateTo('trainer-portal');
+setTimeout(function(){ try { kurtarmaKontrol(); } catch(e){} }, 800);
 matKurulumYap(); // Mat dersleri verisini erkenden yükle — Takvim'de gölge blok gösterebilmek için
 renderTrainerNotificationBanner();
 checkHatirlatmalar();
@@ -7826,6 +8103,15 @@ return d.toLocaleDateString('tr-TR', {day:'numeric', month:'long', weekday:'long
 }
 function renderExport() {
 document.getElementById('page-content').innerHTML=`
+<div class="card" style="margin-bottom:14px;border:1.5px solid #bfdbfe">
+<div class="card-title">☁️ Otomatik Bulut Yedekleri</div>
+<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">Sistem her saat başı verilerin bir kopyasını otomatik olarak buluta kaydeder ve son 14 günü saklar. Bir sorun olursa istediğiniz saate geri dönebilirsiniz.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn btn-primary" onclick="bulutYedekleriniGoster()"><i class="ti ti-history"></i> Yedekleri Göster</button>
+<button class="btn" onclick="localStorage.getItem('pilates_v3_kurtarma')?kurtarmaPenceresi():toast('Bu cihazda kurtarılacak kayıt bulunamadı.','success')"><i class="ti ti-lifebuoy"></i> Bu cihazdaki kopyayı kontrol et</button>
+</div>
+<div id="bulut-yedek-listesi" style="margin-top:12px"></div>
+</div>
 <div class="two-col">
 <div class="card">
 <div class="card-title"><i class="ti ti-file-type-json" style="color:#185FA5"></i> JSON Yedekleme</div>
@@ -8042,17 +8328,41 @@ input.addEventListener('focus',()=>input.select());
 // Populate trainer cards on load
 populateTrainerSelect();
 // Firebase hazır olunca veriyi güncelle
+function bulutVerisineGec() {
+const bulut = loadState();
+// Açılıştaki yerel kopyada olup bulutta olmayan kayıtlar varsa kurtarma için sakla
+try {
+if(_acilistakiYerelKopya && !localStorage.getItem('pilates_v3_kurtarma') && kurtarmaAdaylariniBul(_acilistakiYerelKopya, bulut)) {
+localStorage.setItem('pilates_v3_kurtarma', _acilistakiYerelKopya);
+}
+} catch(e) {}
+if(bekleyenDegisiklikVar()) {
+// Bulut gelmeden önce bu cihazda değişiklik yapılmış: kaybetme, bulutun üzerine işle
+const tabanObj = JSON.parse(_taban);
+S = ucYonluBirlestir(tabanObj, S, bulut);
+S._rev = bulut._rev||0;
+tabanAyarla(bulut);
+guvenliKaydet();
+} else {
+S = bulut;
+tabanAyarla(bulut);
+}
+}
 window._onFirebaseReady = function() {
 if(window._firebaseData) {
-S = loadState();
+bulutVerisineGec();
 populateTrainerSelect();
 if(currentUser) navigateTo(currentPage);
 else restoreSession(); // Sayfa yenilenince oturumu geri yükle
+setTimeout(kurtarmaKontrol, 1200);
+} else if(!currentUser) {
+restoreSession();
 }
 };
 if(window._firebaseReady && window._firebaseData) {
-S = loadState();
+bulutVerisineGec();
 restoreSession();
+setTimeout(kurtarmaKontrol, 1200);
 }
 </script>
 <script>
