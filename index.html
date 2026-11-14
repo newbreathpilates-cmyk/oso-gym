@@ -4114,6 +4114,7 @@ ${m.emergencyName?`<div style="padding:8px 0;border-bottom:1px solid var(--borde
 </div>
 <div class="modal-footer" style="display:flex;gap:8px">
 <button class="btn btn-primary" style="flex:1" onclick="document.getElementById('member-view-overlay').remove();openMemberModal(${m.id})"><i class="ti ti-edit"></i> Düzenle</button>
+${currentUser && currentUser.role==='owner' ? `<button class="btn" onclick="uyeOdemeOzeti(${m.id})">💰 Ödeme özeti</button>` : ''}
 <button class="btn" onclick="document.getElementById('member-view-overlay').remove()">Kapat</button>
 </div>
 </div>`;
@@ -5793,6 +5794,44 @@ toast(name+' silindi.'+(bosRandevular.length?' '+bosRandevular.length+' boş ran
 // ══════════════════════════════════════
 // PAYMENTS
 // ══════════════════════════════════════
+// Üyenin tüm ödemelerinin özeti — SADECE işletme sahibi
+function uyeOdemeOzeti(memberId, e) {
+if(e) e.stopPropagation();
+if(!currentUser || currentUser.role!=='owner') return;
+const m = S.members.find(x=>x.id===memberId);
+const odemeler = (S.payments||[]).filter(p=>p.memberId===memberId).sort((a,b)=>(b.date||'')>(a.date||'')?1:-1);
+const ad = m ? (m.name+' '+m.surname) : (odemeler[0]&&odemeler[0].member) || 'Üye';
+const odendiMi = p => p.status!=='bekliyor';
+const odenen = odemeler.filter(odendiMi).reduce((a,p)=>a+(p.amount||0),0);
+const bekleyenler = odemeler.filter(p=>!odendiMi(p));
+const bekleyen = bekleyenler.reduce((a,p)=>a+(p.amount||0),0);
+const ort = odemeler.length ? Math.round(odemeler.reduce((a,p)=>a+(p.amount||0),0)/odemeler.length) : 0;
+const tarihler = odemeler.map(p=>p.date).filter(Boolean).sort();
+const tl = v => '₺'+Math.round(v).toLocaleString('tr-TR');
+document.getElementById('odeme-ozet-overlay')?.remove();
+const el = document.createElement('div');
+el.id = 'odeme-ozet-overlay'; el.className = 'modal-overlay'; el.style.display = 'flex'; el.style.zIndex = '10000';
+el.onclick = ev => { if(ev.target===el) el.remove(); };
+el.innerHTML = `<div class="modal" style="max-height:88dvh;overflow-y:auto">
+<div class="modal-header"><div class="modal-title">💰 ${ad}</div><button class="btn btn-icon" onclick="document.getElementById('odeme-ozet-overlay').remove()"><i class="ti ti-x"></i></button></div>
+<div class="modal-body">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+<div style="background:#ecfdf5;border-radius:12px;padding:12px"><div style="font-size:10px;color:#047857;font-weight:700">TOPLAM ÖDENEN</div><div style="font-size:21px;font-weight:800;color:#065f46">${tl(odenen)}</div><div style="font-size:11px;color:#047857">${odemeler.filter(odendiMi).length} paket</div></div>
+<div style="background:${bekleyen?'#fef3c7':'var(--bg)'};border-radius:12px;padding:12px"><div style="font-size:10px;color:${bekleyen?'#92400e':'var(--text3)'};font-weight:700">BEKLEYEN ÖDEME</div><div style="font-size:21px;font-weight:800;color:${bekleyen?'#92400e':'var(--text3)'}">${tl(bekleyen)}</div><div style="font-size:11px;color:${bekleyen?'#92400e':'var(--text3)'}">${bekleyenler.length} paket</div></div>
+</div>
+<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:8px;gap:8px;flex-wrap:wrap">
+<span>İlk ödeme: <b>${tarihler[0]?trTarih(tarihler[0]):'—'}</b></span>
+<span>Son ödeme: <b>${tarihler.length?trTarih(tarihler[tarihler.length-1]):'—'}</b></span>
+<span>Ort. paket: <b>${odemeler.length?tl(ort):'—'}</b></span>
+</div>
+${odemeler.length ? odemeler.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+<div style="min-width:0"><div style="font-size:13px;font-weight:600">${p.package||'—'}</div><div style="font-size:11px;color:var(--text3)">${p.date?trTarih(p.date):'—'}${p.method?' · '+p.method:''}${p.paidDate&&p.status==='odendi'&&p.paidDate!==p.date?' · ödendi '+trTarih(p.paidDate):''}</div></div>
+<div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:700;color:${odendiMi(p)?'#065f46':'#92400e'}">${tl(p.amount||0)}</div><div style="font-size:10px;font-weight:600;color:${odendiMi(p)?'#059669':'#b45309'}">${odendiMi(p)?'✓ Ödendi':'⏳ Bekliyor'}</div></div>
+</div>`).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Bu üyenin ödeme kaydı yok.</div>'}
+</div>
+</div>`;
+document.body.appendChild(el);
+}
 function renderPayments(tab) {
 if(!tab) tab = window.paymentsTab || 'guncel';
 window.paymentsTab = tab;
@@ -5896,7 +5935,7 @@ const lessonCount = getLessonsFromPayment(p)||0;
 const perLesson = lessonCount>0 && lessonCount<999 ? Math.round(p.amount/lessonCount) : null;
 return `<tr>
 <td style="font-size:12px">${p.date}</td>
-<td>${p.member}</td>
+<td><span onclick="uyeOdemeOzeti(${p.memberId},event)" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px">${p.member}</span></td>
 <td style="font-size:12px;color:var(--text2)">${p.package}</td>
 <td style="font-weight:600;color:var(--green)">₺${p.amount.toLocaleString('tr-TR')}</td>
 <td style="font-size:12px">
@@ -5925,7 +5964,7 @@ return `<div class="arsiv-mobile-item" data-member="${p.member}" style="padding:
 <div style="display:flex;justify-content:space-between;align-items:flex-start">
 <div style="flex:1;min-width:0">
 <div style="display:flex;align-items:center;gap:6px">
-<div style="font-weight:700;font-size:13px">${p.member}</div>
+<div style="font-weight:700;font-size:13px"><span onclick="uyeOdemeOzeti(${p.memberId},event)" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px">${p.member}</span></div>
 ${isPast?'<span style="background:#f3f4f6;color:#6b7280;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">Geçmiş</span>':'<span style="background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">Aktif</span>'}
 ${p.status==='bekliyor'?'<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">⏳ Bekliyor</span>':''}
 </div>
