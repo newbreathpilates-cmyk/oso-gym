@@ -5100,10 +5100,10 @@ return '<div style="margin-bottom:12px;padding:14px 16px;background:#dc2626;bord
 }():'')+
 ((m.paketGecmisi&&m.paketGecmisi.length)?'<div class="section">'+
 '<div class="sec-title">📋 PAKET GEÇMİŞİ</div>'+
-'<table><thead><tr><th>Paket</th><th>Başlangıç</th><th>Bitiş</th><th>Yapılan</th><th>Tutar</th></tr></thead><tbody>'+
+'<table><thead><tr><th>Paket</th><th>Başlangıç</th><th>Bitiş</th><th>Yapılan</th></tr></thead><tbody>'+
 [...m.paketGecmisi].sort(function(a,b){return b.start>a.start?1:-1;}).map(function(p){
 const tot = p.total===999?'∞':p.total||'—';
-return '<tr><td style="font-weight:600">'+p.package+'</td><td>'+p.start+'</td><td>'+(p.end||'—')+'</td><td>'+p.used+'/'+tot+'</td><td>'+(p.amount?'₺'+p.amount.toLocaleString('tr-TR'):'—')+'</td></tr>';
+return '<tr><td style="font-weight:600">'+p.package+'</td><td>'+p.start+'</td><td>'+(p.end||'—')+'</td><td>'+p.used+'/'+tot+'</td></tr>';
 }).join('')+
 '</tbody></table></div>':'')+
 // ÖLÇÜM GEÇMİŞİ
