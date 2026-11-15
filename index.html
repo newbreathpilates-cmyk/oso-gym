@@ -1437,6 +1437,7 @@ let calMonthOffset = 0;
 let editingEventId = null;
 let tempEventMembers = []; // member ids for new/edit event
 let visibleTrainers = new Set();
+let _bilinenEgitmenler = new Set(); // takvim filtresi için şu ana kadar görülen eğitmenler
 let trainerFilter = 'all'; // 'all' or trainerId
 function defaultState() {
 return {
@@ -1670,7 +1671,8 @@ if(currentUser.role==='trainer') {
 const t = S.trainers.find(x=>x.id===currentUser.trainerId);
 if(!t || t.status==='pasif') { toast('Hesabınız devre dışı bırakıldı.','error'); setTimeout(function(){ try{ sessionStorage.removeItem('nbp_user'); }catch(e){} location.reload(); }, 1500); return; }
 } else {
-S.trainers.forEach(t=>visibleTrainers.add(t.id));
+// Sadece yeni eklenen eğitmenleri görünür yap; kullanıcının kapattığı eğitmen filtresine dokunma
+S.trainers.forEach(t=>{ if(!_bilinenEgitmenler.has(t.id)) { _bilinenEgitmenler.add(t.id); visibleTrainers.add(t.id); } });
 }
 // Açık bir pencere (modal) varken sayfayı yeniden çizme; kapatılınca zaten yenilenir
 const acikModal = document.querySelector('.modal-overlay.open, .modal.open, .modal-backdrop.show');
@@ -1928,8 +1930,10 @@ buildSidebar();
 // Eğitmen girince sadece kendisi görünsün, işletme sahibi herkesi görsün
 if(currentUser.role === 'trainer') {
 visibleTrainers = new Set([currentUser.trainerId]);
+_bilinenEgitmenler = new Set(S.trainers.map(t=>t.id));
 } else {
 visibleTrainers = new Set(S.trainers.map(t=>t.id));
+_bilinenEgitmenler = new Set(S.trainers.map(t=>t.id));
 }
 if(currentUser.role === 'owner') navigateTo('dashboard');
 else navigateTo('trainer-portal');
