@@ -1540,16 +1540,18 @@ let _taban = null;
 function tabanAyarla(veri) { try { _taban = JSON.stringify(veri); } catch(e) { _taban = null; } }
 function _kopya(v) { return v===undefined ? undefined : JSON.parse(JSON.stringify(v)); }
 function _idDizisiMi(a) { return Array.isArray(a) && a.length>0 && a.every(x=>x && typeof x==='object' && x.id!==undefined && x.id!==null); }
+const ID_UST_SINIR = 1e9; // bundan büyük id'ler (saat damgası) geçersiz sayılır
+function _gecerliId(id) { return Number.isInteger(id) && id >= 0 && id < ID_UST_SINIR; }
 function _enBuyukId(veri) {
 let m = 0;
-Object.keys(veri||{}).forEach(k=>{ const a=veri[k]; if(Array.isArray(a)) a.forEach(x=>{ if(x && typeof x.id==='number' && x.id>m) m=x.id; }); });
+['members','events','payments','trainers','unavailableBlocks','giderler','sabitGiderler'].forEach(k=>{ const a=(veri||{})[k]; if(Array.isArray(a)) a.forEach(x=>{ if(x && _gecerliId(x.id) && x.id>m) m=x.id; }); });
 return m;
 }
 // Üç yönlü birleştirme: taban (ortak geçmiş), yerel (bu cihaz), uzak (bulut)
 function ucYonluBirlestir(taban, yerel, uzak) {
 taban = taban || {}; yerel = yerel || {}; uzak = uzak || {};
 const sonuc = _kopya(uzak);
-let sonrakiId = Math.max(uzak.nextId||0, yerel.nextId||0, _enBuyukId(uzak)+1, _enBuyukId(yerel)+1);
+let sonrakiId = Math.max(_gecerliId(uzak.nextId)?uzak.nextId:0, _gecerliId(yerel.nextId)?yerel.nextId:0, _enBuyukId(uzak)+1, _enBuyukId(yerel)+1);
 const uyeIdDegisim = {}; // çakışma nedeniyle yeni id verilen üyeler: eskiId -> yeniId
 const anahtarlar = [...new Set([...Object.keys(yerel), ...Object.keys(uzak)])]
 .filter(k=>k!=='_rev' && k!=='nextId')
@@ -1605,14 +1607,83 @@ if(!_idDizisiMi(taban[k])) return;
 const var_ = new Set((sonuc[k]||[]).map(x=>x.id));
 taban[k].forEach(x=>{ if(!var_.has(x.id)) { (sonuc[k]=sonuc[k]||[]).push(_kopya(x)); eklenen++; } });
 });
-sonuc.nextId = Math.max(sonuc.nextId||0, taban.nextId||0, _enBuyukId(sonuc)+1);
+sonuc.nextId = Math.max(_gecerliId(sonuc.nextId)?sonuc.nextId:0, _gecerliId(taban.nextId)?taban.nextId:0, _enBuyukId(sonuc)+1);
 if(eklenen) console.warn('Eski sürüm üzerine yazması onarıldı, geri eklenen kayıt:', eklenen);
 return sonuc;
+}
+// Her yeni kayda geçerli ve benzersiz bir sayı id verir (nextId bozulmuşsa onarır)
+function yeniId() {
+if(!_gecerliId(S.nextId) || S.nextId <= _enBuyukId(S)) S.nextId = _enBuyukId(S) + 1;
+return S.nextId++;
+}
+// Bozuk (sayı olmayan / boş) ya da aynı koleksiyonda tekrarlanan id'leri onarır. Değişiklik yaptıysa true döner.
+const ID_KOLEKSIYONLARI = ['members','events','payments','trainers','unavailableBlocks','giderler','sabitGiderler'];
+function idOnar(veri) {
+if(!veri) return false;
+let degisti = false;
+let sonraki = Math.max(_gecerliId(veri.nextId)?veri.nextId:0, _enBuyukId(veri)+1);
+const degisim = {}; // koleksiyon -> Map(eskiAnahtar -> yeniId)
+const bosUyeler = []; // id'si tamamen boş (null) olan üyeler: {yeni, ad}
+ID_KOLEKSIYONLARI.forEach(k=>{
+if(!Array.isArray(veri[k])) return;
+const harita = new Map(); degisim[k] = harita;
+const gorulen = new Set();
+veri[k].forEach(x=>{
+if(!x || typeof x!=='object') return;
+let id = x.id;
+if(typeof id==='string' && /^\d+$/.test(id)) { id = parseInt(id); x.id = id; degisti = true; }
+if(!_gecerliId(id) || gorulen.has(id)) {
+const yeni = sonraki++;
+const tekrar = _gecerliId(id);
+if(!tekrar && id!==null && id!==undefined && Number.isFinite(Number(id))) {
+// küsuratlı / saat damgası id: hem kendisi hem küsuratı atılmış hali (parseInt ile kaydedilmiş bağlantılar) eşlenir
+harita.set(String(id), yeni);
+const kesik = Math.trunc(Number(id)); if(String(kesik)!==String(id)) harita.set(String(kesik), yeni);
+} else if(!tekrar && k==='members') {
+bosUyeler.push({yeni, ad:((x.name||'')+' '+(x.surname||'')).trim()});
+}
+x.id = yeni; degisti = true;
+}
+gorulen.add(x.id);
+});
+});
+const esle = (k, v) => { const h = degisim[k]; if(!h || v===null || v===undefined) return v; const y = h.get(String(v)); return y===undefined ? v : y; };
+// Üye bağlantıları
+(veri.payments||[]).forEach(p=>{
+const y = esle('members', p.memberId);
+if(y!==p.memberId) { p.memberId = y; degisti = true; }
+else if((p.memberId===null || p.memberId===undefined || !Number.isFinite(p.memberId)) && bosUyeler.length) {
+const u = bosUyeler.find(b=>b.ad && p.member && p.member.trim()===b.ad) || (bosUyeler.length===1 ? bosUyeler[0] : null);
+if(u) { p.memberId = u.yeni; degisti = true; }
+}
+});
+(veri.events||[]).forEach(e=>{
+if(Array.isArray(e.members)) {
+const yeniListe = e.members.map(id=>{ if((id===null || id===undefined) && bosUyeler.length===1) return bosUyeler[0].yeni; return esle('members', id); });
+if(JSON.stringify(yeniListe)!==JSON.stringify(e.members)) { e.members = yeniListe; degisti = true; }
+}
+const t = esle('trainers', e.trainerId); if(t!==e.trainerId) { e.trainerId = t; degisti = true; }
+});
+// Eğitmen bağlantıları
+['unavailableBlocks','hakedisPayments','trainerNotifications'].forEach(k=>{
+(veri[k]||[]).forEach(x=>{ const t = esle('trainers', x.trainerId); if(t!==x.trainerId) { x.trainerId = t; degisti = true; } });
+});
+// Oturumdaki eğitmen id'si değiştiyse güncelle
+try {
+if(veri===S && currentUser && currentUser.trainerId!==null && currentUser.trainerId!==undefined) {
+const t = esle('trainers', currentUser.trainerId);
+if(t!==currentUser.trainerId) { currentUser.trainerId = t; sessionStorage.setItem('nbp_user', JSON.stringify(currentUser)); }
+}
+} catch(e) {}
+if(!_gecerliId(veri.nextId) || veri.nextId < sonraki) { veri.nextId = sonraki; degisti = true; }
+if(degisti) console.warn('Bozuk id onarıldı', degisim, bosUyeler);
+return degisti;
 }
 function _yerelSakla() { try { localStorage.setItem('pilates_v3', JSON.stringify(S)); } catch(e){} }
 let _kayitCalisiyor = false, _kayitTekrar = false, _kayitZamanlayici = null, _cevrimdisiUyari = false;
 let _sonYedekSaati = null;
 function guvenliKaydet() {
+idOnar(S);
 _yerelSakla();
 if(!window.firebaseIslem) { clearTimeout(_kayitZamanlayici); _kayitZamanlayici = setTimeout(guvenliKaydet, 1000); return; } // bağlantı katmanı henüz hazır değil
 if(_kayitCalisiyor) { _kayitTekrar = true; return; }
@@ -1704,6 +1775,8 @@ S = data;
 tabanAyarla(data);
 _yerelSakla();
 }
+// Bozuk id'li kayıt geldiyse onar; onarılmış hal bu cihazın değişikliği olarak buluta kaydedilir
+if(idOnar(S)) guvenliKaydet();
 _ekraniYenile();
 };
 function save() {
@@ -3816,7 +3889,7 @@ const note = document.getElementById('un-note').value;
 if(!trainerId || !date || !startTime || !endTime) { toast('Tüm alanları doldurun.','error'); return; }
 if(endTime <= startTime) { toast('Bitiş saati başlangıçtan sonra olmalı.','error'); return; }
 if(!S.unavailableBlocks) S.unavailableBlocks = [];
-S.unavailableBlocks.push({id: S.nextId++, trainerId, date, startTime, endTime, note});
+S.unavailableBlocks.push({id: yeniId(), trainerId, date, startTime, endTime, note});
 save();
 closeModal('unavailable-modal');
 renderCalendar();
@@ -4041,7 +4114,7 @@ oldTrainerIdForNotify = S.events[i].trainerId;
 S.events[i]={...S.events[i],type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,teyitGerekli,members:tempEventMembers,specialCount,singleDropCount};
 }
 } else {
-S.events.push({id:S.nextId++,type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,teyitGerekli,members:tempEventMembers,specialCount,singleDropCount,completed:false});
+S.events.push({id:yeniId(),type,trainerId,date,startTime,duration,capacity,note,guestName,olcumAlinacak,teyitGerekli,members:tempEventMembers,specialCount,singleDropCount,completed:false});
 }
 // Eğitmene bildirim: sadece işletme sahibi değişiklik yaptıysa gönder
 if(currentUser.role==='owner') {
@@ -4349,7 +4422,7 @@ toast('Üye listesi güncelleniyor, lütfen üyeye tekrar dokunun.','error');
 try { navigateTo(currentPage); } catch(e) {}
 }
 function openMemberView(id) {
-const m = S.members.find(x=>x.id===parseInt(id));
+const m = S.members.find(x=>String(x.id)===String(id));
 if(!m) { uyeBulunamadi(); return; }
 const pkg = m.package||'';
 const t = pkgSessions(pkg), u = m.used||0;
@@ -5231,8 +5304,7 @@ d.olcumGecmis = [...d.olcumGecmis, yeniOlcum];
 S.members[i]={...existing,...d};
 }
 } else {
-if(!Number.isFinite(S.nextId) || S.members.some(x=>x.id===S.nextId)) S.nextId = _enBuyukId(S)+1;
-d.id=S.nextId++;d.used=0;d.package='';d.start='';d.kayitTarihi=localDate();
+d.id=yeniId();d.used=0;d.package='';d.start='';d.kayitTarihi=localDate();
 d.olcumGecmis = yeniOlcum ? [yeniOlcum] : [];
 S.members.push(d);
 }
@@ -5262,7 +5334,7 @@ if(!e.target.closest('[id^="share-menu-"]') && !e.target.closest('.btn-icon')) c
 });
 function shareViaPDF(id, channel) {
 try {
-const m = S.members.find(x=>x.id===parseInt(id));
+const m = S.members.find(x=>String(x.id)===String(id));
 if(!m) { uyeBulunamadi(); return; }
 const total = pkgSessions(m.package||'');
 const used = m.used||0;
@@ -5460,7 +5532,7 @@ window.open('mailto:'+(m.email||'')+'?subject='+subject+'&body='+body, '_blank')
 } catch(e) { toast('Hata oluştu.','error'); console.error(e); }
 }
 function sendWhatsApp(id, type) {
-const m = S.members.find(x=>x.id===parseInt(id));
+const m = S.members.find(x=>String(x.id)===String(id));
 if(!m) { uyeBulunamadi(); return; }
 const phone = m.phone ? m.phone.replace(/\D/g,'') : '';
 const total = pkgSessions(m.package||'');
@@ -6057,7 +6129,7 @@ if(!d.name){toast('İsim zorunludur.','error');return;}
 if(pinVal && pinVal.length!==4){toast('PIN 4 haneli olmalıdır.','error');return;}
 if(d.tc && d.tc.length!==11){toast('TC Kimlik No 11 haneli olmalıdır.','error');return;}
 if(id){const i=S.trainers.findIndex(t=>t.id==id);if(i>-1)S.trainers[i]={...S.trainers[i],...d};}
-else{d.id=S.nextId++;S.trainers.push(d);}
+else{d.id=yeniId();S.trainers.push(d);}
 save();closeModal('trainer-modal');renderTrainers();
 visibleTrainers=new Set(S.trainers.map(t=>t.id));
 toast('Eğitmen kaydedildi.','success');
@@ -6412,7 +6484,7 @@ if(ozelDers>0) m.ozelDers=ozelDers;
 }
 }
 } else {
-d.id=S.nextId++;S.payments.push(d);
+d.id=yeniId();S.payments.push(d);
 if(m){
 // Mevcut aktif paketi geçmişe kaydet
 if(m.package && m.start) {
@@ -7479,7 +7551,7 @@ g.name = name; g.category = category; g.amount = amount;
 S.sabitGiderler[i] = g;
 }
 } else {
-S.sabitGiderler.push({id:S.nextId++, name, category, amount, tarihler:[{tarih: gecerliAy, tutar: amount}]});
+S.sabitGiderler.push({id:yeniId(), name, category, amount, tarihler:[{tarih: gecerliAy, tutar: amount}]});
 }
 save();
 document.getElementById('sabit-gider-overlay').remove();
@@ -7612,7 +7684,7 @@ const banka=cat==='Kredi Kartı'?document.getElementById('g-banka').value:'';
 const d={category:cat,yer,banka,amount:parseFloat(document.getElementById('g-amount').value)||0,date:document.getElementById('g-date').value,note:document.getElementById('g-note').value.trim()};
 if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
 if(eid){const i=S.giderler.findIndex(g=>g.id===parseInt(eid));if(i>-1)S.giderler[i]={...S.giderler[i],...d};}
-else{d.id=S.nextId++;S.giderler.push(d);}
+else{d.id=yeniId();S.giderler.push(d);}
 save();closeModal('gider-modal');renderGiderler();
 toast(eid?'Gider güncellendi.':'Gider eklendi.','success');
 }
@@ -8362,6 +8434,8 @@ guvenliKaydet();
 S = bulut;
 tabanAyarla(bulut);
 }
+// Bozuk id'li kayıt varsa onar ve kaydet
+if(idOnar(S)) { guvenliKaydet(); }
 }
 window._onFirebaseReady = function() {
 if(window._firebaseData) {
