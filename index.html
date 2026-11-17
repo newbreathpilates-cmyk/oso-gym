@@ -1710,8 +1710,9 @@ _cevrimdisiUyari = false;
 tabanAyarla(yazilan);
 const simdiki = JSON.stringify(S);
 if(simdiki === gonderilen) {
-// birleştirme başka cihazların değişikliklerini getirdiyse ekranı güncelle
-if(JSON.stringify(yazilan) !== gonderilen) { S = yazilan; _yerelSakla(); _ekraniYenile(); }
+// birleştirme başka cihazların değişikliklerini getirdiyse ekranı güncelle (sadece sürüm no farkıysa çizme)
+const _revsiz = o => { const k = Object.assign({}, o); delete k._rev; return JSON.stringify(k); };
+if(_revsiz(yazilan) !== _revsiz(JSON.parse(gonderilen))) { S = yazilan; _yerelSakla(); _ekraniYenile(); }
 else { S._rev = yazilan._rev; }
 } else {
 // kayıt sürerken yeni değişiklik yapılmış: onları da birleştirip tekrar kaydet
@@ -1736,6 +1737,19 @@ window.guvenliKaydet = guvenliKaydet;
 window.addEventListener('online', function(){ if(_taban !== null && JSON.stringify(S) !== _taban) guvenliKaydet(); });
 // Bekleyen (kaydedilmemiş) yerel değişiklik var mı?
 function bekleyenDegisiklikVar() { return _taban !== null && JSON.stringify(S) !== _taban; }
+// Sayfayı yeniden çizer ama kaydırma konumunu (sayfa ve takvim ızgarası) korur
+function yenidenCizKonumuKoru() {
+const pc = document.getElementById('page-content');
+const takvim = document.getElementById('week-grid-scroll');
+const konum = { pencere: window.scrollY, sayfa: pc ? pc.scrollTop : 0, takvim: takvim ? takvim.scrollTop : null, takvimX: takvim ? takvim.scrollLeft : null };
+navigateTo(currentPage);
+const geriYukle = () => {
+try { window.scrollTo(0, konum.pencere); } catch(e) {}
+const pc2 = document.getElementById('page-content'); if(pc2) pc2.scrollTop = konum.sayfa;
+const t2 = document.getElementById('week-grid-scroll'); if(t2 && konum.takvim!==null) { t2.scrollTop = konum.takvim; t2.scrollLeft = konum.takvimX; }
+};
+geriYukle(); requestAnimationFrame(geriYukle); setTimeout(geriYukle, 60);
+}
 function _ekraniYenile() {
 if(currentUser) {
 if(currentUser.role==='trainer') {
@@ -1747,7 +1761,7 @@ S.trainers.forEach(t=>{ if(!_bilinenEgitmenler.has(t.id)) { _bilinenEgitmenler.a
 }
 // Açık bir pencere (modal) varken sayfayı yeniden çizme; kapatılınca zaten yenilenir
 const acikModal = document.querySelector('.modal-overlay.open, .modal.open, .modal-backdrop.show');
-if(!acikModal) navigateTo(currentPage); else window._ekranYenilemeBekliyor = true;
+if(!acikModal) yenidenCizKonumuKoru(); else window._ekranYenilemeBekliyor = true;
 } else {
 populateTrainerSelect();
 }
@@ -8360,7 +8374,7 @@ const overlay = document.getElementById(id);
 if(!overlay) return;
 overlay.classList.remove('open');
 // Pencere açıkken başka cihazdan güncelleme geldiyse, kapanınca ekranı yenile
-if(window._ekranYenilemeBekliyor && !document.querySelector('.modal-overlay.open')) { window._ekranYenilemeBekliyor = false; setTimeout(function(){ try { if(currentUser) navigateTo(currentPage); } catch(e){} }, 0); }
+if(window._ekranYenilemeBekliyor && !document.querySelector('.modal-overlay.open')) { window._ekranYenilemeBekliyor = false; setTimeout(function(){ try { if(currentUser) yenidenCizKonumuKoru(); } catch(e){} }, 0); }
 // Reset inline styles
 overlay.style.alignItems = '';
 overlay.style.padding = '';
