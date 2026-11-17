@@ -431,7 +431,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.04-2</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.17-1</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -3840,6 +3840,9 @@ const type = document.getElementById('ev-type')?.value;
 const group = document.getElementById('guest-name-group');
 const memberGroup = document.querySelector('[id="ev-member-add"]')?.closest('.form-group');
 if(group) group.style.display = misafirTuruMu(type) ? '' : 'none';
+// Demo ders / Tanışma randevusuna üye eklenemez (paketten düşüp prim yazılmasını önler)
+if(memberGroup) memberGroup.style.display = misafirTuruMu(type) ? 'none' : '';
+if(misafirTuruMu(type) && typeof tempEventMembers!=='undefined' && tempEventMembers.length) { tempEventMembers=[]; if(typeof renderEventMembersList==='function') renderEventMembersList(); }
 }
 function openUnavailableDetail(id) {
 const b = (S.unavailableBlocks||[]).find(x=>x.id===id);
@@ -4104,6 +4107,7 @@ const singleDropCount=0;
 if(!date||!startTime){toast('Tarih ve saat zorunludur.','error');return;}
 // Deneme/Tanışma randevusunda eğitmen zorunlu değil
 const isDenemeType = misafirTuruMu(type);
+if(isDenemeType) tempEventMembers=[]; // misafir randevusunda üye olmaz
 if(!trainerId && !isDenemeType){toast('Eğitmen seçimi zorunludur.','error');return;}
 // Müsait olmama bloğu kontrolü
 const evStart = (parseInt(startTime.split(':')[0])-6)*60 + parseInt(startTime.split(':')[1]);
