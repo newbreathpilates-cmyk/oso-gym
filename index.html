@@ -431,7 +431,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.17-2</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.18-1</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -8342,6 +8342,13 @@ if(pStart && dateStr >= pStart && dateStr <= pEnd) {
 return {type:'history', index:i};
 }
 }
+}
+// Ders aktif paketin başlangıcından ÖNCE ise (ör. eski paket kaydedildikten sonra, yeni paket başlamadan yapılan ders)
+// yeni pakete değil, o tarihten önce başlayan en son geçmiş pakete sayılır
+if(m.start && dateStr < m.start && m.paketGecmisi && m.paketGecmisi.length) {
+let enIyi=-1, enIyiBas='';
+m.paketGecmisi.forEach((p,i)=>{ const b=p.start||p.date; if(b && b<=dateStr && b>enIyiBas){ enIyi=i; enIyiBas=b; } });
+if(enIyi>-1) return {type:'history', index:enIyi};
 }
 return {type:'current'}; // Hiçbir aralığa denk gelmiyorsa güvenli varsayım: aktif paket
 }
