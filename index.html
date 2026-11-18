@@ -422,7 +422,9 @@ font-size: 28px;
 }
 @media (max-width: 768px) {
 .fab { display: flex; }
-}</style>
+}
+@media (min-width:700px){ #signature-canvas{ height:260px !important; } }
+</style>
 </head>
 <body>
 <div id="login-screen">
@@ -431,7 +433,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.18-2</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.18-3</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -884,7 +886,7 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 <span style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.4px">✍️ İmza <span style="font-weight:400;text-transform:none;letter-spacing:0">(opsiyonel)</span></span>
 <button type="button" onclick="clearSignature()" style="font-size:10px;color:#b91c1c;background:none;border:none;cursor:pointer;padding:2px 6px">Temizle</button>
 </div>
-<canvas id="signature-canvas" width="400" height="120" style="width:100%;height:120px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);cursor:crosshair;touch-action:none;background:#fafafa"></canvas>
+<canvas id="signature-canvas" width="400" height="200" style="width:100%;height:200px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);cursor:crosshair;touch-action:none;background:#fafafa"></canvas>
 <div style="font-size:10px;color:var(--text3);margin-top:5px">Parmağınız veya mouse ile imzanızı atın</div>
 </div>
 <div class="mobile-only-footer" style="display:none;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px">
@@ -4655,7 +4657,9 @@ if(m && m.signature) {
 const img = new Image();
 img.onload = () => {
 signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-signatureCtx.drawImage(img, 0, 0, signatureCanvas.width, signatureCanvas.height);
+// Eski (küçük) imzalar orantısı bozulmadan ortalanarak gösterilir
+const _cw=signatureCanvas.width, _ch=signatureCanvas.height, _o=Math.min(_cw/img.width, _ch/img.height);
+signatureCtx.drawImage(img, (_cw-img.width*_o)/2, (_ch-img.height*_o)/2, img.width*_o, img.height*_o);
 };
 img.src = m.signature;
 }
@@ -5255,11 +5259,19 @@ let signatureCtx = null;
 function initSignature() {
 signatureCanvas = document.getElementById('signature-canvas');
 if(!signatureCanvas) return;
+// Çizim çözünürlüğünü ekrandaki kutu boyutuna eşitle (iPhone/tablet: imza gerilmeden, tam kutuya çizilir)
+const _r = signatureCanvas.getBoundingClientRect();
+if(_r.width > 50 && _r.height > 50) {
+const _w = Math.round(Math.min(_r.width, 900)), _h = Math.round(Math.min(_r.height, 400));
+if(signatureCanvas.width !== _w || signatureCanvas.height !== _h) { signatureCanvas.width = _w; signatureCanvas.height = _h; }
+}
 signatureCtx = signatureCanvas.getContext('2d');
 signatureCtx.strokeStyle = '#1a1a18';
 signatureCtx.lineWidth = 2;
 signatureCtx.lineCap = 'round';
 signatureCtx.lineJoin = 'round';
+if(signatureCanvas._dinleyiciVar) return;
+signatureCanvas._dinleyiciVar = true;
 function getPos(e) {
 const rect = signatureCanvas.getBoundingClientRect();
 const scaleX = signatureCanvas.width / rect.width;
