@@ -431,7 +431,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.18-1</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.18-2</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -5498,7 +5498,18 @@ return '<tr><td style="font-weight:600">'+p.package+'</td><td>'+p.start+'</td><t
 '<div class="sec-title">📏 ÖLÇÜM GEÇMİŞİ VE KARŞILAŞTIRMA</div>'+
 '<table class="olcum"><thead><tr>'+
 '<th>Tarih</th><th>Boy</th><th>Kilo</th><th>Göğüs</th><th>Bel</th><th>Kalça</th><th>Kol</th><th>Baldır</th><th>VKİ</th><th>B/K</th></tr></thead><tbody>'+
-gecmis.map(function(o,i){
+(gecmis.length>1?'<tr style="background:#e0e7ff"><td style="font-weight:700;color:#3730a3;font-size:14px">Toplam Değişim</td>'+
+'<td>—</td>'+ // Boy sütunu (değişmez)
+['kilo','gogus','bel','kalca','kol','baldir'].map(function(k){
+const ilk=gecmis[0][k], son=gecmis[gecmis.length-1][k];
+if(!ilk||!son) return '<td>—</td>';
+const d=(parseFloat(son)-parseFloat(ilk)).toFixed(1);
+const c=parseFloat(d)<0?'#059669':parseFloat(d)>0?'#dc2626':'#6b7280';
+const a=parseFloat(d)<0?'↓':parseFloat(d)>0?'↑':'→';
+return '<td style="font-weight:700;color:'+c+'">'+a+Math.abs(d)+'</td>';
+}).join('')+'<td>—</td><td>—</td></tr>':'')+ // vki, b/k sütunları için boş
+gecmis.map(function(o,i){return {o:o,i:i};}).reverse().map(function(x){ // en son ölçüm en üstte
+const o=x.o, i=x.i;
 const prev = gecmis[i-1];
 return '<tr style="'+(i===gecmis.length-1?'background:#f5f3ff;font-weight:600':'')+'">'+
 '<td><b>'+o.tarih+'</b>'+(o.aktivite?'<br><span style="font-size:13px;color:#6b7280">'+o.aktivite+'</span>':'')+'</td>'+
@@ -5513,16 +5524,6 @@ return '<tr style="'+(i===gecmis.length-1?'background:#f5f3ff;font-weight:600':'
 '<td>'+(o.whr||'—')+'</td>'+
 '</tr>';
 }).join('')+
-(gecmis.length>1?'<tr style="background:#e0e7ff"><td style="font-weight:700;color:#3730a3;font-size:14px">Toplam Değişim</td>'+
-'<td>—</td>'+ // Boy sütunu (değişmez)
-['kilo','gogus','bel','kalca','kol','baldir'].map(function(k){
-const ilk=gecmis[0][k], son=gecmis[gecmis.length-1][k];
-if(!ilk||!son) return '<td>—</td>';
-const d=(parseFloat(son)-parseFloat(ilk)).toFixed(1);
-const c=parseFloat(d)<0?'#059669':parseFloat(d)>0?'#dc2626':'#6b7280';
-const a=parseFloat(d)<0?'↓':parseFloat(d)>0?'↑':'→';
-return '<td style="font-weight:700;color:'+c+'">'+a+Math.abs(d)+'</td>';
-}).join('')+'<td>—</td><td>—</td></tr>':'')+ // vki, b/k sütunları için boş
 '</tbody></table></div>':'')+
 bfHTML+
 // SON DERSLER
@@ -5638,7 +5639,18 @@ td { padding:8px 12px; border-bottom:1px solid #e5e7eb; }
 <table>
 <thead><tr><th>Ölçüm</th>${alanlar.map(a=>`<th>${a.label}${a.unit?' ('+a.unit+')':''}</th>`).join('')}</tr></thead>
 <tbody>
-${gecmis.map((o,i)=>{
+${gecmis.length>1?`<tr style="background:#e0e7ff">
+<td style="font-weight:700;color:#3730a3">Toplam Değişim<br><span style="font-size:10px">${gecmis[0].tarih} → ${gecmis[gecmis.length-1].tarih}</span></td>
+${alanlar.map(a=>{
+const ilk=gecmis[0][a.key], son=gecmis[gecmis.length-1][a.key];
+if(!ilk||!son) return '<td>—</td>';
+const diff=(parseFloat(son)-parseFloat(ilk)).toFixed(1);
+const cls=parseFloat(diff)<0?'down':parseFloat(diff)>0?'up':'same';
+const arrow=parseFloat(diff)<0?'↓':parseFloat(diff)>0?'↑':'→';
+return `<td><span class="${cls}" style="font-size:13px">${arrow} ${Math.abs(diff)}${a.unit?' '+a.unit:''}</span></td>`;
+}).join('')}
+</tr>`:''}
+${gecmis.map((o,i)=>({o,i})).reverse().map(({o,i})=>{
 const prev = gecmis[i-1];
 return `<tr style="${i===gecmis.length-1?'background:#f5f3ff;font-weight:600':''}">
 <td><div style="font-weight:700">${o.tarih}</div>${o.aktivite?`<div style="font-size:10px;color:#6b7280">${o.aktivite}</div>`:''}</td>
@@ -5653,17 +5665,6 @@ return `<td>${val}${a.unit?' '+a.unit:''}<br><span class="${cls}" style="font-si
 }).join('')}
 </tr>`;
 }).join('')}
-${gecmis.length>1?`<tr style="background:#e0e7ff">
-<td style="font-weight:700;color:#3730a3">Toplam Değişim<br><span style="font-size:10px">${gecmis[0].tarih} → ${gecmis[gecmis.length-1].tarih}</span></td>
-${alanlar.map(a=>{
-const ilk=gecmis[0][a.key], son=gecmis[gecmis.length-1][a.key];
-if(!ilk||!son) return '<td>—</td>';
-const diff=(parseFloat(son)-parseFloat(ilk)).toFixed(1);
-const cls=parseFloat(diff)<0?'down':parseFloat(diff)>0?'up':'same';
-const arrow=parseFloat(diff)<0?'↓':parseFloat(diff)>0?'↑':'→';
-return `<td><span class="${cls}" style="font-size:13px">${arrow} ${Math.abs(diff)}${a.unit?' '+a.unit:''}</span></td>`;
-}).join('')}
-</tr>`:''}
 </tbody>
 </table>
 <div class="footer">
