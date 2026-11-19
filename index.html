@@ -433,7 +433,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.18-3</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.19-1</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -4429,6 +4429,12 @@ else { const yil = Math.floor(ay/12), kalanAy = ay%12; sure = [yil?yil+' yıl':'
 return { ilkKayit, ilkDers, sonDers, toplamDers: dersler.length, paketSayisi, sure, sistemeEklendi: m.kayitTarihi||null };
 }
 // 2026-11-09 → 09.11.2026 (gün.ay.yıl)
+function tahsilatDetayAcKapa(){
+window._tahsilatDetayAcik=!window._tahsilatDetayAcik;
+const l=document.getElementById('tahsilat-detay-liste'), b=document.getElementById('tahsilat-detay-btn');
+if(l) l.style.display=window._tahsilatDetayAcik?'block':'none';
+if(b) b.textContent=window._tahsilatDetayAcik?'Gizle':'👁 Görüntüle';
+}
 function gaTarih(ds) {
 if(!ds || typeof ds!=='string') return ds||'—';
 const m = ds.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -6294,10 +6300,11 @@ return p.paidDate && p.paidDate.startsWith(tm) && p.status==='odendi';
 if(monthPayments.length > 0) {
 document.getElementById('page-content').innerHTML += `
 <div class="card" style="margin-top:12px">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-<div style="font-weight:700;font-size:14px">💰 Bu Ay Tahsilat Detayı</div>
-<span style="font-size:12px;color:var(--text3)">${monthPayments.length} ödeme</span>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+<div style="font-weight:700;font-size:14px">💰 Bu Ay Tahsilat Detayı <span style="font-size:12px;font-weight:400;color:var(--text3)">· ${monthPayments.length} ödeme</span></div>
+<button class="btn btn-sm" id="tahsilat-detay-btn" onclick="tahsilatDetayAcKapa()" style="white-space:nowrap">${window._tahsilatDetayAcik?'Gizle':'👁 Görüntüle'}</button>
 </div>
+<div id="tahsilat-detay-liste" style="display:${window._tahsilatDetayAcik?'block':'none'};margin-top:10px">
 ${monthPayments.map(p=>{
 const m = S.members.find(x=>x.id===p.memberId);
 return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
@@ -6311,6 +6318,7 @@ return `<div style="display:flex;justify-content:space-between;align-items:cente
 <div style="display:flex;justify-content:space-between;padding-top:8px;font-weight:700">
 <span>Toplam</span>
 <span style="color:var(--green)">₺${monthRev.toLocaleString('tr-TR')}</span>
+</div>
 </div>
 </div>`;
 }
