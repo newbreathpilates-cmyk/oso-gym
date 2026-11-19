@@ -433,7 +433,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.19-1</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.19-2</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -977,12 +977,12 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 </div>
 <div style="border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:14px;background:var(--bg);margin-top:12px">
 <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:10px"><i class="ti ti-id-badge-2" style="font-size:13px;vertical-align:-1px"></i> Özlük Bilgileri</div>
-<div class="form-group"><label class="form-label">Doğum Tarihi</label><input type="text" class="form-input" id="tr-dob" placeholder="YYYY-AA-GG" inputmode="numeric"></div>
+<div class="form-group"><label class="form-label">Doğum Tarihi</label><input type="text" class="form-input" id="tr-dob" placeholder="GG.AA.YYYY  (ör. 05.09.2001)" inputmode="numeric" maxlength="10" oninput="tarihMaske(this)"></div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">TC Kimlik No</label><input class="form-input" id="tr-tc" placeholder="11 haneli" maxlength="11" inputmode="numeric"></div>
 <div class="form-group"><label class="form-label">E-posta</label><input type="email" class="form-input" id="tr-email" placeholder="ornek@mail.com"></div>
 </div>
-<div class="form-group"><label class="form-label">İşe Başlama Tarihi</label><input type="text" class="form-input" id="tr-start-date" placeholder="YYYY-AA-GG" inputmode="numeric"></div>
+<div class="form-group"><label class="form-label">İşe Başlama Tarihi</label><input type="text" class="form-input" id="tr-start-date" placeholder="GG.AA.YYYY  (ör. 09.11.2026)" inputmode="numeric" maxlength="10" oninput="tarihMaske(this)"></div>
 <div class="form-group" style="margin-bottom:0"><label class="form-label">Adres</label><textarea class="form-textarea" id="tr-address" rows="2" placeholder="İkamet adresi"></textarea></div>
 </div>
 <div style="border:1.5px solid #fecaca;border-radius:var(--radius-sm);padding:14px;background:#fff5f5;margin-top:12px;margin-bottom:2px">
@@ -4429,6 +4429,23 @@ else { const yil = Math.floor(ay/12), kalanAy = ay%12; sure = [yil?yil+' yıl':'
 return { ilkKayit, ilkDers, sonDers, toplamDers: dersler.length, paketSayisi, sure, sistemeEklendi: m.kayitTarihi||null };
 }
 // 2026-11-09 → 09.11.2026 (gün.ay.yıl)
+// Elle yazılan tarihi YYYY-AA-GG'ye çevirir: 05092001, 05.09.2001, 5/9/2001, 2001-09-05 → 2001-09-05 (geçersizse '')
+function tarihNormalize(v){
+v=String(v||'').trim(); if(!v) return '';
+let g,a,y,m;
+if((m=v.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/))) { y=+m[1]; a=+m[2]; g=+m[3]; }
+else if((m=v.match(/^(\d{1,2})[-./ ](\d{1,2})[-./ ](\d{4})$/))) { g=+m[1]; a=+m[2]; y=+m[3]; }
+else if((m=v.match(/^(\d{2})(\d{2})(\d{4})$/))) { g=+m[1]; a=+m[2]; y=+m[3]; }
+else return '';
+const d=new Date(y,a-1,g);
+if(d.getFullYear()!==y||d.getMonth()!==a-1||d.getDate()!==g||y<1900||y>2100) return '';
+return y+'-'+String(a).padStart(2,'0')+'-'+String(g).padStart(2,'0');
+}
+// Yazarken GG.AA.YYYY biçimine otomatik noktalar
+function tarihMaske(el){
+const r=el.value.replace(/\D/g,'').slice(0,8);
+el.value = r.length>4 ? r.slice(0,2)+'.'+r.slice(2,4)+'.'+r.slice(4) : r.length>2 ? r.slice(0,2)+'.'+r.slice(2) : r;
+}
 function tahsilatDetayAcKapa(){
 window._tahsilatDetayAcik=!window._tahsilatDetayAcik;
 const l=document.getElementById('tahsilat-detay-liste'), b=document.getElementById('tahsilat-detay-btn');
@@ -6020,8 +6037,8 @@ function egitmenOzet(t, ay) {
 const h = calcTrainerHakedis(t.id, ay);
 const toplamDers = S.events.filter(e=>e.trainerId===t.id && e.completed).length;
 let calismaSuresi = '';
-if(t.startDate) {
-const b = new Date(t.startDate+'T00:00:00'), n = new Date();
+if(tarihNormalize(t.startDate)) {
+const b = new Date(tarihNormalize(t.startDate)+'T00:00:00'), n = new Date();
 let a = (n.getFullYear()-b.getFullYear())*12 + (n.getMonth()-b.getMonth());
 if(n.getDate() < b.getDate()) a--;
 if(a < 1) calismaSuresi = Math.max(0, Math.floor((n-b)/86400000))+' gün';
@@ -6040,8 +6057,8 @@ const telRakam = (t.phone||'').replace(/\D/g,'');
 const waNo = telRakam ? (telRakam.startsWith('90') ? telRakam : telRakam.startsWith('0') ? '9'+telRakam : '90'+telRakam) : '';
 const esc = v => String(v||'').replace(/</g,'&lt;');
 let yas = '', dogumGunuYakin = '';
-if(t.dob) {
-const d = new Date(t.dob+'T00:00:00'), n = new Date();
+if(tarihNormalize(t.dob)) {
+const d = new Date(tarihNormalize(t.dob)+'T00:00:00'), n = new Date();
 const bugun = new Date(n.getFullYear(), n.getMonth(), n.getDate());
 let y = n.getFullYear()-d.getFullYear(); if(n.getMonth()<d.getMonth() || (n.getMonth()===d.getMonth() && n.getDate()<d.getDate())) y--;
 yas = y+' yaş';
@@ -6094,8 +6111,8 @@ ${t.email?aksiyon('mailto:'+encodeURIComponent(t.email),'mail','E-posta','#7c3ae
 <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.5px;margin-bottom:2px">KİŞİSEL BİLGİLER</div>
 ${satir('phone','Telefon',esc(t.phone))}
 ${satir('mail','E-posta',esc(t.email))}
-${satir('cake','Doğum tarihi',t.dob?trTarih(t.dob)+(yas?' · '+yas:''):'', dogumGunuYakin?`<div style="font-size:11px;color:#db2777;font-weight:600;margin-top:2px">${dogumGunuYakin}</div>`:'')}
-${satir('briefcase','İşe başlama',t.startDate?trTarih(t.startDate):'')}
+${satir('cake','Doğum tarihi',t.dob?(tarihNormalize(t.dob)?gaTarih(tarihNormalize(t.dob)):t.dob)+(yas?' · '+yas:''):'', dogumGunuYakin?`<div style="font-size:11px;color:#db2777;font-weight:600;margin-top:2px">${dogumGunuYakin}</div>`:'')}
+${satir('briefcase','İşe başlama',t.startDate?(tarihNormalize(t.startDate)?gaTarih(tarihNormalize(t.startDate)):t.startDate):'')}
 ${satir('id','TC Kimlik No',t.tc?`<span id="tv-tc" data-tc="${esc(t.tc)}">•••••••${esc(String(t.tc).slice(-4))}</span> <button onclick="const s=document.getElementById('tv-tc');s.textContent=s.dataset.tc;this.remove()" style="border:none;background:none;color:#2563eb;font-size:11px;cursor:pointer;padding:0 4px">göster</button>`:'')}
 ${satir('map-pin','Adres',esc(t.address))}
 ${t.emergencyName||t.emergencyPhone?`<div style="margin-top:12px;background:#fef2f2;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -6126,10 +6143,10 @@ document.getElementById('tr-online-pct').value=(t.onlinePct)||'';
 document.getElementById('tr-gizli').checked=!!t.randevulariGizli;
 document.getElementById('tr-pin').value='';
 document.getElementById('tr-status').value=t.status||'aktif';
-document.getElementById('tr-dob').value=t.dob||'';
+document.getElementById('tr-dob').value=tarihNormalize(t.dob)?gaTarih(tarihNormalize(t.dob)):(t.dob||'');
 document.getElementById('tr-tc').value=t.tc||'';
 document.getElementById('tr-email').value=t.email||'';
-document.getElementById('tr-start-date').value=t.startDate||'';
+document.getElementById('tr-start-date').value=tarihNormalize(t.startDate)?gaTarih(tarihNormalize(t.startDate)):(t.startDate||'');
 document.getElementById('tr-address').value=t.address||'';
 document.getElementById('tr-emergency-name').value=t.emergencyName||'';
 document.getElementById('tr-emergency-rel').value=t.emergencyRel||'';
@@ -6146,6 +6163,7 @@ document.getElementById('tr-status').value='aktif';
 openModal('trainer-modal');
 }
 function saveTrainer(){
+for(const [k,ad] of [['tr-dob','Doğum tarihi'],['tr-start-date','İşe başlama tarihi']]){ const v=document.getElementById(k).value.trim(); if(v && !tarihNormalize(v)){ toast(ad+' geçersiz. GG.AA.YYYY şeklinde yazın (ör. 05.09.2001)','error'); document.getElementById(k).focus(); return; } }
 const id=document.getElementById('tr-id').value;
 const pinVal=document.getElementById('tr-pin').value.trim();
 const statusVal=document.getElementById('tr-status').value;
@@ -6158,10 +6176,10 @@ pct:parseFloat(document.getElementById('tr-rate-pct').value)||0,
 onlinePct:parseFloat(document.getElementById('tr-online-pct').value)||0,
 randevulariGizli:document.getElementById('tr-gizli').checked,
 status:statusVal,
-dob:document.getElementById('tr-dob').value,
+dob:tarihNormalize(document.getElementById('tr-dob').value),
 tc:document.getElementById('tr-tc').value.trim(),
 email:document.getElementById('tr-email').value.trim(),
-startDate:document.getElementById('tr-start-date').value,
+startDate:tarihNormalize(document.getElementById('tr-start-date').value),
 address:document.getElementById('tr-address').value.trim(),
 emergencyName:document.getElementById('tr-emergency-name').value.trim(),
 emergencyRel:document.getElementById('tr-emergency-rel').value.trim(),
