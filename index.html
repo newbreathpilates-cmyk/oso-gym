@@ -433,7 +433,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.24-2</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.24-3</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -4466,10 +4466,17 @@ if(r.top<70 || r.bottom>vh-20) n.scrollIntoView({block:'center',behavior:'smooth
 };
 modal.querySelectorAll('input').forEach(el=>{ if(['text','tel','email','number',''].includes(el.type)) el.setAttribute('enterkeyhint','next'); });
 modal.addEventListener('keydown',e=>{ const el=e.target; if(e.key==='Enter' && el.tagName==='INPUT' && ['text','tel','email','number'].includes(el.type)){ e.preventDefault(); sonraki(el); } });
-modal.addEventListener('input',e=>{ const el=e.target; if((el.id==='m-phone'||el.id==='m-emergency-phone') && el.value.replace(/\D/g,'').length===11 && /^0/.test(el.value.replace(/\D/g,''))) sonraki(el); });
+modal.addEventListener('input',e=>{ const el=e.target; if(el.id!=='m-phone' && el.id!=='m-emergency-phone') return;
+const r=el.value.replace(/\D/g,'');
+// 0532 111 22 33 biçimi (başı 0 ile başlayan 11 haneli numaralarda); silerken araya karışmaz
+if(r.startsWith('0') && r.length<=11 && e.inputType!=='deleteContentBackward') el.value=telefonBicimle(r);
+if(r.length===11 && r.startsWith('0') && e.inputType!=='deleteContentBackward') sonraki(el); });
+modal.addEventListener('blur',e=>{ const el=e.target; if(el.id==='m-phone'||el.id==='m-emergency-phone'){ const r=el.value.replace(/\D/g,''); if(r.length===11&&r.startsWith('0')) el.value=telefonBicimle(r); } },true);
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',kur); else kur();
 })();
+function telefonBicimle(r){ r=String(r||'').replace(/\D/g,'').slice(0,11); return [r.slice(0,4),r.slice(4,7),r.slice(7,9),r.slice(9,11)].filter(Boolean).join(' '); }
+function telKaydet(v){ v=String(v||'').trim(); const r=v.replace(/\D/g,''); return (r.length===11&&r.startsWith('0'))?telefonBicimle(r):v; }
 function tahsilatDetayAcKapa(){
 window._tahsilatDetayAcik=!window._tahsilatDetayAcik;
 const l=document.getElementById('tahsilat-detay-liste'), b=document.getElementById('tahsilat-detay-btn');
@@ -4655,7 +4662,7 @@ document.getElementById('m-yas').value=m.yas||'';
 document.getElementById('m-dob').value=m.dob||'';
 document.getElementById('m-emergency-name').value=m.emergencyName||'';
 document.getElementById('m-emergency-rel').value=m.emergencyRel||'';
-document.getElementById('m-emergency-phone').value=m.emergencyPhone||'';
+document.getElementById('m-emergency-phone').value=(String(m.emergencyPhone||'').replace(/\D/g,'').length===11&&String(m.emergencyPhone).replace(/\D/g,'').startsWith('0'))?telefonBicimle(m.emergencyPhone):(m.emergencyPhone||'');
 document.getElementById('m-rules-accepted').checked=m.rulesAccepted||false;
 // Paket geçmişi
 renderPaketGecmisi(m.paketGecmisi||[], m);
@@ -5360,7 +5367,7 @@ function saveMember(){
 const id=document.getElementById('m-id').value;
 // Yeni ölçüm var mı kontrol et
 const yeniOlcum = getNewOlcum();
-const d={name:document.getElementById('m-name').value.trim(),surname:document.getElementById('m-surname').value.trim(),phone:document.getElementById('m-phone').value.trim(),email:document.getElementById('m-email').value.trim(),il:document.getElementById('m-il').value.trim(),ilce:document.getElementById('m-ilce').value.trim(),adres:document.getElementById('m-adres').value.trim(),gender:document.getElementById('m-gender').value,yas:document.getElementById('m-yas').value||'',dob:document.getElementById('m-dob').value||'',status:document.getElementById('m-status').value,note:document.getElementById('m-note').value.trim(),emergencyName:document.getElementById('m-emergency-name').value.trim(),emergencyRel:document.getElementById('m-emergency-rel').value.trim(),emergencyPhone:document.getElementById('m-emergency-phone').value.trim(),rulesAccepted:document.getElementById('m-rules-accepted').checked,
+const d={name:document.getElementById('m-name').value.trim(),surname:document.getElementById('m-surname').value.trim(),phone:telKaydet(document.getElementById('m-phone').value),email:document.getElementById('m-email').value.trim(),il:document.getElementById('m-il').value.trim(),ilce:document.getElementById('m-ilce').value.trim(),adres:document.getElementById('m-adres').value.trim(),gender:document.getElementById('m-gender').value,yas:document.getElementById('m-yas').value||'',dob:document.getElementById('m-dob').value||'',status:document.getElementById('m-status').value,note:document.getElementById('m-note').value.trim(),emergencyName:document.getElementById('m-emergency-name').value.trim(),emergencyRel:document.getElementById('m-emergency-rel').value.trim(),emergencyPhone:telKaydet(document.getElementById('m-emergency-phone').value),rulesAccepted:document.getElementById('m-rules-accepted').checked,
 saglik:getHealthForm(),kanGrubu:document.getElementById('m-kan-grubu').value||'',healthAccepted:document.getElementById('m-health-accepted').checked,healthNotes:document.getElementById('m-health-notes').value.trim(),
 postur:getPosturData(),signature:getSignatureData()};
 if(!d.name||!d.surname){toast('Ad ve soyad zorunludur.','error');return;}
