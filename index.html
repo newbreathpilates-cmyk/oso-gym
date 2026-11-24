@@ -433,7 +433,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.19-2</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.24-1</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -4446,6 +4446,21 @@ function tarihMaske(el){
 const r=el.value.replace(/\D/g,'').slice(0,8);
 el.value = r.length>4 ? r.slice(0,2)+'.'+r.slice(2,4)+'.'+r.slice(4) : r.length>2 ? r.slice(0,2)+'.'+r.slice(2) : r;
 }
+// ── Üye formu klavye kolaylığı: büyük harfle başlar (istenirse küçük yazılabilir), "Sonraki" ile kutudan kutuya geçer, telefon dolunca geçer ──
+(function(){
+function kur(){
+const modal=document.getElementById('member-modal'); if(!modal || modal._klavye) return; modal._klavye=true;
+['m-name','m-surname','m-il','m-ilce','m-adres','m-emergency-name','m-emergency-rel'].forEach(id=>{const el=document.getElementById(id); if(el){ el.setAttribute('autocapitalize','characters'); el.setAttribute('lang','tr'); el.setAttribute('autocorrect','off'); el.setAttribute('spellcheck','false'); }});
+const em=document.getElementById('m-email'); if(em){ em.type='email'; em.setAttribute('autocapitalize','none'); em.setAttribute('autocorrect','off'); em.setAttribute('spellcheck','false'); em.setAttribute('inputmode','email'); }
+['m-phone','m-emergency-phone'].forEach(id=>{const el=document.getElementById(id); if(el){ el.type='tel'; el.setAttribute('inputmode','tel'); el.setAttribute('autocomplete','off'); }});
+const alanlar=()=>[...modal.querySelectorAll('input,textarea')].filter(el=>el.type!=='hidden'&&el.type!=='checkbox'&&el.type!=='radio'&&el.type!=='date'&&!el.disabled&&el.offsetParent!==null&&!el.closest('[style*="display:none"]'));
+const sonraki=el=>{const l=alanlar(); const i=l.indexOf(el); const n=l[i+1]; if(n){ n.focus(); if(n.select&&n.tagName==='INPUT') try{n.select();}catch(e){} } else el.blur();};
+modal.querySelectorAll('input').forEach(el=>{ if(['text','tel','email','number',''].includes(el.type)) el.setAttribute('enterkeyhint','next'); });
+modal.addEventListener('keydown',e=>{ const el=e.target; if(e.key==='Enter' && el.tagName==='INPUT' && ['text','tel','email','number'].includes(el.type)){ e.preventDefault(); sonraki(el); } });
+modal.addEventListener('input',e=>{ const el=e.target; if((el.id==='m-phone'||el.id==='m-emergency-phone') && el.value.replace(/\D/g,'').length===11 && /^0/.test(el.value.replace(/\D/g,''))) sonraki(el); });
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',kur); else kur();
+})();
 function tahsilatDetayAcKapa(){
 window._tahsilatDetayAcik=!window._tahsilatDetayAcik;
 const l=document.getElementById('tahsilat-detay-liste'), b=document.getElementById('tahsilat-detay-btn');
