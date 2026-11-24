@@ -433,7 +433,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.24-1</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.24-2</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -4454,7 +4454,16 @@ const modal=document.getElementById('member-modal'); if(!modal || modal._klavye)
 const em=document.getElementById('m-email'); if(em){ em.type='email'; em.setAttribute('autocapitalize','none'); em.setAttribute('autocorrect','off'); em.setAttribute('spellcheck','false'); em.setAttribute('inputmode','email'); }
 ['m-phone','m-emergency-phone'].forEach(id=>{const el=document.getElementById(id); if(el){ el.type='tel'; el.setAttribute('inputmode','tel'); el.setAttribute('autocomplete','off'); }});
 const alanlar=()=>[...modal.querySelectorAll('input,textarea')].filter(el=>el.type!=='hidden'&&el.type!=='checkbox'&&el.type!=='radio'&&el.type!=='date'&&!el.disabled&&el.offsetParent!==null&&!el.closest('[style*="display:none"]'));
-const sonraki=el=>{const l=alanlar(); const i=l.indexOf(el); const n=l[i+1]; if(n){ n.focus(); if(n.select&&n.tagName==='INPUT') try{n.select();}catch(e){} } else el.blur();};
+const sonraki=el=>{const l=alanlar(); const i=l.indexOf(el); const n=l[i+1];
+if(!n){ el.blur(); return; }
+// Odak, tuş olayı bittikten sonra verilir: iOS yeni kutunun büyük harf ayarını böylece doğru okur
+setTimeout(()=>{
+n.focus({preventScroll:true});
+// Ekran zıplamasın: kutu zaten görünüyorsa kaydırma yok, değilse yumuşakça ortala
+const r=n.getBoundingClientRect(), vh=(window.visualViewport?window.visualViewport.height:window.innerHeight);
+if(r.top<70 || r.bottom>vh-20) n.scrollIntoView({block:'center',behavior:'smooth'});
+},0);
+};
 modal.querySelectorAll('input').forEach(el=>{ if(['text','tel','email','number',''].includes(el.type)) el.setAttribute('enterkeyhint','next'); });
 modal.addEventListener('keydown',e=>{ const el=e.target; if(e.key==='Enter' && el.tagName==='INPUT' && ['text','tel','email','number'].includes(el.type)){ e.preventDefault(); sonraki(el); } });
 modal.addEventListener('input',e=>{ const el=e.target; if((el.id==='m-phone'||el.id==='m-emergency-phone') && el.value.replace(/\D/g,'').length===11 && /^0/.test(el.value.replace(/\D/g,''))) sonraki(el); });
