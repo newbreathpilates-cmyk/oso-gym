@@ -433,7 +433,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.25-1</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.26-1</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -1097,10 +1097,16 @@ Yukarıdaki üyelik kurallarını okudum ve kabul ediyorum.
 <select class="form-select" id="p-method" style="width:100%"><option>Nakit</option><option>Kredi Kartı</option><option>Havale/EFT</option></select>
 </div>
 <div class="form-group"><label class="form-label">Ödeme Durumu</label>
-<select class="form-select" id="p-status" style="width:100%">
+<select class="form-select" id="p-status" style="width:100%" onchange="kismiAlanGoster()">
 <option value="odendi">✅ Ödendi</option>
+<option value="kismi">🟠 Kısmi ödeme (bir kısmı alındı)</option>
 <option value="bekliyor">⏳ Bekliyor</option>
 </select>
+</div>
+<div class="form-group" id="p-alinan-grup" style="display:none">
+<label class="form-label">Alınan Tutar (₺)</label>
+<input type="number" class="form-input" id="p-alinan" placeholder="Örn. 10000" inputmode="numeric" oninput="kismiAlanGoster()">
+<div id="p-alinan-not" style="font-size:12px;color:#b45309;margin-top:4px"></div>
 </div>
 </div>
 <div class="modal-footer">
@@ -2803,7 +2809,9 @@ const pay = memberPayments[0];
 const fiyat = pay ? pay.amount : getPaketFiyati(m.package);
 const perLesson = fiyat / total;
 const tutar = remaining * perLesson;
-const isPaid = pay ? (pay.status==='odendi' || pay.status===undefined) : false;
+const isPaid = pay ? (pay.status==='odendi' || pay.status===undefined || pay.status==='kismi') : false;
+// Kısmi ödemede dersler alınmış sayılır; kalan bakiye "ödeme bekleyen"e eklenir
+if(pay && pay.status==='kismi' && odemeKalan(pay)>0) { bekleyenDeger += odemeKalan(pay); bekleyenUyeSayisi++; bekleyenDetay.push({name: m.name+' '+m.surname+' (kısmi)', remaining: total, tutar: odemeKalan(pay)}); }
 if(isPaid) {
 devredenDeger += tutar;
 devredenDersSayisi += remaining;
@@ -2855,6 +2863,7 @@ return diff >= 0 && diff <= 7;
 }).sort((a,b)=>a._bdays-b._bdays);
 document.getElementById('page-content').innerHTML = `
 ${renderTebrikKarti()}
+${renderBakiyeKarti()}
 <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
 <div class="stat-card">
 <div class="stat-label">Toplam Üye</div>
@@ -4606,6 +4615,7 @@ ${(()=>{const ub=uyelikBilgileri(m);return `<div style="background:#f0fdf8;borde
 <div><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">TOPLAM</div><div style="font-weight:700;color:#064e3b">${ub.paketSayisi} paket · ${ub.toplamDers} ders</div></div>
 ${ub.sonDers?`<div><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">SON DERS</div><div style="font-weight:700;color:#064e3b">${trTarih(ub.sonDers)}</div></div>`:''}
 ${ub.sistemeEklendi?`<div><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">SİSTEME EKLENDİ</div><div style="font-weight:700;color:#064e3b">${trTarih(ub.sistemeEklendi)}</div></div>`:''}
+${currentUser&&currentUser.role==='owner'&&(S.payments||[]).some(p=>String(p.memberId)===String(m.id)&&p.status==='kismi'&&odemeKalan(p)>0)?`<div style="grid-column:1/-1"><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">BAKİYE</div><div style="font-weight:800;color:#c2410c">🟠 ${tlBicim((S.payments||[]).filter(p=>String(p.memberId)===String(m.id)&&p.status==='kismi').reduce((a,p)=>a+odemeKalan(p),0))} ödenmemiş bakiye</div></div>`:''}
 ${m.tebrik100&&m.tebrik100.durum==='gonderildi'&&currentUser&&currentUser.role==='owner'?`<div style="grid-column:1/-1"><div style="font-size:9px;color:#6b7280;letter-spacing:0.3px">KUTLAMA</div><div style="font-weight:700;color:#b45309">🎉 ${TEBRIK_ESIK}. ders tebriği gönderildi · ${gaTarih(m.tebrik100.tarih)}</div></div>`:''}
 </div>
 </div>`;})()}
@@ -6310,16 +6320,75 @@ toast(name+' silindi.'+(bosRandevular.length?' '+bosRandevular.length+' boş ran
 // PAYMENTS
 // ══════════════════════════════════════
 // Üyenin tüm ödemelerinin özeti — SADECE işletme sahibi
+// ── KISMİ ÖDEME ── ödeme tutarı (paket fiyatı) aynı kalır; alınan paralar p.tahsilatlar=[{tutar,tarih}] listesinde tutulur
+function odemeAlinan(p){ if(Array.isArray(p.tahsilatlar)&&p.tahsilatlar.length) return p.tahsilatlar.reduce((a,t)=>a+(+t.tutar||0),0); return p.status==='bekliyor'?0:(p.amount||0); }
+function odemeKalan(p){ return Math.max(0,Math.round((p.amount||0)-odemeAlinan(p))); }
+// Tahsilat kalemleri (hangi gün ne kadar para alındı) — aylık tahsilat hesabı bunu kullanır
+function odemeTahsilatKalemleri(p){ if(Array.isArray(p.tahsilatlar)&&p.tahsilatlar.length) return p.tahsilatlar.map(t=>({tutar:+t.tutar||0,tarih:t.tarih})); return (p.status==='odendi'&&p.paidDate)?[{tutar:p.amount||0,tarih:p.paidDate}]:[]; }
+function odemeDurumGuncelle(p){
+if(!Array.isArray(p.tahsilatlar)||!p.tahsilatlar.length) return;
+const alinan=odemeAlinan(p);
+if(alinan>=(p.amount||0)){ p.status='odendi'; p.paidDate=p.tahsilatlar.map(t=>t.tarih).filter(Boolean).sort().pop()||localDate(); }
+else if(alinan>0){ p.status='kismi'; p.paidDate=null; }
+else { p.status='bekliyor'; p.paidDate=null; delete p.tahsilatlar; }
+}
+const tlBicim = v => '₺'+Math.round(v||0).toLocaleString('tr-TR');
+function kismiAlanGoster(){
+const st=document.getElementById('p-status')?.value, g=document.getElementById('p-alinan-grup'); if(!g) return;
+g.style.display = st==='kismi' ? '' : 'none';
+const tutar=parseFloat(document.getElementById('p-amount').value)||0, al=parseFloat(document.getElementById('p-alinan').value)||0, n=document.getElementById('p-alinan-not');
+if(n) n.textContent = st==='kismi' && tutar>0 && al>0 ? (al>=tutar ? 'Tutarın tamamı alınmış — "Ödendi" olarak kaydedilecek.' : 'Kalan: '+tlBicim(tutar-al)) : '';
+}
+function tahsilatEkle(id, e){
+if(e) e.stopPropagation();
+const p=S.payments.find(x=>x.id===id); if(!p) return;
+const kalan=odemeKalan(p);
+const g=prompt(p.member+' · '+p.package+'\nKalan: '+tlBicim(kalan)+'\n\nAlınan tutar (₺):', String(kalan));
+if(g===null) return;
+const tutar=parseFloat(String(g).replace(/\./g,'').replace(',','.'));
+if(!(tutar>0)){ toast('Geçerli bir tutar yazın.','error'); return; }
+if(!Array.isArray(p.tahsilatlar)||!p.tahsilatlar.length) p.tahsilatlar = odemeAlinan(p)>0 ? [{tutar:odemeAlinan(p),tarih:p.paidDate||p.date}] : [];
+p.tahsilatlar.push({tutar:Math.min(tutar,kalan||tutar),tarih:localDate()});
+odemeDurumGuncelle(p);
+save();
+toast(p.status==='odendi'?'✅ Ödeme tamamlandı':'Tahsilat eklendi · kalan '+tlBicim(odemeKalan(p)),'success');
+if(currentPage==='payments') renderPayments(); else if(currentPage==='dashboard') renderDashboard();
+}
+function bakiyeHatirlat(id, e){
+if(e) e.stopPropagation();
+const p=S.payments.find(x=>x.id===id); if(!p) return;
+const m=S.members.find(x=>String(x.id)===String(p.memberId));
+let tel=String(m&&m.phone||'').replace(/\D/g,''); if(!tel){ toast('Üyenin telefonu kayıtlı değil.','error'); return; }
+if(tel.startsWith('0')) tel='90'+tel.slice(1); else if(tel.length===10) tel='90'+tel;
+const hitap = m ? trBasHarf(m.name)+(m.gender==='Erkek'?' Bey':m.gender==='Kadın'?' Hanım':'') : '';
+const metin=`Merhaba ${hitap} 🤍\n\n${p.package} paketinizin kalan ${tlBicim(odemeKalan(p))} tutarındaki ödemesini hatırlatmak isteriz. Uygun olduğunuzda bir sonraki dersinizde getirebilirsiniz.\n\nTeşekkür ederiz 🙏\n*New Breath Pilates*`;
+window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(metin),'_blank');
+}
+function renderBakiyeKarti(){
+if(!currentUser||currentUser.role!=='owner') return '';
+const l=(S.payments||[]).filter(p=>p.status==='kismi'&&odemeKalan(p)>0).sort((a,b)=>odemeKalan(b)-odemeKalan(a));
+if(!l.length) return '';
+const top=l.reduce((a,p)=>a+odemeKalan(p),0);
+return `<div class="card" style="margin-bottom:14px;border:1.5px solid #fdba74;background:#fff7ed">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-weight:800;font-size:14px;color:#9a3412">🟠 Bekleyen Bakiyeler</div><div style="font-weight:800;color:#9a3412">${tlBicim(top)}</div></div>
+${l.map(p=>{const ilk=(p.tahsilatlar||[]).map(t=>t.tarih).filter(Boolean).sort()[0]; const gun=ilk?Math.max(0,Math.round((new Date(localDate()+'T00:00:00')-new Date(ilk+'T00:00:00'))/86400000)):0;
+return `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid #fed7aa;flex-wrap:wrap">
+<div style="flex:1;min-width:150px"><div style="font-weight:700;font-size:13px">${p.member}</div><div style="font-size:11.5px;color:#9a3412">${tlBicim(odemeKalan(p))} kaldı · ${tlBicim(odemeAlinan(p))} / ${tlBicim(p.amount)} alındı${gun?` · ${gun} gündür`:''}</div></div>
+<button class="btn btn-sm" onclick="bakiyeHatirlat(${p.id},event)"><i class="ti ti-brand-whatsapp"></i> Hatırlat</button>
+<button class="btn btn-sm" style="background:#059669;color:#fff;border-color:#059669" onclick="tahsilatEkle(${p.id},event)">+ Tahsilat</button>
+</div>`;}).join('')}
+</div>`;
+}
 function uyeOdemeOzeti(memberId, e) {
 if(e) e.stopPropagation();
 if(!currentUser || currentUser.role!=='owner') return;
 const m = S.members.find(x=>x.id===memberId);
 const odemeler = (S.payments||[]).filter(p=>p.memberId===memberId).sort((a,b)=>(b.date||'')>(a.date||'')?1:-1);
 const ad = m ? (m.name+' '+m.surname) : (odemeler[0]&&odemeler[0].member) || 'Üye';
-const odendiMi = p => p.status!=='bekliyor';
-const odenen = odemeler.filter(odendiMi).reduce((a,p)=>a+(p.amount||0),0);
-const bekleyenler = odemeler.filter(p=>!odendiMi(p));
-const bekleyen = bekleyenler.reduce((a,p)=>a+(p.amount||0),0);
+const odendiMi = p => p.status!=='bekliyor' && p.status!=='kismi';
+const odenen = odemeler.reduce((a,p)=>a+odemeAlinan(p),0);
+const bekleyenler = odemeler.filter(p=>odemeKalan(p)>0);
+const bekleyen = bekleyenler.reduce((a,p)=>a+odemeKalan(p),0);
 const ort = odemeler.length ? Math.round(odemeler.reduce((a,p)=>a+(p.amount||0),0)/odemeler.length) : 0;
 const tarihler = odemeler.map(p=>p.date).filter(Boolean).sort();
 const tl = v => '₺'+Math.round(v).toLocaleString('tr-TR');
@@ -6331,7 +6400,7 @@ el.innerHTML = `<div class="modal" style="max-height:88dvh;overflow-y:auto">
 <div class="modal-header"><div class="modal-title">💰 ${ad}</div><button class="btn btn-icon" onclick="document.getElementById('odeme-ozet-overlay').remove()"><i class="ti ti-x"></i></button></div>
 <div class="modal-body">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-<div style="background:#ecfdf5;border-radius:12px;padding:12px"><div style="font-size:10px;color:#047857;font-weight:700">TOPLAM ÖDENEN</div><div style="font-size:21px;font-weight:800;color:#065f46">${tl(odenen)}</div><div style="font-size:11px;color:#047857">${odemeler.filter(odendiMi).length} paket</div></div>
+<div style="background:#ecfdf5;border-radius:12px;padding:12px"><div style="font-size:10px;color:#047857;font-weight:700">TOPLAM ÖDENEN</div><div style="font-size:21px;font-weight:800;color:#065f46">${tl(odenen)}</div><div style="font-size:11px;color:#047857">alınan toplam</div></div>
 <div style="background:${bekleyen?'#fef3c7':'var(--bg)'};border-radius:12px;padding:12px"><div style="font-size:10px;color:${bekleyen?'#92400e':'var(--text3)'};font-weight:700">BEKLEYEN ÖDEME</div><div style="font-size:21px;font-weight:800;color:${bekleyen?'#92400e':'var(--text3)'}">${tl(bekleyen)}</div><div style="font-size:11px;color:${bekleyen?'#92400e':'var(--text3)'}">${bekleyenler.length} paket</div></div>
 </div>
 <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:8px;gap:8px;flex-wrap:wrap">
@@ -6341,7 +6410,7 @@ el.innerHTML = `<div class="modal" style="max-height:88dvh;overflow-y:auto">
 </div>
 ${odemeler.length ? odemeler.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
 <div style="min-width:0"><div style="font-size:13px;font-weight:600">${p.package||'—'}</div><div style="font-size:11px;color:var(--text3)">Başlangıç ${p.date?gaTarih(p.date):'—'}${p.method?' · '+p.method:''}${p.paidDate&&p.status==='odendi'&&p.paidDate!==p.date?' · ödendi '+gaTarih(p.paidDate):''}</div></div>
-<div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:700;color:${odendiMi(p)?'#065f46':'#92400e'}">${tl(p.amount||0)}</div><div style="font-size:10px;font-weight:600;color:${odendiMi(p)?'#059669':'#b45309'}">${odendiMi(p)?'✓ Ödendi':'⏳ Bekliyor'}</div></div>
+<div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:700;color:${odendiMi(p)?'#065f46':'#92400e'}">${tl(p.amount||0)}</div><div style="font-size:10px;font-weight:600;color:${odendiMi(p)?'#059669':'#b45309'}">${odendiMi(p)?'✓ Ödendi':p.status==='kismi'?'🟠 '+tlBicim(odemeKalan(p))+' kaldı':'⏳ Bekliyor'}</div></div>
 </div>`).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Bu üyenin ödeme kaydı yok.</div>'}
 </div>
 </div>`;
@@ -6351,7 +6420,7 @@ function renderPayments(tab) {
 if(!tab) tab = window.paymentsTab || 'guncel';
 window.paymentsTab = tab;
 const tm = localDate().slice(0,7);
-const monthRev = S.payments.filter(p=>p.paidDate&&p.paidDate.startsWith(tm)&&p.status==='odendi').reduce((a,p)=>a+p.amount,0);
+const monthRev = S.payments.reduce((a,p)=>a+odemeTahsilatKalemleri(p).filter(t=>t.tarih&&t.tarih.startsWith(tm)).reduce((x,t)=>x+t.tutar,0),0);
 const totalRev = S.payments.reduce((a,p)=>a+p.amount,0);
 // Güncel vs Arşiv ayrımı
 // Gerçek anlamda aktif üyeler — paketi geçerli ve dersi olan
@@ -6404,9 +6473,9 @@ window._dashReveal = window._dashReveal || {};
 window._dashReveal['pay-month-rev'] = { value: '₺'+monthRev.toLocaleString('tr-TR'), shown: false };
 window._dashReveal['pay-total-rev'] = { value: '₺'+totalRev.toLocaleString('tr-TR'), shown: false };
 // Bu ay tahsilat detayı — sadece bu ayda ödendi yapılanlar (paidDate zorunlu)
-const monthPayments = S.payments.filter(p=>{
-return p.paidDate && p.paidDate.startsWith(tm) && p.status==='odendi';
-}).sort((a,b)=>b.paidDate>a.paidDate?1:-1);
+const monthPayments = [];
+S.payments.forEach(p=>odemeTahsilatKalemleri(p).forEach(t=>{ if(t.tarih&&t.tarih.startsWith(tm)) monthPayments.push({...p, amount:t.tutar, paidDate:t.tarih, _kismi:Array.isArray(p.tahsilatlar)&&p.tahsilatlar.length>1||p.status==='kismi'}); }));
+monthPayments.sort((a,b)=>b.paidDate>a.paidDate?1:-1);
 if(monthPayments.length > 0) {
 document.getElementById('page-content').innerHTML += `
 <div class="card" style="margin-top:12px">
@@ -6420,7 +6489,7 @@ const m = S.members.find(x=>x.id===p.memberId);
 return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
 <div>
 <div style="font-size:13px;font-weight:600">${p.member||'—'}</div>
-<div style="font-size:11px;color:var(--text3)">${p.package||'—'} · ödendi ${gaTarih(p.paidDate)}</div>
+<div style="font-size:11px;color:var(--text3)">${p.package||'—'} · ${p._kismi?'kısmi tahsilat':'ödendi'} ${gaTarih(p.paidDate)}</div>
 </div>
 <div style="font-size:14px;font-weight:700;color:var(--green)">₺${(p.amount||0).toLocaleString('tr-TR')}</div>
 </div>`;
@@ -6460,7 +6529,9 @@ ${perLesson!=null?`<div style="font-weight:600;color:var(--text)">₺${perLesson
 </td>
 <td><span class="pay-method" style="background:${p.method==='Nakit'?'#d1fae5':p.method==='Kredi Kartı'?'#fef3c7':'#eff6ff'};color:${p.method==='Nakit'?'#065f46':p.method==='Kredi Kartı'?'#92400e':'#1e3a8a'}">${p.method}</span></td>
 <td>
-${p.status==='bekliyor'
+${p.status==='kismi'
+?`<span style="color:#c2410c;font-size:11px;font-weight:600">🟠 Kısmi · ${tlBicim(odemeKalan(p))} kaldı</span><br><button onclick="tahsilatEkle(${p.id},event)" style="margin-top:4px;padding:3px 8px;background:#059669;color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">+ Tahsilat</button>`
+:p.status==='bekliyor'
 ?`<button onclick="markPaymentPaid(${p.id})" style="padding:4px 8px;background:#f59e0b;color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">⏳ Ödendi Yap</button>`
 :`<span style="color:#059669;font-size:11px;font-weight:600">✅ Ödendi${p.paidDate?' · '+gaTarih(p.paidDate):''}</span>`
 }
@@ -6483,12 +6554,13 @@ return `<div class="arsiv-mobile-item" data-member="${p.member}" style="padding:
 <div style="display:flex;align-items:center;gap:6px">
 <div style="font-weight:700;font-size:13px"><span onclick="uyeOdemeOzeti(${p.memberId},event)" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px">${p.member}</span></div>
 ${isPast?'<span style="background:#f3f4f6;color:#6b7280;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">Geçmiş</span>':'<span style="background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">Aktif</span>'}
-${p.status==='bekliyor'?'<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">⏳ Bekliyor</span>':''}
+${p.status==='bekliyor'?'<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">⏳ Bekliyor</span>':''}${p.status==='kismi'?'<span style="background:#ffedd5;color:#c2410c;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700">🟠 Kısmi</span>':''}
 </div>
 <div style="font-size:12px;color:var(--text2);margin-top:2px">${p.package}${p.method?` · <span style="background:${p.method==='Nakit'?'#d1fae5':p.method==='Kredi Kartı'?'#fef3c7':'#eff6ff'};color:${p.method==='Nakit'?'#065f46':p.method==='Kredi Kartı'?'#92400e':'#1e3a8a'};padding:1px 6px;border-radius:8px;font-size:10px">${p.method}</span>`:''}</div>
 <div style="font-size:11px;color:var(--text3);margin-top:4px">📅 Paket başlangıcı: <b style="color:var(--text2)">${gaTarih(p.date)}</b></div>
 ${p.status==='bekliyor'?`<button onclick="markPaymentPaid(${p.id})" style="margin-top:6px;padding:4px 10px;background:#059669;color:white;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">✅ Ödendi Olarak İşaretle</button>`:''}
-${p.paidDate&&p.status==='odendi'?`<div style="font-size:11px;color:#059669;margin-top:2px">💰 Ödeme tarihi: <b>${gaTarih(p.paidDate)}</b></div>`:''}
+${Array.isArray(p.tahsilatlar)&&p.tahsilatlar.length?p.tahsilatlar.map(t=>`<div style="font-size:11px;color:#059669;margin-top:2px">💰 ${tlBicim(t.tutar)} alındı · <b>${gaTarih(t.tarih)}</b></div>`).join(''):(p.paidDate&&p.status==='odendi'?`<div style="font-size:11px;color:#059669;margin-top:2px">💰 Ödeme tarihi: <b>${gaTarih(p.paidDate)}</b></div>`:'')}
+${p.status==='kismi'?`<div style="font-size:12px;color:#c2410c;font-weight:700;margin-top:4px">Kalan: ${tlBicim(odemeKalan(p))}</div><button onclick="tahsilatEkle(${p.id},event)" style="margin-top:6px;padding:5px 12px;background:#059669;color:white;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">+ Tahsilat ekle</button>`:''}
 </div>
 <div style="text-align:right;flex-shrink:0;margin-left:10px">
 <div style="font-weight:700;color:${isPast?'var(--text3)':'var(--green)'};font-size:15px">₺${p.amount.toLocaleString('tr-TR')}</div>
@@ -6582,6 +6654,8 @@ document.getElementById('p-amount').value=p.amount;
 document.getElementById('p-date').value=p.date;
 document.getElementById('p-method').value=p.method;
 document.getElementById('p-status').value=p.status||'odendi';
+document.getElementById('p-alinan').value = p.status==='kismi' ? odemeAlinan(p) : '';
+kismiAlanGoster();
 openModal('payment-modal');
 }
 // Arşivlenen bir paketin doğru ödeme tutarını bulur: aynı üye + aynı paket adı + o paketin başlangıç tarihiyle eşleşen ödeme kaydı.
@@ -6607,11 +6681,26 @@ ozelDers = countVal === '0' ? 0 : (parseInt(countVal)||1);
 pkg = ozelDers === 0 ? 'Özel Paket (Sınırsız)' : `Özel Paket (${ozelDers} Ders)`;
 }
 const payStatus = document.getElementById('p-status').value;
-const d={memberId:mid,member:m?m.name+' '+m.surname:'',package:pkg,amount:parseFloat(document.getElementById('p-amount').value)||0,date:date,method:document.getElementById('p-method').value,status:payStatus,paidDate:payStatus==='odendi'?localDate():null,ozelDers:ozelDers||0};
+const eskiP = eid ? S.payments.find(p=>p.id==eid) : null;
+const d={memberId:mid,member:m?m.name+' '+m.surname:'',package:pkg,amount:parseFloat(document.getElementById('p-amount').value)||0,date:date,method:document.getElementById('p-method').value,status:payStatus,
+ // Ödendi tarihi: zaten ödenmiş bir kaydı düzenlerken eski tarih korunur
+ paidDate:payStatus==='odendi'?((eskiP&&eskiP.status!=='bekliyor'&&eskiP.status!=='kismi'&&eskiP.paidDate)||localDate()):null,ozelDers:ozelDers||0};
 if((d.amount===undefined||d.amount===null||d.amount==='' )||!d.date){toast('Tutar ve tarih zorunludur.','error');return;}
+// Kısmi ödeme / tahsilat listesi
+{ const onceki = eskiP && Array.isArray(eskiP.tahsilatlar) ? eskiP.tahsilatlar.map(t=>({...t})) : null;
+if(payStatus==='kismi'){
+const al=parseFloat(document.getElementById('p-alinan').value)||0;
+if(!(al>0)){ toast('Kısmi ödemede alınan tutarı yazın.','error'); return; }
+if(onceki && onceki.length){ const fark=al-onceki.reduce((a,t)=>a+(+t.tutar||0),0); if(fark) onceki[onceki.length-1].tutar=Math.max(0,(+onceki[onceki.length-1].tutar||0)+fark); d.tahsilatlar=onceki.filter(t=>t.tutar>0); }
+else d.tahsilatlar=[{tutar:al,tarih:localDate()}];
+} else if(payStatus==='odendi' && onceki && onceki.length){
+const kalan=d.amount-onceki.reduce((a,t)=>a+(+t.tutar||0),0); if(kalan>0) onceki.push({tutar:kalan,tarih:localDate()}); d.tahsilatlar=onceki;
+} else if(payStatus==='bekliyor'){ d.tahsilatlar=[]; }
+if(d.tahsilatlar && d.tahsilatlar.length) odemeDurumGuncelle(d); else delete d.tahsilatlar;
+if(payStatus==='bekliyor' && eskiP) d.tahsilatlar=undefined; }
 if(eid){
 const i=S.payments.findIndex(p=>p.id==eid);
-if(i>-1) S.payments[i]={...S.payments[i],...d};
+if(i>-1){ S.payments[i]={...S.payments[i],...d}; if(!S.payments[i].tahsilatlar||!S.payments[i].tahsilatlar.length) delete S.payments[i].tahsilatlar; }
 if(m) {
 if(m.package===pkg) {
 // Paket aynı — sadece tarihi güncelle, kullanılan ders sayısı korunur
