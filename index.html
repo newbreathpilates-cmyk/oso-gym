@@ -433,7 +433,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.26-2</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.27-1</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -1196,7 +1196,7 @@ Bu işlem geri alınamaz. Üyeye ait tüm veriler silinecek.
 <select style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:white;appearance:auto" id="g-yer">
 <option value="isyeri">🏢 İş Yeri</option>
 <option value="ev">🏠 Ev</option>
-<option value="kisisel">👤 Kişisel</option>
+<option value="kisisel">👤 Kişisel / Sosyal</option>
 </select>
 </div>
 <div id="g-banka-group" style="display:none">
@@ -2990,7 +2990,7 @@ return `<div style="display:flex;justify-content:space-between;align-items:cente
 </div>`;
 // Önümüzdeki Hafta kartı — ayrı blok kaldırıldı, yukarıya taşındı
 // Gerçek değerleri sakla
-const monthGider = (S.giderler||[]).filter(g=>g.date&&g.date.startsWith(tm)).reduce((a,g)=>a+g.amount,0);
+const monthGider = (S.giderler||[]).filter(g=>g.date&&g.date.startsWith(tm)&&giderYeri(g)==='isyeri').reduce((a,g)=>a+g.amount,0);
 const netKar = monthLessonRev - monthGider;
 window._dashReveal = {
 'month-rev': { value: '₺'+Math.round(monthLessonRev).toLocaleString('tr-TR'), shown: false },
@@ -7451,7 +7451,7 @@ if(!dersUcretiGecerliMi(p, ev.date)) return sum;
 return sum+(p.amount/lessons);
 },0);
 },0);
-const monthGider = (S.giderler||[]).filter(g=>g.date&&g.date.startsWith(tm)).reduce((a,g)=>a+g.amount,0);
+const monthGider = (S.giderler||[]).filter(g=>g.date&&g.date.startsWith(tm)&&giderYeri(g)==='isyeri').reduce((a,g)=>a+g.amount,0);
 const netKar = monthLessonRev - monthGider;
 const ay = new Date().toLocaleDateString('tr-TR',{month:'long',year:'numeric'});
 document.getElementById('page-content').innerHTML = `
@@ -7500,8 +7500,94 @@ window._dashReveal['fin-gelir2'] = { value: '₺'+Math.round(monthLessonRev).toL
 window._dashReveal['fin-gider2'] = { value: '₺'+Math.round(monthGider).toLocaleString('tr-TR'), shown: false };
 window._dashReveal['fin-kar2'] = { value: (netKar>=0?'+':'')+'₺'+Math.round(Math.abs(netKar)).toLocaleString('tr-TR'), shown: false };
 }
+// ── GİDERLER: İş Yeri / Ev / Kişisel-Sosyal ayrımı ──
+const GIDER_YERLERI = [['isyeri','🏢 İş Yeri Giderleri','#0f766e'],['ev','🏠 Ev Giderleri','#b45309'],['kisisel','👤 Kişisel / Sosyal Giderler','#7c3aed']];
+function giderYeri(g){ return (g && (g.yer==='ev'||g.yer==='kisisel')) ? g.yer : 'isyeri'; }
+// Eski sabit giderlere bir kerelik yer ataması (adına göre tahmin; sonradan ✏️ ile değiştirilebilir)
+function sabitGiderYerleriniAta(){
+let degisti=false;
+(S.sabitGiderler||[]).forEach(g=>{ if(g.yer) return; const ad=String(g.name||'').toLocaleUpperCase('tr-TR');
+g.yer = /^EV\b|\bEV (K[İI]RA|A[İI]DAT)/.test(ad) ? 'ev' : (/GARANT[İI]|KRED[İI]/.test(ad) && !/[İI]Ş YER/.test(ad)) ? 'kisisel' : 'isyeri'; degisti=true; });
+if(degisti) save();
+}
+function giderTekKalemHTML(g){
+const renk=GIDER_RENK[g.category]||'#6B7280';
+const odendi = g.odendi===true;
+return `<div style="padding:12px;border-bottom:1px solid var(--border);${odendi?'opacity:0.7':''}">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div>
+<div style="font-size:13px;font-weight:600;color:${odendi?'#059669':'#b91c1c'}">₺${g.amount.toLocaleString('tr-TR')}</div>
+<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+<div style="width:8px;height:8px;border-radius:50%;background:${renk}"></div>
+<span style="font-size:12px;color:var(--text2)">${g.category}</span>
+<span style="font-size:10px;color:var(--text3)">· ${g.date}</span>
+</div>
+${g.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${g.note}</div>`:''}
+${odendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:3px">✅ Ödendi · ${g.odendiTarih||''}</div>`:''}
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+<div style="display:flex;gap:6px">
+<button class="btn btn-sm btn-icon" onclick="openGiderModal(${g.id})"><i class="ti ti-edit"></i></button>
+<button class="btn btn-sm btn-icon btn-danger" onclick="deleteGider(${g.id})"><i class="ti ti-trash"></i></button>
+</div>
+<button style="${odendi?'background:#fef2f2;color:#b91c1c':'background:#f0fdf4;color:#059669'};border:1px solid ${odendi?'#fecaca':'#bbf7d0'};border-radius:6px;font-size:11px;padding:4px 10px;cursor:pointer" onclick="toggleGiderOdendi(${g.id})">${odendi?'↩ Geri Al':'✅ Ödendi'}</button>
+</div>
+</div>
+</div>`;
+}
+function giderSabitKalemHTML(g){const selAyStr = window._giderAy || new Date().toISOString().slice(0,7);
+const isAktif = isSabitGiderAktifForAy(g, selAyStr);
+const odKey = 'od_' + selAyStr;
+const isOdendi = g[odKey] === true;
+const aylikTutar = getSabitGiderTutar(g, selAyStr);
+return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);${!isAktif?'opacity:0.5':''}">
+<div style="flex:1">
+<div style="display:flex;align-items:center;gap:8px">
+<div style="font-weight:500;font-size:13px">${g.name}</div>
+<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isAktif?'#d1fae5':'#f3f4f6'};color:${isAktif?'#065f46':'#6b7280'};font-weight:600">${isAktif?'Aktif':'Pasif'}</span>
+</div>
+<div style="font-size:11px;color:var(--text3)">${g.category}</div>
+${isOdendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">✅ Ödendi · ${g['odTarih_'+selAyStr]||selAyStr}</div>`:`<div style="font-size:10px;color:#b91c1c;margin-top:2px">⏳ ${selAyStr} ödenmedi</div>`}
+</div>
+<div style="display:flex;align-items:center;gap:6px">
+<div style="font-weight:700;color:${isOdendi?'#059669':'#b91c1c'}">₺${aylikTutar.toLocaleString('tr-TR')}</div>
+<button onclick="toggleSabitGiderOdendi(${g.id})" style="border:1px solid ${isOdendi?'#bbf7d0':'#fecaca'};background:${isOdendi?'#f0fdf4':'#fef2f2'};border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:${isOdendi?'#059669':'#b91c1c'}">${isOdendi?'↩':'✅'}</button>
+<button onclick="toggleSabitGiderAktif(${g.id})" style="border:1px solid var(--border);background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:var(--text2)">${isAktif?'⏸':'▶'}</button>
+<button class="btn btn-sm btn-icon" onclick="editSabitGider(${g.id})"><i class="ti ti-edit"></i></button>
+<button class="btn btn-sm btn-icon btn-danger" onclick="deleteSabitGider(${g.id})"><i class="ti ti-trash"></i></button>
+</div>
+</div>`;
+}
+function giderBolumAcKapa(y){ window._giderBolumAcik=window._giderBolumAcik||{}; window._giderBolumAcik[y]=!window._giderBolumAcik[y]; const el=document.getElementById('gider-bolum-'+y), ok=document.getElementById('gider-bolum-ok-'+y); if(el) el.style.display=window._giderBolumAcik[y]?'block':'none'; if(ok) ok.textContent=window._giderBolumAcik[y]?'▴':'▾'; }
+function renderGiderBolumleri(filtered, ay){
+const acik=window._giderBolumAcik||{};
+const sabitler=(S.sabitGiderler||[]).filter(g=>window._sabitPasifGoster || isSabitGiderAktifForAy(g, ay));
+window._sabitKaldirilanSayisi=(S.sabitGiderler||[]).filter(g=>!isSabitGiderAktifForAy(g, ay)).length;
+let genel=0;
+const bolumler=GIDER_YERLERI.map(([y,baslik,renk])=>{
+const sab=sabitler.filter(g=>giderYeri(g)===y), tek=[...filtered].filter(g=>giderYeri(g)===y).sort((a,b)=>b.date>a.date?1:-1);
+const top=sab.filter(g=>isSabitGiderAktifForAy(g, ay)).reduce((a,g)=>a+getSabitGiderTutar(g, ay),0)+tek.reduce((a,g)=>a+(g.amount||0),0);
+genel+=top;
+const adet=sab.length+tek.length;
+return `<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden;border-left:4px solid ${renk}">
+<div onclick="giderBolumAcKapa('${y}')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer">
+<div><div style="font-weight:800;font-size:15px;color:${renk}">${baslik}</div><div style="font-size:11.5px;color:var(--text3);margin-top:2px">${adet} kalem${sab.length?' · '+sab.length+' sabit':''}</div></div>
+<div style="display:flex;align-items:center;gap:10px"><div style="font-weight:800;font-size:18px;color:#b91c1c">₺${Math.round(top).toLocaleString('tr-TR')}</div><span id="gider-bolum-ok-${y}" style="color:var(--text3);font-size:14px">${acik[y]?'▴':'▾'}</span></div>
+</div>
+<div id="gider-bolum-${y}" style="display:${acik[y]?'block':'none'};border-top:1px solid var(--border);padding:0 12px">
+${adet ? sab.map(g=>giderSabitKalemHTML(g).replace('<div style="font-weight:500;font-size:13px">'+g.name+'</div>','<div style="font-weight:500;font-size:13px">'+g.name+' <span style="font-size:10px;color:var(--text3);font-weight:600">· sabit</span></div>')).join('') + tek.map(g=>giderTekKalemHTML(g)).join('') : '<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Bu ay gider yok</div>'}
+</div>
+</div>`;}).join('');
+return bolumler + `
+${window._sabitKaldirilanSayisi?`<button onclick="window._sabitPasifGoster=!window._sabitPasifGoster;renderGiderler()" style="width:100%;margin:4px 0 10px;padding:7px;background:none;border:1px dashed var(--border2);border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;font-size:11.5px;color:var(--text3)">${window._sabitPasifGoster?'Kaldırılan sabit giderleri gizle ▴':'Kaldırılan sabit giderleri göster ('+window._sabitKaldirilanSayisi+') ▾'}</button>`:''}
+<div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px">
+<span style="font-weight:700;font-size:14px">Genel Toplam <span style="font-weight:400;font-size:11.5px;color:var(--text3)">(üçü birlikte)</span></span>
+<span style="font-weight:800;font-size:17px;color:#b91c1c">₺${Math.round(genel).toLocaleString('tr-TR')}</span>
+</div>`;
+}
 function renderGiderler() {
 if(!S.giderler) S.giderler = [];
+sabitGiderYerleriniAta();
 document.getElementById('page-content').innerHTML = ''; // Önce temizle!
 const tm = new Date().toISOString().slice(0,7);
 const months = getMonthOptions();
@@ -7517,8 +7603,9 @@ ${months.map(m=>`<option value="${m}" ${m===(window._giderAy||tm)?'selected':''}
 const selAy = window._giderAy !== undefined ? window._giderAy : tm;
 if(!S.sabitGiderler) S.sabitGiderler = [];
 let filtered = selAy ? S.giderler.filter(g=>g.date&&g.date.startsWith(selAy)) : S.giderler;
-const sabitToplam = S.sabitGiderler.filter(g=>isSabitGiderAktifForAy(g, selAy||tm)).reduce((a,g)=>a+getSabitGiderTutar(g, selAy||tm),0);
-const toplam = filtered.reduce((a,g)=>a+g.amount,0) + sabitToplam;
+const sabitToplam = S.sabitGiderler.filter(g=>giderYeri(g)==='isyeri'&&isSabitGiderAktifForAy(g, selAy||tm)).reduce((a,g)=>a+getSabitGiderTutar(g, selAy||tm),0);
+// İşletme kârı için sadece İŞ YERİ giderleri (ev ve kişisel giderler ayrı bölümlerde takip edilir)
+const toplam = filtered.filter(g=>giderYeri(g)==='isyeri').reduce((a,g)=>a+g.amount,0) + sabitToplam;
 const ayGelir = S.events.filter(e=>e.date&&e.date.startsWith(selAy||tm)&&e.completed)
 .reduce((total,ev)=>{
 return total+(ev.members||[]).reduce((sum,mid)=>{
@@ -7575,7 +7662,7 @@ document.getElementById('page-content').innerHTML = `
 <span class="gider-real" style="display:none">₺${Math.round(ayHakedis).toLocaleString('tr-TR')}</span>
 </div>
 <div style="padding:10px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)">
-<span style="font-size:13px;color:var(--text2)">🧾 − Genel Toplam Gider</span>
+<span style="font-size:13px;color:var(--text2)">🧾 − İş Yeri Giderleri</span>
 <span class="gider-val" style="font-size:15px;font-weight:600;color:#b91c1c">••••••</span>
 <span class="gider-real" style="display:none">₺${Math.round(toplam).toLocaleString('tr-TR')}</span>
 </div>
@@ -7585,101 +7672,7 @@ document.getElementById('page-content').innerHTML = `
 <span class="gider-real" style="display:none">₺${Math.round(netKar).toLocaleString('tr-TR')}</span>
 </div>
 </div>
-<div class="two-col">
-<div class="card">
-<div class="card-title">Kategori Dağılımı</div>
-${Object.keys(katOzet).length ? Object.entries(katOzet).sort((a,b)=>b[1]-a[1]).map(([kat,tutar])=>{
-const renk=GIDER_RENK[kat]||'#6B7280';
-const pct=toplam>0?Math.round(tutar/toplam*100):0;
-return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-<div style="display:flex;align-items:center;gap:8px">
-<div style="width:10px;height:10px;border-radius:50%;background:${renk};flex-shrink:0"></div>
-<span style="font-size:13px">${kat}</span>
-</div>
-<div style="text-align:right">
-<div style="font-weight:700;font-size:13px">₺${Math.round(tutar).toLocaleString('tr-TR')}</div>
-<div style="font-size:10px;color:var(--text3)">%${pct}</div>
-</div>
-</div>`;
-}).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Gider yok</div>'}
-</div>
-<div></div>
-</div>
-<div class="card" style="padding:0;overflow:hidden">
-<div style="padding:14px 16px;font-weight:600;font-size:13px;border-bottom:1px solid var(--border)">Gider Listesi</div>
-${filtered.length ? `
-<div class="hakedis-mobile-list">
-${[...filtered].sort((a,b)=>b.date>a.date?1:-1).map(g=>{
-const renk=GIDER_RENK[g.category]||'#6B7280';
-const odendi = g.odendi===true;
-return `<div style="padding:12px;border-bottom:1px solid var(--border);${odendi?'opacity:0.7':''}">
-<div style="display:flex;justify-content:space-between;align-items:center">
-<div>
-<div style="font-size:13px;font-weight:600;color:${odendi?'#059669':'#b91c1c'}">₺${g.amount.toLocaleString('tr-TR')}</div>
-<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
-<div style="width:8px;height:8px;border-radius:50%;background:${renk}"></div>
-<span style="font-size:12px;color:var(--text2)">${g.category}</span>
-<span style="font-size:10px;color:var(--text3)">· ${g.date}</span>
-</div>
-${g.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${g.note}</div>`:''}
-${odendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:3px">✅ Ödendi · ${g.odendiTarih||''}</div>`:''}
-</div>
-<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-<div style="display:flex;gap:6px">
-<button class="btn btn-sm btn-icon" onclick="openGiderModal(${g.id})"><i class="ti ti-edit"></i></button>
-<button class="btn btn-sm btn-icon btn-danger" onclick="deleteGider(${g.id})"><i class="ti ti-trash"></i></button>
-</div>
-<button style="${odendi?'background:#fef2f2;color:#b91c1c':'background:#f0fdf4;color:#059669'};border:1px solid ${odendi?'#fecaca':'#bbf7d0'};border-radius:6px;font-size:11px;padding:4px 10px;cursor:pointer" onclick="toggleGiderOdendi(${g.id})">${odendi?'↩ Geri Al':'✅ Ödendi'}</button>
-</div>
-</div>
-</div>`;
-}).join('')}
-<div style="padding:12px;display:flex;justify-content:space-between;align-items:center;background:var(--bg);font-weight:700">
-<span style="font-size:13px">Toplam</span>
-<span style="font-size:14px;color:#b91c1c">₺${Math.round(filtered.reduce((a,g)=>a+g.amount,0)).toLocaleString('tr-TR')}</span>
-</div>
-</div>` : '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px"><i class="ti ti-receipt-off" style="font-size:28px;display:block;margin-bottom:8px"></i>Bu ay gider yok</div>'}
-</div>
-${S.sabitGiderler.length > 0 ? `
-<div class="card" style="margin-top:12px">
-<div class="card-title">🔄 Sabit Giderler (Her Ay)</div>
-${(()=>{
-// Seçili ayda kaldırılmış (pasif) giderler listede gizlenir; geçmiş aylarda görünmeye devam eder
-const ay = window._giderAy || new Date().toISOString().slice(0,7);
-const kaldirilanlar = S.sabitGiderler.filter(g=>!isSabitGiderAktifForAy(g, ay));
-window._sabitKaldirilanSayisi = kaldirilanlar.length;
-return '';
-})()}
-${S.sabitGiderler.filter(g=>window._sabitPasifGoster || isSabitGiderAktifForAy(g, window._giderAy || new Date().toISOString().slice(0,7))).map(g=>{
-const selAyStr = window._giderAy || new Date().toISOString().slice(0,7);
-const isAktif = isSabitGiderAktifForAy(g, selAyStr);
-const odKey = 'od_' + selAyStr;
-const isOdendi = g[odKey] === true;
-const aylikTutar = getSabitGiderTutar(g, selAyStr);
-return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);${!isAktif?'opacity:0.5':''}">
-<div style="flex:1">
-<div style="display:flex;align-items:center;gap:8px">
-<div style="font-weight:500;font-size:13px">${g.name}</div>
-<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${isAktif?'#d1fae5':'#f3f4f6'};color:${isAktif?'#065f46':'#6b7280'};font-weight:600">${isAktif?'Aktif':'Pasif'}</span>
-</div>
-<div style="font-size:11px;color:var(--text3)">${g.category}</div>
-${isOdendi?`<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">✅ Ödendi · ${g['odTarih_'+selAyStr]||selAyStr}</div>`:`<div style="font-size:10px;color:#b91c1c;margin-top:2px">⏳ ${selAyStr} ödenmedi</div>`}
-</div>
-<div style="display:flex;align-items:center;gap:6px">
-<div style="font-weight:700;color:${isOdendi?'#059669':'#b91c1c'}">₺${aylikTutar.toLocaleString('tr-TR')}</div>
-<button onclick="toggleSabitGiderOdendi(${g.id})" style="border:1px solid ${isOdendi?'#bbf7d0':'#fecaca'};background:${isOdendi?'#f0fdf4':'#fef2f2'};border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:${isOdendi?'#059669':'#b91c1c'}">${isOdendi?'↩':'✅'}</button>
-<button onclick="toggleSabitGiderAktif(${g.id})" style="border:1px solid var(--border);background:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:var(--text2)">${isAktif?'⏸':'▶'}</button>
-<button class="btn btn-sm btn-icon" onclick="editSabitGider(${g.id})"><i class="ti ti-edit"></i></button>
-<button class="btn btn-sm btn-icon btn-danger" onclick="deleteSabitGider(${g.id})"><i class="ti ti-trash"></i></button>
-</div>
-</div>`;
-}).join('')}
-${window._sabitKaldirilanSayisi?`<button onclick="window._sabitPasifGoster=!window._sabitPasifGoster;renderGiderler()" style="width:100%;margin-top:8px;padding:7px;background:none;border:1px dashed var(--border2);border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;font-size:11.5px;color:var(--text3)">${window._sabitPasifGoster?'Kaldırılanları gizle ▴':'Kaldırılanları göster ('+window._sabitKaldirilanSayisi+') ▾'}</button>`:''}
-<div style="display:flex;justify-content:space-between;padding-top:8px;font-weight:700">
-<span>Toplam Sabit Gider</span>
-<span style="color:#b91c1c">₺${sabitToplam.toLocaleString('tr-TR')}</span>
-</div>
-</div>` : ''}
+${renderGiderBolumleri(filtered, selAy||tm)}
 `;
 }
 function toggleGiderCards() {
@@ -7716,6 +7709,13 @@ el.innerHTML = `
 <div class="form-group"><label class="form-label">Kategori</label>
 <select class="form-select" id="sg-category">
 ${['Kira','Aidat','Muhasebe','Banka Kredisi','Sigorta','İnternet','Telefon','Diğer'].map(k=>`<option ${existing&&existing.category===k?'selected':''}>${k}</option>`).join('')}
+</select>
+</div>
+<div class="form-group"><label class="form-label">Nereye Ait?</label>
+<select class="form-select" id="sg-yer">
+<option value="isyeri" ${existing&&giderYeri(existing)==='isyeri'?'selected':''}>🏢 İş Yeri</option>
+<option value="ev" ${existing&&giderYeri(existing)==='ev'?'selected':''}>🏠 Ev</option>
+<option value="kisisel" ${existing&&giderYeri(existing)==='kisisel'?'selected':''}>👤 Kişisel / Sosyal</option>
 </select>
 </div>
 <div class="form-group"><label class="form-label">Aylık Tutar (₺)</label>
@@ -7782,6 +7782,7 @@ const name = document.getElementById('sg-name').value.trim();
 const category = document.getElementById('sg-category').value;
 const amount = parseFloat(document.getElementById('sg-amount').value)||0;
 const gecerliAy = document.getElementById('sg-gecerli').value || localDate().slice(0,7);
+const yer = document.getElementById('sg-yer') ? document.getElementById('sg-yer').value : 'isyeri';
 if(!name || !amount) { toast('Ad ve tutar zorunludur.','error'); return; }
 if(!S.sabitGiderler) S.sabitGiderler = [];
 if(id && id !== 'null') {
@@ -7793,11 +7794,11 @@ if(!g.tarihler) g.tarihler = [{tarih: '2020-01', tutar: g.amount||0}];
 const mevcut = g.tarihler.findIndex(t=>t.tarih===gecerliAy);
 if(mevcut>-1) g.tarihler[mevcut].tutar = amount;
 else g.tarihler.push({tarih: gecerliAy, tutar: amount});
-g.name = name; g.category = category; g.amount = amount;
+g.name = name; g.category = category; g.amount = amount; g.yer = yer;
 S.sabitGiderler[i] = g;
 }
 } else {
-S.sabitGiderler.push({id:yeniId(), name, category, amount, tarihler:[{tarih: gecerliAy, tutar: amount}]});
+S.sabitGiderler.push({id:yeniId(), name, category, amount, yer, tarihler:[{tarih: gecerliAy, tutar: amount}]});
 }
 save();
 document.getElementById('sabit-gider-overlay').remove();
