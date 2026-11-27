@@ -433,7 +433,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.27-1</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.27-2</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -7634,7 +7634,10 @@ return msum+(p.amount/lessons)*pct;
 },0);
 },0);
 const toplamGider = toplam + Math.round(ayHakedis);
-const netKar = ayGelir - toplamGider;
+const _yerToplam = y => S.sabitGiderler.filter(g=>giderYeri(g)===y&&isSabitGiderAktifForAy(g, selAy||tm)).reduce((a,g)=>a+getSabitGiderTutar(g, selAy||tm),0) + filtered.filter(g=>giderYeri(g)===y).reduce((a,g)=>a+(g.amount||0),0);
+const evToplam = _yerToplam('ev'), kisiselToplam = _yerToplam('kisisel');
+const isletmeKar = ayGelir - toplamGider;
+const netKar = isletmeKar - evToplam - kisiselToplam;
 const katOzet = {};
 filtered.forEach(g=>{ katOzet[g.category]=(katOzet[g.category]||0)+g.amount; });
 // Eğitmen hakedişini de kategoriye ekle
@@ -7666,10 +7669,25 @@ document.getElementById('page-content').innerHTML = `
 <span class="gider-val" style="font-size:15px;font-weight:600;color:#b91c1c">••••••</span>
 <span class="gider-real" style="display:none">₺${Math.round(toplam).toLocaleString('tr-TR')}</span>
 </div>
+<div style="padding:10px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)">
+<span style="font-size:13px;color:var(--text2)">🏠 − Ev Giderleri</span>
+<span class="gider-val" style="font-size:15px;font-weight:600;color:#b91c1c">••••••</span>
+<span class="gider-real" style="display:none">₺${Math.round(evToplam).toLocaleString('tr-TR')}</span>
+</div>
+<div style="padding:10px 16px 4px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)">
+<span style="font-size:13px;color:var(--text2)">👤 − Kişisel / Sosyal Giderler</span>
+<span class="gider-val" style="font-size:15px;font-weight:600;color:#b91c1c">••••••</span>
+<span class="gider-real" style="display:none">₺${Math.round(kisiselToplam).toLocaleString('tr-TR')}</span>
+</div>
 <div style="padding:12px 16px 16px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1.5px solid var(--border);margin-top:2px;background:${netKar>=0?'#f0fdf8':'#fef2f2'}">
 <span style="font-size:14px;font-weight:700;color:${netKar>=0?'#065f46':'#b91c1c'}">${netKar>=0?'📈':'📉'} Kalan Net Kar</span>
 <span class="gider-val" style="font-size:19px;font-weight:800;color:${netKar>=0?'#065f46':'#b91c1c'}">••••••</span>
 <span class="gider-real" style="display:none">₺${Math.round(netKar).toLocaleString('tr-TR')}</span>
+</div>
+<div style="padding:8px 16px 12px;display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--text3)">
+<span>İşletme kârı (ev ve kişisel hariç)</span>
+<span class="gider-val" style="font-weight:600">••••••</span>
+<span class="gider-real" style="display:none">₺${Math.round(isletmeKar).toLocaleString('tr-TR')}</span>
 </div>
 </div>
 ${renderGiderBolumleri(filtered, selAy||tm)}
