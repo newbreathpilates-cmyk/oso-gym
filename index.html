@@ -433,7 +433,7 @@ font-size: 28px;
 <div class="login-logo-icon" style="display:none"><i class="ti ti-leaf"></i></div>
 <h1>NEW BREATH PILATES</h1>
 <p>Yönetim ve Eğitmen Sistemi</p>
-<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.27-2</div>
+<div id="app-surum" style="font-size:10px;color:#9ca3af;margin-top:2px">Sürüm 2026.11.27-3</div>
 </div>
 <div class="role-tabs">
 <button class="role-tab active" onclick="setRole('owner')"><i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px"></i> İşletme Sahibi</button>
@@ -6625,7 +6625,18 @@ function openPaymentModal(){
 document.getElementById('p-id').value='';
 document.getElementById('payment-modal-title').textContent='Ödeme Ekle';
 const sel=document.getElementById('p-member');
-sel.innerHTML=[...S.members].sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr')).map(m=>`<option value="${m.id}">${m.name} ${m.surname}</option>`).join('');
+sel.innerHTML='<option value="">— Üye seçin —</option>'+[...S.members].sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr')).map(m=>`<option value="${m.id}">${m.name} ${m.surname}</option>`).join('');
+sel.value='';
+// Yeni ödeme her zaman temiz başlar (önceki işlemden hiçbir seçim kalmaz)
+sel.onchange=()=>{ const m=S.members.find(x=>String(x.id)===sel.value); const pk=document.getElementById('p-package'); if(m&&m.package&&[...pk.options].some(o=>o.value===m.package)){ pk.value=m.package; toggleOzelPaket(); autoFillPaymentAmount(); } };
+const pk=document.getElementById('p-package'); pk.selectedIndex=0;
+if(pk.querySelector('option[value="10 Ders Bireysel"]')||[...pk.options].some(o=>o.value==='10 Ders Bireysel')) pk.value='10 Ders Bireysel';
+document.getElementById('ozel-ders-count').value='1'; const oz=document.getElementById('ozel-ders-sayi'); if(oz) oz.textContent='1';
+toggleOzelPaket();
+document.getElementById('p-method').value='Nakit';
+document.getElementById('p-status').value='odendi';
+document.getElementById('p-alinan').value='';
+kismiAlanGoster();
 document.getElementById('p-date').value=localDate();
 document.getElementById('p-amount').value='';
 autoFillPaymentAmount();
@@ -6637,6 +6648,7 @@ document.getElementById('p-id').value=p.id;
 document.getElementById('payment-modal-title').textContent='Ödeme Düzenle';
 const sel=document.getElementById('p-member');
 sel.innerHTML=[...S.members].sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr')).map(m=>`<option value="${m.id}">${m.name} ${m.surname}</option>`).join('');
+sel.onchange=null;
 sel.value=p.memberId;
 const ozelMatch = p.package ? p.package.match(/Özel Paket \((\d+) Ders\)/) : null;
 const ozelSinirsiz = p.package && p.package.includes('Özel Paket (Sınırsız)');
@@ -6674,6 +6686,7 @@ function savePayment(){
 const eid=document.getElementById('p-id').value;
 const mid=parseInt(document.getElementById('p-member').value);
 const m=S.members.find(x=>x.id===mid);
+if(!document.getElementById('p-member').value||!m){ toast('Lütfen üye seçin.','error'); return; }
 let pkg=document.getElementById('p-package').value;
 const date=document.getElementById('p-date').value;
 let ozelDers = 0;
